@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة صلاحيات المجموعات والأدوار - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .group-perms-container {
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+    }
+    
+    .users-page-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+        margin-bottom: 1.5rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+    }
+    .dark .users-page-header {
+        border-bottom-color: rgba(51, 65, 85, 0.8) !important;
+    }
+    
+    .users-page-title-box {
+        text-align: right !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+    
+    .users-page-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.6rem !important;
+        font-size: 1.4rem !important;
+        font-weight: 900 !important;
+        color: #307e92 !important;
+        text-align: right !important;
+        margin: 0 !important;
+    }
+    .dark .users-page-title {
+        color: #38bdf8 !important;
+    }
+    
+    .users-page-subtitle {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        text-align: right !important;
+        margin-top: 0.25rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+        display: block !important;
+    }
+    .dark .users-page-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    .users-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+    }
+
+    .system-card-box {
+        position: relative !important;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        text-align: right !important;
+        direction: rtl !important;
+    }
+    .dark .system-card-box {
+        background: #1e293b;
+        border-color: #334155;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="group-perms-container max-w-6xl mx-auto space-y-6">
+
+    <!-- 1. Header Section -->
+    <div class="users-page-header">
+        <div class="users-page-title-box">
+            <h1 class="users-page-title">
+                <span class="material-symbols-outlined text-3xl">admin_panel_settings</span>
+                <span>إدارة صلاحيات المجموعات والأدوار</span>
+            </h1>
+            <p class="users-page-subtitle">تعريف مجموعات الصلاحيات الإدارية وضبط صلاحيات كل دور في المنظومة بشكل مستقل</p>
+        </div>
+        <div class="users-header-actions">
+            <a href="{% url 'users:manage_users' %}" class="btn-action bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                <span>رجوع لإدارة المستخدمين</span>
+            </a>
+            <a href="{% url 'users:create_group' %}" class="btn-action bg-[#307e92] hover:bg-[#256677] flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold text-white shadow-md">
+                <span class="material-symbols-outlined text-lg">add_moderator</span>
+                <span>إنشاء مجموعة جديدة</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-right" dir="rtl">
+        <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-[#1e293b] shadow-sm flex items-center justify-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-2xl">groups</span>
+            </div>
+            <div class="text-right">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block">إجمالي المجموعات</span>
+                <strong class="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono" id="statsGroupCount">{{ total_groups_count }}</strong>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-[#1e293b] shadow-sm flex items-center justify-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-2xl">verified_user</span>
+            </div>
+            <div class="text-right">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block">إجمالي الصلاحيات في النظام</span>
+                <strong class="text-xl font-bold text-slate-800 dark:text-slate-100 font-mono">{{ total_permissions_count }}</strong>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-xl border border-slate-200 dark:border-slate-700/70 bg-white dark:bg-[#1e293b] shadow-sm flex items-center justify-start gap-4">
+            <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                <span class="material-symbols-outlined text-2xl">policy</span>
+            </div>
+            <div class="text-right">
+                <span class="text-xs font-bold text-slate-500 dark:text-slate-400 block">نمط الحماية</span>
+                <strong class="text-sm font-bold text-slate-800 dark:text-slate-100">تحكم قائم على المجموعات (RBAC)</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 text-right" dir="rtl">
+        
+        <!-- Right Side Column: List of Groups -->
+        <div class="system-card-box space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3 text-right">
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm flex items-center justify-start gap-2 text-right">
+                    <span class="material-symbols-outlined text-[#307e92] dark:text-[#38bdf8]">list</span>
+                    <span>المجموعات الحالية</span>
+                </h3>
+                <a href="{% url 'users:create_group' %}" class="text-xs font-bold text-[#307e92] dark:text-[#38bdf8] hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span>مجموعة جديدة</span>
+                </a>
+            </div>
+
+            <!-- Group Search Filter -->
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-sm pointer-events-none">search</span>
+                <input type="text" id="groupSearchInput" placeholder="بحث في المجموعات..." oninput="filterGroupList()"
+                       class="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#307e92] text-right" dir="rtl">
+            </div>
+
+            <!-- Groups List Buttons -->
+            <div class="space-y-1.5 max-h-[480px] overflow-y-auto pl-1" id="groupsContainer">
+                {% for group in all_groups %}
+                <button type="button" 
+                        onclick="selectGroupForEdit('{{ group.id }}', '{{ group.name|escapejs }}', this)"
+                        class="group-item-btn w-full text-right p-3 rounded-xl border border-slate-100 dark:border-slate-700/60 hover:border-[#307e92] dark:hover:border-[#38bdf8]/50 hover:bg-teal-50/40 dark:hover:bg-slate-800 transition-all flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-200"
+                        data-group-id="{{ group.id }}"
+                        data-group-name="{{ group.name }}">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base text-slate-400 group-hover:text-[#307e92]">shield</span>
+                        <span>{{ group.name }}</span>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 text-[10px] font-mono">
+                        {{ group.permissions.count }} صلاحية
+                    </span>
+                </button>
+                {% empty %}
+                <div class="text-center py-6 text-xs text-slate-400 italic" id="emptyGroupsMsg">
+                    لا توجد مجموعات معرفة حالياً.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Left Main Column: Selected Group Permissions Editor -->
+        <div class="lg:col-span-2 system-card-box space-y-6">
+            
+            <!-- Group Details Header & Name Edit -->
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-100 dark:border-slate-700/60 pb-4 text-right">
+                <div class="flex-1 text-right">
+                    <span class="text-xs font-bold text-[#307e92] dark:text-[#38bdf8] block mb-1 text-right">المجموعة المحددة حالياً</span>
+                    <input type="text" id="selectedGroupNameInput" placeholder="اختر مجموعة من القائمة على اليمين..."
+                           class="text-lg font-bold text-slate-800 dark:text-slate-100 bg-transparent border-b border-transparent focus:border-[#307e92] focus:outline-none w-full pb-1 transition-all text-right"
+                           dir="rtl"
+                           disabled>
+                    <input type="hidden" id="selectedGroupId">
+                </div>
+
+                <div class="flex items-center justify-start sm:justify-end gap-2 flex-wrap">
+                    <button type="button" id="btnSelectAllPerms" onclick="toggleAllPermissions(true)" disabled
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        تحديد الكل
+                    </button>
+                    <button type="button" id="btnDeselectAllPerms" onclick="toggleAllPermissions(false)" disabled
+                            class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        إلغاء التحديد
+                    </button>
+                    <button type="button" id="btnSaveGroupPerms" onclick="saveSelectedGroupPermissions()" disabled
+                            class="btn-action bg-[#307e92] hover:bg-[#256677] px-4 py-2 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
+                        <span class="material-symbols-outlined text-sm">save</span>
+                        <span>حفظ الصلاحيات</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Permissions Checkboxes Grouped by Section -->
+            <div id="permissionsEditorContainer" class="space-y-6 max-h-[550px] overflow-y-auto pl-1 text-right">
+                <div class="text-center py-16 text-slate-400 dark:text-slate-500" id="noGroupSelectedPlaceholder">
+                    <span class="material-symbols-outlined text-5xl mb-2 block text-slate-300 dark:text-slate-600 mx-auto">touch_app</span>
+                    <p class="font-bold text-sm">يرجى اختيار مجموعة من القائمة على اليمين للبدء في تعديل صلاحياتها.</p>
+                </div>
+
+                <!-- Categories Grid -->
+                <div id="permissionsCategoriesWrapper" class="space-y-6 hidden text-right">
+                    {% for category_name, perms in grouped_permissions.items %}
+                    <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3 text-right">
+                        <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60 text-right">
+                            <span class="font-bold text-xs text-[#307e92] dark:text-[#38bdf8] flex items-center justify-start gap-1.5 text-right">
+                                <span class="material-symbols-outlined text-sm">folder_open</span>
+                                <span>{{ category_name }}</span>
+                            </span>
+                            <button type="button" onclick="toggleCategoryPerms('{{ forloop.counter }}')" class="text-[11px] font-semibold text-slate-500 hover:text-[#307e92]">
+                                تبديل تحديد القسم
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-right" id="cat-{{ forloop.counter }}">
+                            {% for p in perms %}
+                            <label class="flex items-start justify-start gap-2.5 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:bg-teal-50/30 transition-all cursor-pointer text-xs text-right">
+                                <input type="checkbox" name="permission" value="{{ p.id }}" data-category="{{ forloop.parentloop.counter }}"
+                                       class="perm-checkbox w-4 h-4 mt-0.5 text-[#307e92] rounded border-slate-300 focus:ring-[#307e92]">
+                                <span class="text-slate-700 dark:text-slate-200 font-semibold leading-tight text-right">{{ p.name }}</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Toast Notification -->
+<div id="toastNotification" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-white dark:bg-[#1e293b] border-r-4 rounded-lg shadow-xl p-4 flex items-center gap-3">
+    <span id="toastIcon" class="material-symbols-outlined text-2xl"></span>
+    <p id="toastMessage" class="text-sm font-bold text-slate-700 dark:text-slate-200"></p>
+</div>
+
+<script>
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showToast(type, message) {
+    const toast = document.getElementById('toastNotification');
+    const icon = document.getElementById('toastIcon');
+    const msg = document.getElementById('toastMessage');
+    if (!toast || !icon || !msg) return;
+    
+    msg.innerText = message;
+    if (type === 'success') {
+        toast.className = "fixed bottom-5 left-5 z-50 transition-all duration-300 max-w-sm w-full bg-white dark:bg-[#1e293b] border-r-4 border-r-emerald-500 rounded-lg shadow-xl p-4 flex items-center gap-3";
+        icon.className = "material-symbols-outlined text-emerald-500 text-2xl";
+        icon.innerText = "check_circle";
+    } else {
+        toast.className = "fixed bottom-5 left-5 z-50 transition-all duration-300 max-w-sm w-full bg-white dark:bg-[#1e293b] border-r-4 border-r-rose-500 rounded-lg shadow-xl p-4 flex items-center gap-3";
+        icon.className = "material-symbols-outlined text-rose-500 text-2xl";
+        icon.innerText = "error";
+    }
+    toast.classList.remove('translate-y-20', 'opacity-0');
+    setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+    }, 4000);
+}
+
+function filterGroupList() {
+    const query = document.getElementById('groupSearchInput').value.toLowerCase();
+    const items = document.querySelectorAll('.group-item-btn');
+    items.forEach(btn => {
+        const name = (btn.getAttribute('data-group-name') || '').toLowerCase();
+        if (name.includes(query)) {
+            btn.style.display = 'flex';
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+}
+
+function selectGroupForEdit(groupId, groupName, btnElement) {
+    document.querySelectorAll('.group-item-btn').forEach(b => {
+        b.classList.remove('border-[#307e92]', 'bg-teal-50/70', 'dark:bg-slate-800');
+    });
+    if (btnElement) {
+        btnElement.classList.add('border-[#307e92]', 'bg-teal-50/70', 'dark:bg-slate-800');
+    }
+
+    document.getElementById('selectedGroupId').value = groupId;
+    const nameInput = document.getElementById('selectedGroupNameInput');
+    nameInput.value = groupName;
+    nameInput.disabled = false;
+
+    document.getElementById('btnSelectAllPerms').disabled = false;
+    document.getElementById('btnDeselectAllPerms').disabled = false;
+    document.getElementById('btnSaveGroupPerms').disabled = false;
+
+    document.getElementById('noGroupSelectedPlaceholder').classList.add('hidden');
+    document.getElementById('permissionsCategoriesWrapper').classList.remove('hidden');
+
+    // Fetch details
+    fetch(`/users/api/groups/${groupId}/`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                const assigned = new Set(data.group.permissions || []);
+                document.querySelectorAll('.perm-checkbox').forEach(cb => {
+                    cb.checked = assigned.has(parseInt(cb.value));
+                });
+            } else {
+                showToast('error', data.error || 'فشل جلب الصلاحيات');
+            }
+        })
+        .catch(err => {
+            showToast('error', 'حدث خطأ في الاتصال');
+        });
+}
+
+function toggleAllPermissions(checked) {
+    document.querySelectorAll('.perm-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+}
+
+function toggleCategoryPerms(catId) {
+    const container = document.getElementById(`cat-${catId}`);
+    if (!container) return;
+    const cbs = container.querySelectorAll('.perm-checkbox');
+    const allChecked = Array.from(cbs).every(c => c.checked);
+    cbs.forEach(c => c.checked = !allChecked);
+}
+
+function saveSelectedGroupPermissions() {
+    const groupId = document.getElementById('selectedGroupId').value;
+    const groupName = document.getElementById('selectedGroupNameInput').value.trim();
+    if (!groupId) {
+        showToast('error', 'يرجى اختيار مجموعة أولاً');
+        return;
+    }
+    if (!groupName) {
+        showToast('error', 'اسم المجموعة مطلوب');
+        return;
+    }
+
+    const selectedPerms = [];
+    document.querySelectorAll('.perm-checkbox:checked').forEach(cb => {
+        selectedPerms.push(parseInt(cb.value));
+    });
+
+    const btn = document.getElementById('btnSaveGroupPerms');
+    btn.disabled = true;
+    btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> جارِ الحفظ...`;
+
+    fetch(`/users/api/groups/${groupId}/update/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            name: groupName,
+            permissions: selectedPerms
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">save</span><span>حفظ الصلاحيات</span>`;
+        if (data.success) {
+            showToast('success', data.message || '✅ تم حفظ صلاحيات المجموعة بنجاح');
+            const activeBtn = document.querySelector(`.group-item-btn[data-group-id="${groupId}"]`);
+            if (activeBtn) {
+                activeBtn.setAttribute('data-group-name', groupName);
+                activeBtn.querySelector('span:nth-child(2)').textContent = groupName;
+                activeBtn.querySelector('.font-mono').textContent = `${selectedPerms.length} صلاحية`;
+            }
+        } else {
+            showToast('error', data.error || 'فشل الحفظ');
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-sm">save</span><span>حفظ الصلاحيات</span>`;
+        showToast('error', 'فشل الاتصال بالخادم');
+    });
+}
+</script>
+{% endblock %}

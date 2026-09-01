@@ -1,0 +1,205 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}لوحة التحكم - بوابة الطالب{% endblock %}
+
+{% block page_title %}لوحة التحكّم الأكاديمية{% endblock %}
+{% block page_subtitle %}أهلاً بكِ في فضائك الأكاديمي الرقمي الموحد{% endblock %}
+
+{% block content %}
+
+<div class="stats-summary-grid mb-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+    <!-- بطاقة الطالب والترحيب -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); display: flex; align-items: center; gap: 1rem;">
+        <div style="width: 52px; height: 52px; border-radius: 50%; overflow: hidden; background: #e0f2fe; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            {% if photo_url and photo_url != '/static/images/default_avatar.png' %}
+            <img src="{{ photo_url }}" alt="Avatar" class="w-full h-full object-cover">
+            {% else %}
+            <span class="material-icons-outlined" style="font-size: 2rem; color: #0284c7;">person</span>
+            {% endif %}
+        </div>
+        <div>
+            <h4 style="font-weight: 800; font-size: 1.05rem; color: #0f172a; margin: 0;">{{ student.full_name|default:student_name|default:request.user.get_full_name|default:"مرحباً بك" }}</h4>
+            <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem;">{{ department_name|default:student.department.name|default:"--" }} | {{ level_name|default:student.level.name|default:"--" }}</p>
+        </div>
+    </div>
+
+    <!-- بطاقة المعدل التراكمي cGPA -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); text-align: center;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: #64748b; display: block;">المعدل التراكمي (cGPA)</span>
+        <span style="font-size: 1.6rem; font-weight: 900; color: #8b5cf6; display: block; margin-top: 0.25rem;">{{ cgpa|default:gpa|default:"0.00" }}</span>
+    </div>
+
+    <!-- بطاقة الساعات المنجزة -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); text-align: center;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: #64748b; display: block;">الساعات المنجزة</span>
+        <span style="font-size: 1.6rem; font-weight: 900; color: #0284c7; display: block; margin-top: 0.25rem;">{{ total_credits|default:0 }} وحدة</span>
+    </div>
+
+    <!-- بطاقة المواد المسجلة -->
+    <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03); text-align: center;">
+        <span style="font-size: 0.8rem; font-weight: 700; color: #64748b; display: block;">المواد المسجلة حالياً</span>
+        <span style="font-size: 1.6rem; font-weight: 900; color: #16a34a; display: block; margin-top: 0.25rem;">{{ registered_courses_count|default:0 }} مقرر</span>
+    </div>
+</div>
+
+<div class="dashboard-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.25rem;">
+
+    <!-- مؤشر الفصول والتطور الأكاديمي -->
+    <div class="chart-premium-card" style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+        <h3 class="card-title" style="font-size: 1.05rem; font-weight: 800; color: #0F4C50; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+            <span class="material-icons-outlined card-icon" style="color: #1A5D63;">timeline</span>
+            مؤشر تقدم المعدل الأكاديمي ({{ level_name|default:"المستوى الحالي" }})
+        </h3>
+
+        <div class="chart-wrapper" style="position: relative; height: 220px; max-height: 240px; width: 100%;">
+            <canvas id="semesterTimelineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- حصيلة المواد بالخطة -->
+    <div class="chart-premium-card" style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1.25rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+        <h3 class="card-title" style="font-size: 1.05rem; font-weight: 800; color: #0F4C50; margin: 0 0 0.75rem 0; display: flex; align-items: center; gap: 0.5rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+            <span class="material-icons-outlined card-icon" style="color: #1A5D63;">analytics</span>
+            حصيلة المواد الدراسية بالخطة
+        </h3>
+
+        <div class="chart-wrapper" style="position: relative; height: 220px; max-height: 240px; width: 100%;">
+            <canvas id="subjectsCountChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<!-- جدول المقررات الدراسية الحالية -->
+<div style="margin-top: 1.5rem;">
+    <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span class="material-icons-outlined" style="color: #1A5D63; font-size: 1.4rem;">menu_book</span>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F4C50; margin: 0;">المواد المسجلة للفصل الدراسي الحالي</h3>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 0.35rem 0.8rem; border-radius: 20px; font-weight: 800;">
+                    {{ registered_courses_count|default:0 }} مقررات مسجلة
+                </span>
+                <a href="{% url 'student:my_courses' %}" style="font-size: 0.85rem; color: #1A5D63; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0; transition: all 0.2s ease;">
+                    <span>تفاصيل المقررات</span>
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
+            {% for reg in registered_courses %}
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1rem 1.15rem; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s ease;">
+                <div>
+                    <div style="font-weight: 800; color: #1e293b; font-size: 0.95rem;">
+                        {% if reg.course %}{{ reg.course.name }}{% elif reg.subject %}{{ reg.subject.name }}{% else %}{{ reg }}{% endif %}
+                    </div>
+                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.2rem; display: flex; align-items: center; gap: 6px;">
+                        <span style="color: #1A5D63; font-weight: 700;">كود: {% if reg.course %}{{ reg.course.code }}{% elif reg.subject %}{{ reg.subject.code }}{% else %}--{% endif %}</span>
+                        <span>•</span>
+                        <span>{{ reg.course.level.name|default:"المستوى الدراسي" }}</span>
+                    </div>
+                </div>
+                <div style="background: #e0f2fe; color: #0369a1; font-weight: 800; font-size: 0.85rem; padding: 0.35rem 0.75rem; border-radius: 8px; flex-shrink: 0;">
+                    {% if reg.course %}{{ reg.course.credits|default:0 }}{% elif reg.subject %}{{ reg.subject.credits|default:0 }}{% else %}0{% endif %} ساعات
+                </div>
+            </div>
+            {% empty %}
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1.5rem; color: #64748b; background: #f8fafc; border-radius: 12px; border: 1.5px dashed #cbd5e1;">
+                <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">📚</span>
+                <p style="font-weight: 800; font-size: 1.05rem; color: #334155; margin: 0;">لا توجد مواد مسجلة لهذا الفصل الدراسي حالياً</p>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.3rem;">يمكنك تسجيل المواد عبر بوابة تنزيل وتجديد القيد خلال الفترات المحددة.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- بطاقة متابعة حالة طعون الدرجات والنتائج -->
+{% if student_appeals %}
+<div style="margin-top: 1.5rem;">
+    <div style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span class="material-icons-outlined" style="color: #0284c7; font-size: 1.4rem;">fact_check</span>
+                <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F4C50; margin: 0;">سجل متابعة طعون النتائج والدرجات</h3>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.8rem; background: #f0fdf4; color: #166534; padding: 0.35rem 0.8rem; border-radius: 20px; font-weight: 800; border: 1px solid #bbf7d0;">
+                    {{ student_appeals_count }} طلبات طعن مسجلة
+                </span>
+                <a href="{% url 'student:term_result' %}" style="font-size: 0.85rem; color: #0284c7; font-weight: 800; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.75rem; border-radius: 8px; background: #f0f9ff; border: 1px solid #bae6fd;">
+                    <span>كشف الدرجات</span>
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                        <th style="padding: 0.75rem 1rem; font-weight: 800;">المقرر الدراسي</th>
+                        <th style="padding: 0.75rem 1rem; font-weight: 800;">الفصل</th>
+                        <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center;">فترة الطعن</th>
+                        <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center;">حالة الطعن الحالية</th>
+                        <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center;">تاريخ التقديم</th>
+                        <th style="padding: 0.75rem 1rem; font-weight: 800;">ملاحظات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for app in student_appeals %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='transparent';">
+                        <td style="padding: 0.85rem 1rem; font-weight: 800; color: #1e293b;">
+                            {{ app.course.name }}
+                            <span style="display: block; font-size: 0.78rem; color: #1A5D63; font-weight: 700;">كود: {{ app.course.code }}</span>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; color: #475569; font-weight: 600;">
+                            {{ app.semester }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: center;">
+                            <span style="font-size: 0.8rem; font-weight: 700; color: #334155; background: #f1f5f9; padding: 0.25rem 0.65rem; border-radius: 6px;">
+                                {{ app.get_appeal_type_display }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: center;">
+                            <span style="display: inline-flex; align-items: center; gap: 4px; padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 800; font-size: 0.82rem; background: {{ app.badge_info.bg_color }}; color: {{ app.badge_info.text_color }}; border: 1px solid {{ app.badge_info.border_color }};">
+                                {{ app.badge_info.text }}
+                            </span>
+                        </td>
+                        <td style="padding: 0.85rem 1rem; text-align: center; color: #64748b; font-size: 0.82rem; font-weight: 600;">
+                            {{ app.created_at|date:"Y-m-d H:i" }}
+                        </td>
+                        <td style="padding: 0.85rem 1rem; color: #64748b; font-size: 0.82rem;">
+                            {{ app.notes|default:"--" }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{{ dashboard_chart_data|json_script:"dashboard-data-json" }}
+<script>
+    (function() {
+        const el = document.getElementById('dashboard-data-json');
+        window.dashboardData = el ? JSON.parse(el.textContent) : {
+            gpaLabels: ['الفصل الحالي'],
+            gpaData: [0],
+            completedCourses: 0,
+            remainingCourses: 0
+        };
+    })();
+</script>
+<script src="{% static 'student/js/student_dashboard.js' %}?v=1.2.0"></script>
+{% endblock %}

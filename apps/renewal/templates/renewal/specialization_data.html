@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة بيانات التخصصات | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main specialization-page" dir="rtl">
+    <div class="specialization-container">
+        
+        <!-- الهيدر الخاص بالصفحة -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة بيانات التخصصات</h1>
+                <p class="page-header-subtitle">تسجيل وتعديل التخصصات الأكاديمية وربطها بالأقسام العلمية في الكلية</p>
+            </div>
+        </div>
+
+        <!-- الجزء العلوي: نموذج إدخال البيانات -->
+        <div class="group-box">
+            <span class="group-title">بيانات التخصص</span>
+            
+            <form id="specializationForm" onsubmit="event.preventDefault();">
+                {% csrf_token %}
+                <div class="filters-grid-4col">
+                    <div>
+                        <label class="field-label">رمز التخصص *</label>
+                        <input type="text" id="specCode" placeholder="مثال: SWE" required>
+                    </div>
+                    <div>
+                        <label class="field-label">اسم التخصص *</label>
+                        <input type="text" id="specName" placeholder="أدخل اسم التخصص" required>
+                    </div>
+                    <div>
+                        <label class="field-label">القسم التابع له *</label>
+                        <select id="specDept" required>
+                            <option value="">-- اختر القسم --</option>
+                            <option value="هندسة البرمجيات">هندسة البرمجيات</option>
+                            <option value="تقنية المعلومات">تقنية المعلومات</option>
+                            <option value="علوم الحاسوب">علوم الحاسوب</option>
+                            <option value="نظم المعلومات">نظم المعلومات</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">حالة التخصص *</label>
+                        <select id="specStatus" required>
+                            <option value="مفعل">مفعل</option>
+                            <option value="غير مفعل">غير مفعل</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات للنموذج -->
+                <div class="buttons-row mt-6">
+                    <button type="button" class="btn-action btn-new" onclick="window.newSpec()">
+                        <span class="material-symbols-outlined">add</span> جديد
+                    </button>
+                    <button type="button" class="btn-action btn-save" onclick="window.saveSpec()">
+                        <span class="material-symbols-outlined">save</span> حفظ
+                    </button>
+                    <button type="button" class="btn-action btn-edit" onclick="window.editSpec()">
+                        <span class="material-symbols-outlined">edit</span> تعديل
+                    </button>
+                    <button type="button" class="btn-action btn-exit" onclick="window.goBack()">
+                        <span class="material-symbols-outlined">logout</span> خروج
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- الجزء السفلي: عرض البيانات في جدول -->
+        <div class="group-box mt-6">
+            <span class="group-title">سجل بيانات التخصصات</span>
+            
+            <!-- فلتر القسم للجدول -->
+            <div class="table-actions-header-row mb-4">
+                <div class="table-actions-title-search">
+                    <div class="section-title-row">
+                        <span class="material-symbols-outlined">filter_alt</span>
+                        <span>تصفية النتائج</span>
+                    </div>
+                    <div class="search-input-group">
+                        <label class="search-label">القسم العلمي:</label>
+                        <select id="filterSpecDept" class="search-field" onchange="window.filterSpecs()">
+                            <option value="">-- الكل --</option>
+                            <option value="هندسة البرمجيات">هندسة البرمجيات</option>
+                            <option value="تقنية المعلومات">تقنية المعلومات</option>
+                            <option value="علوم الحاسوب">علوم الحاسوب</option>
+                            <option value="نظم المعلومات">نظم المعلومات</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="data-table w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-center w-16">رقم تسلسلي</th>
+                            <th class="text-center w-32">رمز التخصص</th>
+                            <th class="text-right">اسم التخصص</th>
+                            <th class="text-center w-48">القسم العلمي</th>
+                            <th class="text-center w-28">الحالة</th>
+                            <th class="text-center w-32">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="specializationTableBody">
+                        <!-- سيتم تعبئة البيانات برمجياً عبر ملف specialization_data.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/specialization_data.js' %}?v=1.0.1"></script>
+{% endblock %}

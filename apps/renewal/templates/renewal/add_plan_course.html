@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إضافة مقرر للخطة: {{ plan.name }} | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<!-- Tailwind CSS & Google Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<style>
+    body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #f0f8fa;
+        color: #1e293b;
+    }
+
+    :root {
+        --primary-teal: #307e92;
+        --primary-dark: #1a5f64;
+        --deep-teal-gradient: linear-gradient(135deg, #307e92 0%, #1a5f64 100%);
+        --btn-gold-start: #b59b66;
+        --btn-gold-end: #967d4b;
+    }
+
+    /* Main Plan Container Box */
+    .plan-container-box, .group-box.system-card, .system-card {
+        position: relative !important;
+        background-color: #ffffff !important;
+        border: 1px solid #d2e1ed !important;
+        border-top: 4px solid var(--primary-teal) !important;
+        border-radius: 14px !important;
+        padding: 2.2rem 1.5rem 1.5rem 1.5rem !important;
+        margin-top: 1.75rem !important;
+        margin-bottom: 1.75rem !important;
+        box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.25s ease-in-out !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+    html.dark .plan-container-box, html.dark .group-box.system-card, html.dark .system-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        border-top-color: #38bdf8 !important;
+        box-shadow: none !important;
+        color: #f8fafc !important;
+    }
+
+    /* Floating Title Badge (Strict Right-alignment: right: 30px !important) */
+    .plan-container-box > .plan-title-badge,
+    .plan-container-box > .group-title,
+    .plan-container-box > .card-badge,
+    .plan-title-badge,
+    .group-title.card-badge,
+    .card-badge {
+        position: absolute !important;
+        top: -16px !important;
+        right: 30px !important;
+        left: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        background: var(--primary-teal) !important;
+        color: #ffffff !important;
+        padding: 5px 22px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+        z-index: 10 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+    }
+    html.dark .plan-title-badge, html.dark .group-title.card-badge, html.dark .card-badge {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-color: #38bdf8 !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Form Controls & Labels */
+    .form-control-system {
+        width: 100% !important; background-color: #ffffff !important; border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important; padding: 0.65rem 0.95rem !important; font-size: 0.875rem !important;
+        color: #1e293b !important; font-weight: 600 !important; outline: none !important; transition: all 0.2s ease-in-out !important;
+    }
+    .form-control-system:focus { border-color: var(--primary-teal) !important; box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18) !important; }
+    html.dark .form-control-system { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    .form-label-system { display: block !important; font-size: 0.8rem !important; font-weight: 700 !important; color: #475569 !important; margin-bottom: 0.35rem !important; text-align: right !important; }
+    html.dark .form-label-system { color: #38bdf8 !important; }
+
+    /* Action Buttons */
+    .btn-teal-action {
+        background: var(--deep-teal-gradient) !important;
+        color: #ffffff !important; border: none !important; border-radius: 8px !important; font-weight: 700 !important;
+        padding: 0.65rem 1.6rem !important; display: inline-flex !important; align-items: center !important; gap: 0.4rem !important;
+        cursor: pointer !important; transition: all 0.2s ease-in-out !important; box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important; font-size: 0.875rem !important;
+    }
+    .btn-teal-action:hover { opacity: 0.93 !important; transform: translateY(-1px) !important; }
+    .btn-grey-action {
+        background-color: #64748b !important; color: #ffffff !important; border: none !important; border-radius: 8px !important;
+        font-weight: 700 !important; padding: 0.65rem 1.4rem !important; display: inline-flex !important; align-items: center !important;
+        gap: 0.4rem !important; cursor: pointer !important; transition: all 0.2s ease-in-out !important; font-size: 0.875rem !important;
+    }
+    .btn-grey-action:hover { background-color: #475569 !important; }
+
+    .page-header-row { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.25rem !important; text-align: right !important; }
+    .page-header-title { font-size: 1.3rem !important; font-weight: 900 !important; color: var(--primary-teal, #307e92) !important; line-height: 1.25 !important; text-align: right !important; }
+    html.dark .page-header-title { color: #38bdf8 !important; }
+    .page-header-subtitle { font-size: 0.875rem !important; font-weight: 700 !important; color: #64748b !important; margin-top: 0.25rem !important; text-align: right !important; }
+    html.dark .page-header-subtitle { color: #cbd5e1 !important; }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+    <div class="max-w-5xl mx-auto space-y-6">
+
+        <!-- Page Header Row -->
+        <div class="page-header-row">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-bold text-[#64748b] dark:text-slate-400 mb-1.5">
+                    <a href="{% url 'renewal:plans_manage' %}" class="hover:text-[#307e92] dark:hover:text-[#38bdf8] transition-colors">إدارة الخطط الدراسية</a>
+                    <span class="material-symbols-outlined text-sm">chevron_left</span>
+                    <span class="text-[#307e92] dark:text-[#38bdf8]">إضافة مقرر</span>
+                </div>
+                <h1 class="page-header-title text-2xl sm:text-3xl">إضافة مقرر للخطة: <span class="text-[#b59b66] dark:text-[#fcd34d]">{{ plan.name }}</span></h1>
+                <p class="page-header-subtitle">قم بتعبئة بيانات المقرر الجديد مباشرة لربطها بالخطة والتخصص الحاليين.</p>
+            </div>
+
+            <div>
+                <a href="{% url 'renewal:plans_manage' %}" class="btn-grey-action">
+                    <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                    عودة للخطط
+                </a>
+            </div>
+        </div>
+
+        <!-- Form Container Box -->
+        <div class="plan-container-box group-box system-card space-y-6" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side (right: 30px !important) -->
+            <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">edit_note</span>
+                <span>بيانات المقرر الدراسي الجديد</span>
+            </span>
+
+            <form method="POST" action="{% url 'renewal:plan_add_course' plan_id=plan.id %}" id="courseDetailsForm" class="space-y-6 pt-2">
+                {% csrf_token %}
+                <input type="hidden" id="inputCourseId" name="course_id" value="">
+
+                <!-- Row 1: Code & Name -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label for="inputCode" class="form-label-system">رمز المقرر (Code) <span class="text-red-500">*</span></label>
+                        <input type="text" id="inputCode" name="code" required placeholder="مثال: CS101" class="form-control-system">
+                    </div>
+                    <div>
+                        <label for="inputName" class="form-label-system">اسم المقرر الدراسي <span class="text-red-500">*</span></label>
+                        <input type="text" id="inputName" name="name" required placeholder="مثال: مقدمة في برمجة الحاسوب" class="form-control-system">
+                    </div>
+                </div>
+
+                <!-- Row 2: Credits, Theoretical, Practical -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label for="inputCredits" class="form-label-system">عدد الوحدات (Credits)</label>
+                        <input type="number" id="inputCredits" name="credits" value="3" min="1" max="10" class="form-control-system text-center font-extrabold text-[#b59b66] dark:text-[#fcd34d]">
+                    </div>
+                    <div>
+                        <label for="inputTheoretical" class="form-label-system">ساعات النظري</label>
+                        <input type="number" id="inputTheoretical" name="theoretical_hours" value="2" min="0" max="10" class="form-control-system text-center">
+                    </div>
+                    <div>
+                        <label for="inputPractical" class="form-label-system">ساعات العملي</label>
+                        <input type="number" id="inputPractical" name="practical_hours" value="0" min="0" max="10" class="form-control-system text-center">
+                    </div>
+                </div>
+
+                <!-- Row 3: Department, Level, Course Type, Prerequisite -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div>
+                        <label for="selectDepartment" class="form-label-system">التخصص / القسم <span class="text-red-500">*</span></label>
+                        <select id="selectDepartment" name="department_id" required class="form-control-system">
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}" {% if plan.department and plan.department.id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="selectLevel" class="form-label-system">المستوى الدراسي <span class="text-red-500">*</span></label>
+                        <select id="selectLevel" name="level_id" required class="form-control-system">
+                            {% for lvl in levels %}
+                                <option value="{{ lvl.id }}">المستوى {{ lvl.number }} - {{ lvl.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="selectCourseType" class="form-label-system">نوع الإلزامية</label>
+                        <select id="selectCourseType" name="course_type" class="form-control-system">
+                            <option value="mandatory">مادة إجبارية</option>
+                            <option value="elective">مادة اختيارية</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="selectPrerequisite" class="form-label-system">المتطلب السابق</label>
+                        <select id="selectPrerequisite" name="prerequisite_id" class="form-control-system">
+                            <option value="">-- لا يوجد متطلب سابق --</option>
+                            {% for c in existing_courses %}
+                                <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex flex-col sm:flex-row items-center justify-end gap-4 pt-6 border-t border-slate-200 dark:border-slate-700">
+                    <a href="{% url 'renewal:plans_manage' %}" class="btn-grey-action w-full sm:w-auto text-center justify-center">
+                        إلغاء وعودة
+                    </a>
+                    <button type="submit" class="btn-teal-action w-full sm:w-auto text-center justify-center">
+                        <span class="material-symbols-outlined text-lg">save</span>
+                        حفظ وإضافة للخطة
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+    <div id="toastNotification">
+        <div id="toastIconCircle" class="toast-icon-circle">
+            <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+        </div>
+    </div>
+</main>
+
+<script>
+function showNotification(type, message) {
+    const toast = document.getElementById('toastNotification');
+    const iconCircle = document.getElementById('toastIconCircle');
+    const icon = document.getElementById('toastIcon');
+    const msg = document.getElementById('toastMessage');
+    
+    if (!toast || !icon || !msg) {
+        console.warn('⚠️ Toast Notification elements not found:', type, message);
+        return;
+    }
+    
+    msg.innerText = message;
+    const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+    
+    if (isDark) {
+        toast.style.background = '#1e293b';
+        toast.style.backgroundColor = '#1e293b';
+        toast.style.boxShadow = '0 14px 45px rgba(0, 0, 0, 0.7)';
+        msg.style.color = '#f8fafc';
+    } else {
+        toast.style.background = '#ffffff';
+        toast.style.backgroundColor = '#ffffff';
+        toast.style.boxShadow = '0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08)';
+        msg.style.color = '#1e293b';
+    }
+    
+    if (type === 'success') {
+        toast.style.borderRight = '4.5px solid #10b981';
+        toast.style.borderRightColor = '#10b981';
+        icon.innerText = "check_circle";
+        icon.style.color = '#10b981';
+        if (iconCircle) {
+            iconCircle.style.background = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)';
+        }
+    } else if (type === 'warning') {
+        toast.style.borderRight = '4.5px solid #f59e0b';
+        toast.style.borderRightColor = '#f59e0b';
+        icon.innerText = "warning";
+        icon.style.color = '#f59e0b';
+        if (iconCircle) {
+            iconCircle.style.background = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.12)';
+        }
+    } else if (type === 'info') {
+        toast.style.borderRight = '4.5px solid #3b82f6';
+        toast.style.borderRightColor = '#3b82f6';
+        icon.innerText = "info";
+        icon.style.color = '#3b82f6';
+        if (iconCircle) {
+            iconCircle.style.background = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.12)';
+        }
+    } else {
+        toast.style.borderRight = '4.5px solid #e11d48';
+        toast.style.borderRightColor = '#e11d48';
+        icon.innerText = "error";
+        icon.style.color = '#e11d48';
+        if (iconCircle) {
+            iconCircle.style.background = isDark ? 'rgba(225, 29, 72, 0.2)' : 'rgba(225, 29, 72, 0.12)';
+        }
+    }
+    
+    toast.style.transform = 'translateY(0)';
+    toast.style.opacity = '1';
+    
+    clearTimeout(window.notificationTimeout);
+    window.notificationTimeout = setTimeout(() => {
+        toast.style.transform = 'translateY(80px)';
+        toast.style.opacity = '0';
+    }, 4000);
+}
+window.showNotification = showNotification;
+
+document.addEventListener('DOMContentLoaded', function () {
+    const selectLevel = document.getElementById('selectLevel');
+    const selectPrerequisite = document.getElementById('selectPrerequisite');
+    const planId = '{{ plan.id }}';
+
+    function updatePrerequisitesList(levelId) {
+        if (!selectPrerequisite) return;
+        const currentSelectedPrereq = selectPrerequisite.value;
+        
+        let url = `/renewal/api/prerequisites/?plan_id=${planId}`;
+        if (levelId) url += `&level_id=${levelId}`;
+
+        fetch(url)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.courses) {
+                    let html = '<option value="">-- لا يوجد متطلب سابق --</option>';
+                    data.courses.forEach(c => {
+                        const selected = (String(c.id) === String(currentSelectedPrereq)) ? 'selected' : '';
+                        html += `<option value="${c.id}" ${selected}>${c.display}</option>`;
+                    });
+                    selectPrerequisite.innerHTML = html;
+                }
+            })
+            .catch(err => console.error('Error fetching prerequisites:', err));
+    }
+
+    if (selectLevel) {
+        selectLevel.addEventListener('change', function () {
+            updatePrerequisitesList(this.value);
+        });
+    }
+});
+</script>
+
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

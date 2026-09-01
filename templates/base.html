@@ -1,0 +1,102 @@
+{% load static %}
+<!DOCTYPE html>
+<html class="light" dir="rtl" lang="ar">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+
+    <title>{% block title %}نظام كلية طرابلس{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/شعار الكلية.jpeg' %}" type="image/jpeg">
+
+    <!-- Dark Mode JavaScript المبدئي لمنع الوميض الأبيض -->
+    <script src="{% static 'js/dark-mode.js' %}?v=1.0.3"></script>
+
+    <!-- إدارة حالة السايدبار ومنع الوميض مبكراً -->
+    <script src="{% static 'js/sidebar-state.js' %}?v=1.0.5"></script>
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=1.0.0" />
+
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+
+    <!-- CSS الرئيسي -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=1.1.02">
+
+    <style id="sidebar-scroll-style"></style>
+
+    <!-- Tailwind CSS -->
+    <script>
+        (function () {
+            const originalWarn = console.warn;
+            console.warn = function (...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                originalWarn.apply(console, args);
+            };
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body class="main-body" data-user-id="{{ request.user.id }}">
+
+    {% if user.is_authenticated and not hide_sidebar and not user.is_student and user.role != 'student' and user.role != 'طالب' %}
+    {% include "sidebar.html" %}
+    {% endif %}
+
+    <!-- الهيكل الخارجي للمنظومة (App Shell) مع مراعاة مسافة السايدبار -->
+    <div class="app-shell {% if user.is_authenticated and not hide_sidebar and not user.is_student and user.role != 'student' and user.role != 'طالب' %}has-sidebar{% endif %}">
+
+        <!-- المحتوى الرئيسي للمنظومة -->
+        <main class="app-content">
+            {% block content %}
+            {% endblock %}
+        </main>
+
+        <!-- الفوتر السفلي -->
+        <footer class="app-footer" dir="rtl">
+            <p>© 2026 كلية طرابلس للعلوم والتقنية - جميع الحقوق محفوظة</p>
+            <p class="app-footer-subtitle">
+                نظام إدارة المعلومات الجامعي - الإصدار 1.0
+            </p>
+        </footer>
+
+    </div>
+
+    <!-- ملفات الـ JS الأساسية -->
+    <script src="{% static 'js/script.js' %}?v=1.0.13"></script>
+
+
+
+    {% if messages %}
+    <div id="django-messages" style="display: none;">
+        {% for message in messages %}
+        <div class="django-message" data-tags="{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Disable native browser autocomplete/autofill
+            document.querySelectorAll('form').forEach(form => {
+                form.setAttribute('autocomplete', 'off');
+            });
+            document.querySelectorAll('input').forEach(input => {
+                if (!input.hasAttribute('autocomplete')) {
+                    input.setAttribute('autocomplete', 'off');
+                }
+            });
+        });
+    </script>
+    <!-- في base.html قبل إغلاق </body> -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{% static 'js/script.js' %}"></script>
+    <script src="{% static 'users/js/officials_helper.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,457 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}منظومة رصد ومتابعة الطلاب الناجحين{% endblock %}
+
+{% block content %}
+<main class="custom-main successful-students-page" dir="rtl">
+    <!-- الهيدر الخاص بالصفحة -->
+    <div class="page-header-row no-print">
+        <div>
+            <h1 class="page-header-title">حصر واستخراج كشوفات الطلاب الناجحين</h1>
+            <p class="page-header-subtitle font-bold text-muted">استدعاء المواد المنجزة بناءً على دمج الفلاتر الزمنية
+                والترتيبية للمستويات الدراسية</p>
+        </div>
+    </div>
+
+    <!-- الجزء العلوي: خيارات البحث والتصفية -->
+    <div class="group-box no-print">
+        <span class="group-title">خيارات الاستعلام والتصفية للناجحين</span>
+
+        <div class="filters-grid-4col">
+            <div class="filter-group">
+                <label class="field-label">نوع الفصل الدراسي</label>
+                <select id="filter-semester-type">
+                    <option value="الكل">كل الفصول</option>
+                    <option value="spring">ربيع</option>
+                    <option value="fall">خريف</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="field-label">السنة الدراسية</label>
+                <input type="text" id="filter-semester-year" placeholder="مثال: 2026" value="">
+            </div>
+
+            <div class="filter-group">
+                <label class="field-label">التخصص الدراسي</label>
+                <select id="filter-major">
+                    <option value="الكل">كافة التخصصات</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <label class="field-label">التقدير العام للطالب</label>
+                <select id="filter-grade">
+                    <option value="الكل">جميع التقديرات</option>
+                    <option value="ممتاز">ممتاز</option>
+                    <option value="جيد جداً">جيد جداً</option>
+                    <option value="جيد">جيد</option>
+                    <option value="مقبول">مقبول</option>
+                </select>
+            </div>
+
+            <div class="filter-group relative" style="position: relative;">
+                <label class="field-label">بحث بأسم الطالب</label>
+                <input type="text" id="filter-student-name" placeholder="اكتب الاسم...">
+                <div id="student-name-suggestions" class="autocomplete-suggestions-dropdown hidden"
+                    style="position: absolute; width: 100%; z-index: 100; right: 0; left: 0;"></div>
+            </div>
+
+            <div class="filter-group relative" style="position: relative;">
+                <label class="field-label">بحث برقم القيد</label>
+                <input type="text" id="filter-student-id" placeholder="اكتب رقم القيد...">
+                <div id="student-id-suggestions" class="autocomplete-suggestions-dropdown hidden"
+                    style="position: absolute; width: 100%; z-index: 100; right: 0; left: 0;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="buttons-row mt-6 no-print">
+        <button onclick="generatePassedReport()" class="btn-action btn-save" style="width: auto; padding: 0.5rem 2rem;">
+            <span class="material-symbols-outlined">how_to_reg</span> استدعاء وحصر الطلاب الناجحين
+        </button>
+        <button onclick="resetAllFilters()" class="btn-action btn-exit" style="width: auto; padding: 0.5rem 2rem;">
+            <span class="material-symbols-outlined">restart_alt</span> إعادة ضبط
+        </button>
+    </div>
+
+    <!-- منطقة التقرير -->
+    <section id="report-container" class="report-section hidden">
+
+        <div class="print-btn-wrapper no-print">
+            <button id="printPassedReportBtn"
+                onclick="if(window.triggerPrintWithOfficials){window.triggerPrintWithOfficials();}else{window.print();}"
+                class="btn-print">
+                <span class="material-symbols-outlined btn-icon-small">print</span>
+                طباعة سجل الناجحين (PDF)
+            </button>
+        </div>
+
+        <div class="report-card print-card">
+
+            <div class="report-accent-bar no-print"></div>
+            <div class="print-header-space"></div>
+
+            <div class="report-header">
+                <div>
+                    <h2 class="report-title">سجل حصر وفحص الطلاب الناجحين والمجتازين</h2>
+                    <p class="report-subtitle">
+                        الموسم: <span id="print-season-target" class="report-highlight"></span>
+                        | الفصل (السمستر): <span id="print-semester-target" class="report-highlight"></span>
+                        | مكتب الامتحانات العام
+                    </p>
+                </div>
+                <div class="report-date">
+                    <p class="report-date-text" id="report-date-text">تاريخ الاستخراج: </p>
+                </div>
+            </div>
+
+            <div id="students-wrapper" class="students-wrapper"></div>
+
+            <div id="no-results-message" class="no-results-message">
+                لا توجد سجلات تطابق خيارات البحث والموسم والفصل المحددين.
+            </div>
+
+            <div class="signatures-grid no-print">
+                <div data-official="registrar">
+                    <p class="signature-text font-bold">المسجل العام بالكلية</p>
+                    <p class="signature-name off-name font-bold text-slate-800 dark:text-slate-200 mt-1">{{ registrar_official_name }}</p>
+                    <p class="signature-line">_______________________</p>
+                </div>
+                <div data-official="exams_head">
+                    <p class="signature-text font-bold">مدير مكتب شؤون الدراسة والامتحانات</p>
+                    <p class="signature-name off-name font-bold text-slate-800 dark:text-slate-200 mt-1">{{ exams_head_official_name }}</p>
+                    <p class="signature-line">_______________________</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+</main>
+
+<!-- وعاء التقرير الرسمي المخصص للطباعة فقط -->
+<div id="printReportContainer">
+    <div class="print-page-frame">
+
+        <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+        <div class="print-header-line" style="width:100%;margin:6px 0 10px;border-top:1.5px solid #000;"></div>
+        <div class="print-title"
+            style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير الطلاب
+            الناجحين</div>
+
+        <!-- معلومات التقرير -->
+        <div class="print-info-grid">
+            <div class="print-info-right">
+                <div><span class="info-lbl">الموسم الدراسي:</span> <span id="printSeasonVal" class="info-val">كل
+                        الفصول</span></div>
+                <div><span class="info-lbl">الفصل الدراسي:</span> <span id="printSemesterVal"
+                        class="info-val">الكل</span></div>
+            </div>
+            <div class="print-info-left">
+                <div><span class="info-lbl">القسم:</span> <span id="printDeptVal" class="info-val">كافة التخصصات</span>
+                </div>
+                <div><span class="info-lbl">المستوى الدراسي:</span> <span id="printLevelVal"
+                        class="info-val">الكل</span></div>
+            </div>
+        </div>
+
+        <!-- جدول التقرير - 6 أعمدة -->
+        <div class="print-table-container">
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 6%;">م</th>
+                        <th style="width: 15%;">رقم القيد</th>
+                        <th style="width: 35%;">اسم الطالب</th>
+                        <th style="width: 20%;">التخصص</th>
+                        <th style="width: 8%;">المعدل</th>
+                        <th style="width: 16%;">التقدير</th>
+                    </tr>
+                </thead>
+                <tbody id="printTableBody">
+                    <tr>
+                        <td colspan="6" class="empty-print-cell">لا توجد بيانات مطابقة لمعايير البحث.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ✅ قسم التواقيع الرسمي - توقيعين متناسقين (المسجل العام يميناً، مدير الدراسة والامتحانات يساراً) -->
+        <div class="print-signatures-row">
+            <!-- اليمين: المسجل العام -->
+            <div class="print-signature-box right-sig" data-official="registrar">
+                <span class="off-name">{{ registrar_official_name }}</span>
+                <span class="off-pos">المسجل العام بالكلية</span>
+                <span class="off-sig-line">التوقيع والختم: ............................................</span>
+            </div>
+
+            <!-- اليسار: مدير / رئيس قسم الدراسة والامتحانات -->
+            <div class="print-signature-box left-sig" data-official="exams_head">
+                <span class="off-name">{{ exams_head_official_name }}</span>
+                <span class="off-pos">مدير مكتب شؤون الدراسة والامتحانات</span>
+                <span class="off-sig-line">التوقيع والختم: ............................................</span>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* إخفاء التقرير المطبوع في العرض المباشر */
+    #printReportContainer {
+        display: none !important;
+    }
+
+    /* ============================================
+       PRINT STYLES - تقرير الطلاب الناجحين الرسمي
+       ============================================ */
+    @media print {
+
+        body>*:not(#printReportContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #printReportContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 5px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printReportContainer * {
+            visibility: visible !important;
+        }
+
+        .print-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 18px 25px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .print-header-section {
+            text-align: center !important;
+            margin-bottom: 15px !important;
+        }
+
+        .print-college-logo {
+            max-height: 80px !important;
+            width: auto !important;
+            margin: 0 auto 6px auto !important;
+            display: block !important;
+        }
+
+        .print-country {
+            font-size: 15px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+        }
+
+        .print-ministry {
+            font-size: 14px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+        }
+
+        .print-college {
+            font-size: 17px !important;
+            font-weight: bold !important;
+            margin-bottom: 8px !important;
+        }
+
+        .print-header-line {
+            width: 70% !important;
+            margin: 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .print-title {
+            font-size: 21px !important;
+            font-weight: bold !important;
+            margin: 10px 0 16px 0 !important;
+            letter-spacing: 1px !important;
+        }
+
+        .print-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            margin: 18px 0 15px 0 !important;
+            font-size: 13.5px !important;
+            line-height: 2.1 !important;
+        }
+
+        .print-info-right {
+            text-align: right !important;
+        }
+
+        .print-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .info-lbl {
+            font-weight: bold !important;
+        }
+
+        .info-val {
+            font-weight: bold !important;
+        }
+
+        .print-table-container {
+            margin-top: 10px !important;
+            margin-bottom: 30px !important;
+        }
+
+        .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 13px !important;
+            direction: rtl !important;
+        }
+
+        .print-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 8px 6px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+        }
+
+        .print-table td {
+            padding: 8px 6px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+        }
+
+        .empty-print-cell {
+            padding: 20px !important;
+            text-align: center !important;
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+        }
+
+        /* ✅ قسم التواقيع الرسمي ثنائي التوزيع */
+        .print-signatures-row {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            width: 100% !important;
+            margin-top: 45px !important;
+            page-break-inside: avoid !important;
+            direction: rtl !important;
+        }
+
+        .print-signature-box {
+            width: 44% !important;
+            text-align: center !important;
+            display: flex !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            page-break-inside: avoid !important;
+            margin: 0 !important;
+            float: none !important;
+        }
+
+        .print-signature-box .off-name {
+            display: block !important;
+            font-size: 13.5px !important;
+            font-weight: 800 !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1.2em !important;
+        }
+
+        .print-signature-box .off-pos {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: 700 !important;
+            color: #000000 !important;
+            margin-bottom: 12px !important;
+        }
+
+        .print-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 12px !important;
+            color: #000000 !important;
+            letter-spacing: 0.5px !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 6mm 6mm;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script id="successful-data" type="application/json">
+    {
+        "students": {{ students_json|safe }},
+        "semesters": {{ semesters_json|safe }},
+        "departments": {{ departments_json|safe }}
+    }
+</script>
+<script>
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'grades/js/successful_students.js' %}?v=1.0.4"></script>
+{% endblock %}

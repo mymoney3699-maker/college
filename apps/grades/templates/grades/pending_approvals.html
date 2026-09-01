@@ -1,0 +1,373 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}النتائج المعلقة والاعتماد الأكاديمي - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pending-page-container {
+        padding: 1.5rem 1rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+    .pending-header-box {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+    .pending-filter-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+    .grade-text-pass {
+        color: #16a34a !important;
+    }
+    .grade-text-fail {
+        color: #dc2626 !important;
+    }
+    .pending-table-card {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: right;
+        font-size: 0.88rem;
+    }
+    .custom-table thead th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 800;
+        font-size: 0.84rem;
+        padding: 1rem 0.85rem;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+    .custom-table tbody tr {
+        border-bottom: 1px solid #f1f5f9;
+        transition: background 0.15s ease;
+    }
+    .custom-table tbody tr:hover {
+        background: #f8fafc;
+    }
+    .custom-table tbody td {
+        padding: 0.95rem 0.85rem;
+        color: #1e293b;
+        vertical-align: middle;
+        white-space: nowrap;
+    }
+    .badge-pending {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.35rem;
+        background: #fef3c7;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        padding: 0.35rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .badge-dept {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #e0f2fe;
+        color: #0369a1;
+        padding: 0.35rem 0.8rem;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid #bae6fd;
+    }
+    .badge-level {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #f1f5f9;
+        color: #334155;
+        padding: 0.3rem 0.65rem;
+        border-radius: 8px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid #e2e8f0;
+    }
+    .filter-input, .filter-select {
+        width: 100%;
+        padding: 0.6rem 0.85rem;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        outline: none;
+    }
+    .filter-input:focus, .filter-select:focus {
+        border-color: #307e92;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
+    }
+    .btn-search {
+        background: #307e92;
+        color: #fff;
+        padding: 0.6rem 1.5rem;
+        border-radius: 8px;
+        font-weight: 700;
+        border: none;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+    }
+    .btn-search:hover {
+        background: #246475;
+    }
+    .btn-reset {
+        background: #64748b;
+        color: #fff;
+        padding: 0.6rem 1.25rem;
+        border-radius: 8px;
+        font-weight: 700;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        transition: all 0.2s ease;
+    }
+    .btn-reset:hover {
+        background: #475569;
+    }
+
+    /* 🌙 Dark Mode Harmonization */
+    html.dark .pending-page-container {
+        color: #f8fafc;
+    }
+    html.dark .pending-header-box h1 {
+        color: #f8fafc !important;
+    }
+    html.dark .pending-header-box p {
+        color: #94a3b8 !important;
+    }
+    html.dark .pending-header-box div[style*="background: #fffbeb"],
+    html.dark .pending-header-box div[style*="background:#fffbeb"] {
+        background: #1e293b !important;
+        border-color: #d97706 !important;
+    }
+    html.dark .pending-header-box div[style*="background: #fffbeb"] span,
+    html.dark .pending-header-box div[style*="background:#fffbeb"] span {
+        color: #fbbf24 !important;
+    }
+    html.dark .pending-filter-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    html.dark .pending-filter-card label {
+        color: #cbd5e1 !important;
+    }
+    html.dark .filter-input,
+    html.dark .filter-select {
+        background: #0f172a;
+        border-color: #475569;
+        color: #f8fafc;
+    }
+    html.dark .pending-table-card {
+        background: #1e293b;
+        border-color: #334155;
+    }
+    html.dark .custom-table thead th {
+        background: #0f172a;
+        color: #94a3b8;
+        border-bottom-color: #334155;
+    }
+    html.dark .custom-table tbody tr {
+        border-bottom-color: #334155;
+    }
+    html.dark .custom-table tbody tr:hover {
+        background: rgba(51, 65, 85, 0.45) !important;
+    }
+    html.dark .custom-table tbody td {
+        color: #f8fafc;
+    }
+    html.dark .custom-table tbody td strong {
+        color: #f8fafc !important;
+    }
+    html.dark .custom-table tbody td span[style*="color: #64748b"] {
+        color: #94a3b8 !important;
+    }
+    html.dark .badge-dept {
+        background: rgba(12, 74, 110, 0.4);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.3);
+    }
+    html.dark .badge-level {
+        background: rgba(51, 65, 85, 0.6);
+        color: #e2e8f0;
+        border-color: rgba(148, 163, 184, 0.2);
+    }
+    html.dark .badge-pending {
+        background: rgba(120, 53, 15, 0.35);
+        color: #fde68a;
+        border-color: rgba(245, 158, 11, 0.4);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="pending-page-container dir-rtl" dir="rtl">
+    
+    <!-- Page Header -->
+    <div class="pending-header-box">
+        <div>
+            <h1 style="font-size: 1.75rem; font-weight: 900; color: #1e293b; display: flex; align-items: center; gap: 0.6rem;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: #d97706;">pending_actions</span>
+                النتائج والدرجات المعلقة بانتظار الاعتماد
+            </h1>
+            <p style="color: #64748b; font-size: 0.95rem; margin-top: 0.25rem;">
+                قائمة كشوفات الطلاب والمواد التي تم رصد درجاتها في المنظومة وتنتظر المراجعة والاعتماد النهائي في الكنترول.
+            </p>
+        </div>
+
+        <div>
+            <div style="background: #fffbeb; border: 1.5px solid #fef3c7; padding: 0.6rem 1.25rem; border-radius: 10px; display: inline-flex; align-items: center; gap: 0.6rem;">
+                <span class="material-symbols-outlined" style="color: #d97706;">hourglass_top</span>
+                <span style="font-size: 0.9rem; color: #92400e; font-weight: 700;">إجمالي النتائج المعلقة:</span>
+                <strong style="font-size: 1.2rem; color: #b45309; font-weight: 900;">{{ total_count }}</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Box -->
+    <div class="pending-filter-card">
+        <form method="GET" action="{% url 'grades:pending_approvals' %}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; align-items: flex-end;">
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">البحث عن طالب أو مادة:</label>
+                    <input type="text" name="search" value="{{ search_query }}" placeholder="رقم القيد، اسم الطالب، كود المادة..." class="filter-input" />
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">القسم / التخصص:</label>
+                    <select name="department" class="filter-select">
+                        <option value="">-- جميع الأقسام والتخصصات --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: #475569; margin-bottom: 0.35rem;">الفصل الدراسي:</label>
+                    <select name="semester" class="filter-select">
+                        <option value="">-- جميع الفصول الدراسية --</option>
+                        {% for sem in semesters %}
+                        <option value="{{ sem.id }}" {% if selected_semester == sem.id|stringformat:"s" %}selected{% endif %}>{{ sem.type }} - {{ sem.year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn-search">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+                        تصفية
+                    </button>
+                    <a href="{% url 'grades:pending_approvals' %}" class="btn-reset">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">refresh</span>
+                        إلغاء
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Container -->
+    <div class="pending-table-card">
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px; text-align: center;">#</th>
+                        <th style="text-align: center; min-width: 100px;">رقم القيد</th>
+                        <th style="text-align: right; min-width: 160px;">اسم الطالب</th>
+                        <th style="text-align: center; min-width: 150px;">القسم / التخصص</th>
+                        <th style="text-align: center; min-width: 100px;">المستوى</th>
+                        <th style="text-align: right; min-width: 160px;">المادة المرصودة</th>
+                        <th style="text-align: center; min-width: 110px;">درجة النصفي (40)</th>
+                        <th style="text-align: center; min-width: 110px;">درجة النهائي (60)</th>
+                        <th style="text-align: center; min-width: 90px;">المجموع</th>
+                        <th style="text-align: center; min-width: 140px;">تاريخ وتوقيت الرصد</th>
+                        <th style="text-align: center; min-width: 130px;">حالة الاعتماد</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grades_list %}
+                    <tr>
+                        <td style="text-align: center; font-weight: 800; color: #64748b;">{{ forloop.counter }}</td>
+                        <td style="text-align: center;">
+                            <strong style="font-family: monospace; color: #0d9488; font-size: 0.95rem;">{{ grade.student.student_id|default:grade.student.id }}</strong>
+                        </td>
+                        <td style="text-align: right;">
+                            <strong style="color: #1e293b;">{{ grade.student.get_full_name }}</strong>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge-dept">{{ grade.student.department.name|default:'عام' }}</span>
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge-level">
+                                {% if grade.student.level %}{{ grade.student.level.name }}{% else %}المستوى 1{% endif %}
+                            </span>
+                        </td>
+                        <td style="text-align: right;">
+                            <strong style="color: #334155; display: block;">{{ grade.course.name }}</strong>
+                            <span style="display: block; font-size: 0.78rem; color: #64748b; font-family: monospace;">{{ grade.course.code }}</span>
+                        </td>
+                        <td style="text-align: center; font-weight: 800; font-family: monospace; font-size: 0.95rem; color: #0284c7;">
+                            {{ grade.midterm_grade|floatformat:"-2"|default:"0" }}
+                        </td>
+                        <td style="text-align: center; font-weight: 800; font-family: monospace; font-size: 0.95rem; color: #475569;">
+                            {% if grade.is_final_entered %}{{ grade.final_grade|floatformat:"-2" }}{% else %}<span style="color: #94a3b8;">--</span>{% endif %}
+                        </td>
+                        <td class="{% if grade.total_grade >= 50 %}grade-text-pass{% else %}grade-text-fail{% endif %}" style="text-align: center; font-weight: 900; font-family: monospace; font-size: 1rem;">
+                            {{ grade.total_grade|floatformat:"-2"|default:"0" }}
+                        </td>
+                        <td style="text-align: center; font-size: 0.82rem; font-family: monospace; color: #64748b;">
+                            {{ grade.updated_at|date:"Y-m-d H:i"|default:grade.registered_at|date:"Y-m-d H:i" }}
+                        </td>
+                        <td style="text-align: center;">
+                            <span class="badge-pending">
+                                <span class="material-symbols-outlined" style="font-size: 16px;">hourglass_empty</span>
+                                بانتظار الاعتماد
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" style="text-align: center; padding: 3rem 1rem; color: #64748b;">
+                            <div style="display: flex; flex-direction: column; align-items: center; gap: 0.75rem;">
+                                <span class="material-symbols-outlined" style="font-size: 48px; color: #16a34a;">check_circle</span>
+                                <strong style="font-size: 1.1rem; color: #334155;">لا توجد درجات أو نتائج معلقة بانتظار الاعتماد</strong>
+                                <p style="font-size: 0.9rem; color: #94a3b8; margin: 0;">كافة الدرجات المرصودة تم اعتمادها وتثبيتها بالكامل.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+{% endblock %}

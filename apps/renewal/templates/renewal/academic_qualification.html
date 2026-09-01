@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة المؤهل العلمي | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main qualification-page" dir="rtl">
+    <div class="qualification-container">
+        
+        <!-- الهيدر الخاص بالصفحة -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة المؤهل العلمي للطلاب</h1>
+                <p class="page-header-subtitle">تسجيل وتعديل المؤهلات العلمية الخاصة بالطلاب وتوثيقها بالمنظومة</p>
+            </div>
+        </div>
+
+        <!-- الجزء العلوي: نموذج إدخال البيانات -->
+        <div class="group-box">
+            <span class="group-title">بيانات المؤهل العلمي</span>
+            
+            <form id="qualificationForm" method="POST">
+                {% csrf_token %}
+                <div class="filters-grid-2col">
+                    <div>
+                        <label class="field-label">رقم القيد</label>
+                        <input type="text" id="studentId" name="studentId" placeholder="أدخل رقم القيد" required>
+                    </div>
+                    <div>
+                        <label class="field-label">المؤهل العلمي</label>
+                        <select id="qualification" name="qualification" required>
+                            <option value="">-- اختر المؤهل العلمي --</option>
+                            <option value="علمي">ثانوية عامة - علمي</option>
+                            <option value="أدبي">ثانوية عامة - أدبي</option>
+                            <option value="دبلوم متوسط">دبلوم متوسط</option>
+                            <option value="دبلوم عالي">دبلوم عالي</option>
+                            <option value="بكالوريوس">بكالوريوس</option>
+                            <option value="أخرى">أخرى</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات للنموذج -->
+                <div class="buttons-row mt-6">
+                    <button type="button" class="btn-action btn-new" onclick="window.newQualification()">
+                        <span class="material-symbols-outlined">add</span> جديد
+                    </button>
+                    <button type="button" class="btn-action btn-save" onclick="window.saveQualification()">
+                        <span class="material-symbols-outlined">save</span> حفظ
+                    </button>
+                    <button type="button" class="btn-action btn-edit" onclick="window.editQualification()">
+                        <span class="material-symbols-outlined">edit</span> تعديل
+                    </button>
+                    <button type="button" class="btn-action btn-search" onclick="window.searchQualification()">
+                        <span class="material-symbols-outlined">search</span> بحث
+                    </button>
+                    <button type="button" class="btn-action btn-exit" onclick="window.goBack()">
+                        <span class="material-symbols-outlined">logout</span> خروج
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- الجزء السفلي: عرض البيانات في جدول -->
+        <div class="group-box">
+            <span class="group-title">سجل المؤهلات العلمية</span>
+            
+            <div class="overflow-x-auto">
+                <table class="data-table w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-center w-32">رقم القيد</th>
+                            <th class="text-right">اسم الطالب</th>
+                            <th class="text-center w-48">المؤهل العلمي</th>
+                        </tr>
+                    </thead>
+                    <tbody id="qualificationTableBody">
+                        <tr>
+                            <td colspan="3" class="text-center py-4 text-gray-500">لا توجد بيانات</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/academic_qualification.js' %}?v=1.0.1"></script>
+{% endblock %}

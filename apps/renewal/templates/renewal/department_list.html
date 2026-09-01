@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}إدارة الأقسام والتخصصات | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 🌙 Global Comprehensive Dark Mode Sweep for Departments Management Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .department-list-page,
+    html.dark .places-container {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    /* Headlines & Subtitles */
+    html.dark .page-header-title,
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Cards & Containers Sweep */
+    html.dark .dept-card,
+    html.dark .group-box,
+    html.dark .modal-content-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .dept-card-header,
+    html.dark div[class*="bg-gradient-to-r"] {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .dept-card-stats,
+    html.dark div[class*="bg-gray-50"] {
+        background-color: #0f172a !important;
+    }
+
+    html.dark .dept-stat-box {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .dept-stat-label {
+        color: #94a3b8 !important;
+    }
+
+    /* Tables & Data Rows Sweep */
+    html.dark .data-table,
+    html.dark #departmentsTable {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead,
+    html.dark #departmentsTable thead,
+    html.dark .data-table thead tr,
+    html.dark #departmentsTable thead tr,
+    html.dark .data-table thead th,
+    html.dark #departmentsTable thead th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tbody tr,
+    html.dark #departmentsTable tbody tr,
+    html.dark .data-table tbody td,
+    html.dark #departmentsTable tbody td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tbody tr:hover,
+    html.dark #departmentsTable tbody tr:hover,
+    html.dark .data-table tbody tr:hover td,
+    html.dark #departmentsTable tbody tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    html.dark #departmentsTable a {
+        color: #38bdf8 !important;
+    }
+
+    html.dark #departmentsTable a:hover {
+        color: #7dd3fc !important;
+    }
+
+    /* Universal Text Color Overrides for Dark Mode */
+    html.dark .text-gray-900,
+    html.dark .text-gray-800,
+    html.dark .text-gray-700,
+    html.dark .text-gray-600 {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .text-gray-500,
+    html.dark .text-gray-400 {
+        color: #94a3b8 !important;
+    }
+
+    /* Search Inputs & Form Controls Sweep */
+    html.dark .search-field,
+    html.dark #deptSearchInput,
+    html.dark .modal-input,
+    html.dark input[type="text"] {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark input::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    /* Modals & Backdrop Overrides */
+    html.dark #addDeptModal > div,
+    html.dark #toggleConfirmModal > div {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main department-list-page" dir="rtl">
+    <div class="places-container">
+        
+        <!-- 🏛️ هيدر الصفحة الرئيسي -->
+        <div class="page-header-row flex flex-wrap justify-between items-center mb-6">
+            <div>
+                <h1 class="page-header-title text-2xl font-extrabold text-gray-800 dark:text-slate-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary dark:text-cyan-400 text-3xl">corporate_fare</span>
+                    إدارة الأقسام والتخصصات الديناميكية
+                </h1>
+                <p class="page-header-subtitle text-sm text-gray-600 dark:text-slate-400 mt-1">
+                    عرض الأقسام الأكاديمية ومتابعة أحجام التسجيل والمواد وتفعيل/تجميد الأقسام العلميّة
+                </p>
+            </div>
+            <div class="flex items-center gap-2.5 mt-4 sm:mt-0">
+                {% if not request.user|has_exec_perm:'renewal.add_department' and not request.user|has_exec_perm:'renewal.change_department' and not request.user|has_exec_perm:'add_department' and not request.user|has_exec_perm:'change_department' %}
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                    <span>نمط العرض فقط (Read-Only)</span>
+                </div>
+                {% endif %}
+                {% if request.user|has_exec_perm:'renewal.add_department' or request.user|has_exec_perm:'renewal.change_department' or request.user|has_exec_perm:'add_department' or request.user|has_exec_perm:'change_department' %}
+                <button type="button" class="btn-action btn-new font-bold px-4 py-2 flex items-center gap-1.5 cursor-pointer shadow-sm" onclick="openAddDepartmentModal()">
+                    <span class="material-symbols-outlined text-base">add_circle</span>
+                    <span>إضافة قسم جديد</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 📊 شبكة كروت الأقسام الديناميكية (Department Cards Grid) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {% for item in departments_list %}
+            <div class="dept-card bg-white dark:bg-slate-800 rounded-xl shadow-md border {% if not item.department.is_active %}border-red-200 dark:border-red-900/60 bg-red-50/20 dark:bg-red-950/30{% else %}border-gray-200 dark:border-slate-700{% endif %} hover:shadow-lg transition-all duration-200 overflow-hidden flex flex-col justify-between">
+                
+                <!-- رأس كرت القسم -->
+                <div class="dept-card-header p-5 border-b border-gray-100 dark:border-slate-700/60 {% if not item.department.is_active %}bg-red-50/50 dark:bg-red-950/40{% else %}bg-gradient-to-r from-slate-50 to-white dark:from-slate-800 dark:to-slate-800/80{% endif %}">
+                    <div class="flex justify-between items-start mb-2 gap-2 flex-wrap">
+                        <span class="px-2.5 py-1 rounded-md text-xs font-mono font-bold bg-teal-100 dark:bg-teal-950/80 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+                            {{ item.department.code }}
+                        </span>
+                        {% if item.department.is_active %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 dark:bg-emerald-950/70 text-green-700 dark:text-emerald-300 border dark:border-emerald-800/50">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500 dark:bg-emerald-400"></span> نشط
+                        </span>
+                        {% else %}
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-red-100 dark:bg-red-950/80 text-red-800 dark:text-red-300 border border-red-300 dark:border-red-800 shadow-xs" title="قسم موقوف عن الإجراءات الجديدة">
+                            <span class="material-symbols-outlined text-sm text-red-600 dark:text-red-400">warning</span>
+                            <span>⚠️ قسم غير مفعّل (أرشيف فقط)</span>
+                        </span>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-lg font-bold text-gray-900 dark:text-slate-100 mt-1 flex items-center justify-between">
+                        <span>{{ item.department.name }}</span>
+                    </h3>
+                </div>
+
+                <!-- إحصائيات القسم السريعة -->
+                <div class="dept-card-stats p-5 grid grid-cols-3 gap-2 text-center bg-gray-50/50 dark:bg-slate-900/60">
+                    <div class="dept-stat-box p-2 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700 shadow-xs">
+                        <span class="dept-stat-label block text-xs text-gray-500 dark:text-slate-400 font-semibold mb-0.5">الطلاب</span>
+                        <span class="text-base font-extrabold text-primary dark:text-cyan-400">{{ item.total_students }}</span>
+                    </div>
+                    <div class="dept-stat-box p-2 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700 shadow-xs">
+                        <span class="dept-stat-label block text-xs text-gray-500 dark:text-slate-400 font-semibold mb-0.5">المواد</span>
+                        <span class="text-base font-extrabold text-amber-600 dark:text-amber-400">{{ item.courses_count }}</span>
+                    </div>
+                    <div class="dept-stat-box p-2 bg-white dark:bg-slate-800 rounded-lg border border-gray-100 dark:border-slate-700 shadow-xs">
+                        <span class="dept-stat-label block text-xs text-gray-500 dark:text-slate-400 font-semibold mb-0.5">الشعب</span>
+                        <span class="text-base font-extrabold text-indigo-600 dark:text-indigo-400">{{ item.groups_count }}</span>
+                    </div>
+                </div>
+
+                <!-- زر الإجراء والربط بالمسار الديناميكي مع زر التفعيل/الإلغاء -->
+                <div class="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex flex-wrap gap-2 justify-between items-center">
+                    <a href="{% url 'renewal:department_detail' dept_code=item.department.code %}" class="flex-1 text-center py-2 px-3 rounded-lg bg-primary/10 dark:bg-cyan-950/60 hover:bg-primary dark:hover:bg-cyan-600 text-primary hover:text-white dark:text-cyan-400 dark:hover:text-white font-bold text-xs transition-colors duration-200 flex items-center justify-center gap-1 shadow-xs">
+                        <span class="material-symbols-outlined text-base">visibility</span>
+                        <span>عرض تفاصيل القسم</span>
+                    </a>
+                    
+                    <button type="button" 
+                            data-dept-id="{{ item.department.id }}"
+                            data-dept-name="{{ item.department.name }}"
+                            data-dept-active="{% if item.department.is_active %}1{% else %}0{% endif %}"
+                            onclick="onToggleDeptClick(this)" 
+                            class="py-2 px-3 rounded-lg border font-extrabold text-xs flex items-center justify-center gap-1 transition-all shadow-xs cursor-pointer {% if item.department.is_active %}bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 border-red-200 dark:border-red-800 hover:bg-red-600 hover:text-white{% else %}bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 hover:bg-emerald-600 hover:text-white{% endif %}"
+                            title="{% if item.department.is_active %}إلغاء تفعيل / تجميد القسم{% else %}تفعيل القسم الأكاديمي{% endif %}">
+                        <span class="material-symbols-outlined text-base">{% if item.department.is_active %}power_settings_new{% else %}check_circle{% endif %}</span>
+                        <span>{% if item.department.is_active %}تجميد القسم{% else %}تفعيل القسم{% endif %}</span>
+                    </button>
+                </div>
+
+            </div>
+            {% empty %}
+            <div class="col-span-full bg-white dark:bg-slate-800 p-8 text-center rounded-xl border border-gray-200 dark:border-slate-700">
+                <span class="material-symbols-outlined text-4xl text-gray-400 dark:text-slate-500 mb-2">folder_off</span>
+                <p class="text-gray-600 dark:text-slate-300 font-semibold">لا توجد أقسام مسجلة حالياً بالمنظومة.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</main>
+
+<!-- ➕ نافذة منبثقة لإضافة قسم جديد -->
+<div id="addDeptModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center p-4">
+    <div class="modal-content-box bg-white dark:bg-slate-800 rounded-xl shadow-xl max-w-md w-full p-6 relative border border-gray-200 dark:border-slate-700">
+        <h3 class="text-lg font-bold text-gray-900 dark:text-slate-100 mb-4 pb-2 border-b border-gray-200 dark:border-slate-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary dark:text-cyan-400">add_business</span>
+            إضافة قسم أكاديمي جديد
+        </h3>
+        <form id="addDeptForm" onsubmit="submitNewDepartment(event)">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">اسم القسم الأكاديمي *</label>
+                    <input type="text" id="newDeptName" required placeholder="مثال: قسم الأمن السيبراني" class="modal-input w-full p-2.5 text-xs rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-700 dark:text-slate-300 mb-1">رمز القسم (كود مختصر) *</label>
+                    <input type="text" id="newDeptCode" required placeholder="مثال: CYBER" class="modal-input w-full p-2.5 text-xs rounded-lg border border-gray-300 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-primary focus:outline-none font-mono">
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 mt-6 pt-3 border-t border-gray-100 dark:border-slate-700">
+                <button type="button" onclick="closeAddDepartmentModal()" class="px-4 py-2 rounded-lg text-xs font-bold bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-300 dark:hover:bg-slate-600">إلغاء</button>
+                <button type="submit" class="px-5 py-2 rounded-lg text-xs font-bold bg-primary text-white hover:bg-primary-dark shadow-sm">حفظ القسم</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ⚠️ مودال تأكيد تجميد / تفعيل القسم -->
+<div id="toggleConfirmModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div class="modal-content-box bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6 relative border border-gray-200 dark:border-slate-700 text-right">
+        <div class="flex items-center gap-3 text-amber-600 dark:text-amber-400 mb-4 pb-3 border-b border-gray-100 dark:border-slate-700">
+            <span class="material-symbols-outlined text-3xl">warning</span>
+            <h3 class="text-lg font-extrabold text-gray-900 dark:text-slate-100" id="toggleModalTitle">تغيير حالة تفعيل القسم</h3>
+        </div>
+        <p class="text-sm text-gray-700 dark:text-slate-300 leading-relaxed font-semibold mb-4" id="toggleModalBody">
+            هل أنت متأكد من تغيير حالة تفعيل هذا القسم؟
+        </p>
+        <div class="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3 text-xs text-amber-800 dark:text-amber-300 mb-6 font-semibold flex items-start gap-2">
+            <span class="material-symbols-outlined text-base text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">info</span>
+            <span>تجميد القسم يُحظر عمليات تجديد القيد وتنزيل المواد وتعيين الأعضاء الجدد، بينما تُتاح التقارير والأرشيف التاريخي حصرياً.</span>
+        </div>
+        <div class="flex justify-end gap-2.5 pt-2 border-t border-gray-100 dark:border-slate-700">
+            <button type="button" onclick="closeToggleModal()" class="px-4 py-2 rounded-xl text-xs font-extrabold bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-300 dark:hover:bg-slate-600 transition-colors">
+                إلغاء
+            </button>
+            <button type="button" id="confirmToggleBtn" onclick="executeToggleDepartment()" class="px-5 py-2 rounded-xl text-xs font-extrabold text-white transition-colors shadow-md">
+                تأكيد الإجراء
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/departments.js' %}?v=2.0.0"></script>
+{% endblock %}

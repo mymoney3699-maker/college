@@ -1,0 +1,662 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}عرض الخطط الدراسية المعتمدة | كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<!-- Tailwind CSS CDN & Google Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<style>
+    body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #f0f8fa;
+        color: #1e293b;
+    }
+
+    :root {
+        --primary-teal: #307e92;
+        --primary-dark: #1a5f64;
+        --btn-gold-start: #b59b66;
+        --btn-gold-end: #967d4b;
+        --badge-mandatory-bg: #ecfdf5;
+        --badge-mandatory-text: #047857;
+        --badge-mandatory-border: #a7f3d0;
+        --badge-elective-bg: #fffbeb;
+        --badge-elective-text: #b45309;
+        --badge-elective-border: #fde68a;
+    }
+
+    .plan-container-box, .group-box.system-card, .system-card, .inquiry-group-box {
+        position: relative !important;
+        background-color: #ffffff !important;
+        border: 1px solid #d2e1ed !important;
+        border-top: 4px solid var(--primary-teal) !important;
+        border-radius: 14px !important;
+        padding: 2.2rem 1.5rem 1.5rem 1.5rem !important;
+        margin-top: 1.75rem !important;
+        margin-bottom: 1.75rem !important;
+        box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.25s ease-in-out !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+    html.dark .plan-container-box, html.dark .group-box.system-card, html.dark .system-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        border-top-color: #38bdf8 !important;
+        box-shadow: none !important;
+        color: #f8fafc !important;
+    }
+
+    /* Floating Title Badge (Strict Right-alignment: right: 30px !important, left: auto !important, transform: none !important) */
+    .plan-container-box > .plan-title-badge,
+    .plan-container-box > .group-title,
+    .plan-container-box > .card-badge,
+    .plan-title-badge,
+    .group-title.card-badge,
+    .card-badge {
+        position: absolute !important;
+        top: -16px !important;
+        right: 30px !important;
+        left: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        background: var(--primary-teal) !important;
+        color: #ffffff !important;
+        padding: 5px 22px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+        z-index: 10 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+    }
+    html.dark .plan-title-badge, html.dark .group-title.card-badge, html.dark .card-badge {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-color: #38bdf8 !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    .modern-level-card {
+        background-color: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 12px !important;
+        padding: 1.25rem !important;
+        transition: all 0.25s ease-in-out !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02) !important;
+        margin-bottom: 1.25rem !important;
+        display: block !important;
+    }
+    html.dark .modern-level-card {
+        background-color: #0f172a !important;
+        border-color: #1e293b !important;
+        box-shadow: none !important;
+    }
+    html.dark .modern-level-card:hover {
+        border-color: #334155 !important;
+    }
+
+    /* Level Card Header */
+    .level-card-header {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 0.75rem 1.1rem !important;
+        background: linear-gradient(135deg, #f8fafc 0%, #eef6f8 100%) !important;
+        border: 1px solid #e2e8f0 !important;
+        border-right: 4px solid var(--primary-teal) !important;
+        border-radius: 10px !important;
+        margin-bottom: 1rem !important;
+    }
+    html.dark .level-card-header {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-color: #334155 !important;
+        border-right-color: #38bdf8 !important;
+    }
+
+    .level-header-right { display: flex !important; align-items: center !important; gap: 0.75rem !important; }
+    .level-number-badge {
+        width: 32px !important; height: 32px !important; border-radius: 50% !important;
+        background-color: var(--primary-teal) !important; color: #ffffff !important;
+        font-weight: 800 !important; font-size: 0.875rem !important; display: flex !important;
+        align-items: center !important; justify-content: center !important;
+    }
+    .level-course-count-pill {
+        display: inline-flex !important; align-items: center !important; gap: 0.35rem !important;
+        padding: 0.35rem 0.85rem !important; background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important; border-radius: 50px !important;
+        font-size: 0.78rem !important; font-weight: 700 !important; color: #475569 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+    }
+    html.dark .level-course-count-pill { background-color: #1e293b !important; border-color: #334155 !important; color: #94a3b8 !important; }
+
+    /* Structured Academic HTML Table System */
+    .table-responsive-wrapper {
+        overflow-x: auto !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
+    html.dark .table-responsive-wrapper {
+        border-color: #334155 !important;
+    }
+
+    .academic-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        text-align: right !important;
+        font-size: 0.875rem !important;
+    }
+
+    .academic-table thead tr {
+        background: linear-gradient(135deg, #307e92 0%, #1a5f64 100%) !important;
+        color: #ffffff !important;
+    }
+    html.dark .academic-table thead tr {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #38bdf8 !important;
+    }
+
+    .academic-table th {
+        padding: 0.85rem 1rem !important;
+        font-weight: 800 !important;
+        font-size: 0.825rem !important;
+        border-bottom: 2px solid #286b7c !important;
+        white-space: nowrap !important;
+    }
+    html.dark .academic-table th {
+        border-bottom-color: #334155 !important;
+    }
+
+    .academic-table th.th-index { width: 50px !important; text-align: center !important; }
+    .academic-table th.th-code { width: 120px !important; text-align: center !important; }
+    .academic-table th.th-name { text-align: right !important; }
+    .academic-table th.th-credits { width: 90px !important; text-align: center !important; }
+    .academic-table th.th-hours { width: 130px !important; text-align: center !important; }
+    .academic-table th.th-type { width: 110px !important; text-align: center !important; }
+    .academic-table th.th-prereq { width: 180px !important; text-align: center !important; }
+
+    .academic-table tbody tr {
+        border-bottom: 1px solid #f1f5f9 !important;
+        transition: background-color 0.15s ease-in-out !important;
+        background-color: #ffffff !important;
+    }
+    .academic-table tbody tr:nth-child(even) {
+        background-color: #f8fafc !important;
+    }
+    .academic-table tbody tr:hover {
+        background-color: #f0f7f9 !important;
+    }
+    html.dark .academic-table tbody tr {
+        background-color: #0f172a !important;
+        border-bottom-color: #1e293b !important;
+    }
+    html.dark .academic-table tbody tr:nth-child(even) {
+        background-color: #111c30 !important;
+    }
+    html.dark .academic-table tbody tr:hover {
+        background-color: #1e293b !important;
+    }
+
+    .academic-table td {
+        padding: 0.75rem 1rem !important;
+        vertical-align: middle !important;
+    }
+
+    .td-index { text-align: center !important; font-weight: 700 !important; color: #94a3b8 !important; font-size: 0.8rem !important; }
+    .td-code { text-align: center !important; }
+    .td-name { font-weight: 700 !important; color: #1e293b !important; }
+    html.dark .td-name { color: #f1f5f9 !important; }
+    .td-credits { text-align: center !important; }
+    .td-hours { text-align: center !important; font-size: 0.8rem !important; font-weight: 600 !important; color: #475569 !important; }
+    html.dark .td-hours { color: #cbd5e1 !important; }
+    .td-type { text-align: center !important; }
+    .td-prereq { text-align: center !important; }
+
+    .course-code-pill {
+        font-family: monospace !important;
+        font-weight: 800 !important;
+        font-size: 0.8rem !important;
+        padding: 0.25rem 0.6rem !important;
+        background-color: #eef6f8 !important;
+        color: var(--primary-teal) !important;
+        border: 1px solid #b8dae4 !important;
+        border-radius: 6px !important;
+        display: inline-block !important;
+    }
+    html.dark .course-code-pill {
+        background-color: #1e293b !important;
+        color: #38bdf8 !important;
+        border-color: #334155 !important;
+    }
+
+    .credit-number {
+        font-weight: 900 !important;
+        color: #b59b66 !important;
+        font-size: 0.9rem !important;
+    }
+    html.dark .credit-number {
+        color: #fcd34d !important;
+    }
+
+    .pill-mandatory {
+        display: inline-flex !important;
+        align-items: center !important;
+        padding: 0.2rem 0.65rem !important;
+        border-radius: 50px !important;
+        font-size: 0.725rem !important;
+        font-weight: 800 !important;
+        background-color: #ecfdf5 !important;
+        color: #047857 !important;
+        border: 1px solid #a7f3d0 !important;
+    }
+    html.dark .pill-mandatory {
+        background-color: rgba(6, 78, 59, 0.4) !important;
+        color: #6ee7b7 !important;
+        border-color: #047857 !important;
+    }
+
+    .pill-elective {
+        display: inline-flex !important;
+        align-items: center !important;
+        padding: 0.2rem 0.65rem !important;
+        border-radius: 50px !important;
+        font-size: 0.725rem !important;
+        font-weight: 800 !important;
+        background-color: #fffbeb !important;
+        color: #b45309 !important;
+        border: 1px solid #fde68a !important;
+    }
+    html.dark .pill-elective {
+        background-color: rgba(120, 53, 15, 0.4) !important;
+        color: #fcd34d !important;
+        border-color: #b45309 !important;
+    }
+
+    .prereq-list {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.3rem !important;
+    }
+
+    .prereq-pill {
+        display: inline-flex !important;
+        align-items: center !important;
+        padding: 0.15rem 0.5rem !important;
+        background-color: #f0fdfa !important;
+        border: 1px solid #99f6e4 !important;
+        border-radius: 6px !important;
+        color: #0f766e !important;
+        font-weight: 700 !important;
+        font-size: 0.725rem !important;
+    }
+    html.dark .prereq-pill {
+        background-color: rgba(17, 94, 89, 0.4) !important;
+        border-color: #0f766e !important;
+        color: #5eead4 !important;
+    }
+
+    /* Form Controls */
+    .form-control-system {
+        width: 100% !important; background-color: #ffffff !important; border: 1.5px solid #cbd5e1 !important;
+        border-radius: 6px !important; padding: 0.6rem 0.9rem !important; font-size: 0.875rem !important;
+        color: #1e293b !important; font-weight: 600 !important; outline: none !important; transition: all 0.2s ease-in-out !important;
+    }
+    .form-control-system:focus { border-color: var(--primary-teal) !important; box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18) !important; }
+    html.dark .form-control-system { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+    .form-label-system, .field-label { display: block !important; font-size: 0.8rem !important; font-weight: 700 !important; color: #475569 !important; margin-bottom: 0.35rem !important; text-align: right !important; }
+    html.dark .form-label-system, html.dark .field-label { color: #38bdf8 !important; }
+
+    .btn-print-system, .btn-gold-action, button.btn-print {
+        background: linear-gradient(135deg, var(--btn-gold-start) 0%, var(--btn-gold-end) 100%) !important;
+        color: #ffffff !important; border: none !important; border-radius: 6px !important; font-weight: 700 !important;
+        padding: 0.55rem 1.2rem !important; display: inline-flex !important; align-items: center !important; gap: 0.4rem !important;
+        cursor: pointer !important; transition: all 0.2s ease-in-out !important; box-shadow: 0 4px 12px rgba(181, 155, 102, 0.25) !important; font-size: 0.85rem !important;
+    }
+    .btn-teal-action {
+        background: linear-gradient(135deg, var(--primary-teal) 0%, var(--primary-dark) 100%) !important;
+        color: #ffffff !important; border: none !important; border-radius: 6px !important; font-weight: 700 !important;
+        padding: 0.55rem 1.2rem !important; display: inline-flex !important; align-items: center !important; gap: 0.4rem !important;
+        cursor: pointer !important; transition: all 0.2s ease-in-out !important; box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important; font-size: 0.85rem !important;
+    }
+    .btn-grey-action {
+        background-color: #64748b !important; color: #ffffff !important; border: none !important; border-radius: 6px !important;
+        font-weight: 700 !important; padding: 0.5rem 1rem !important; display: inline-flex !important; align-items: center !important;
+        gap: 0.4rem !important; cursor: pointer !important; transition: all 0.2s ease-in-out !important; font-size: 0.8rem !important;
+    }
+    .page-header-row { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.25rem !important; border-right: none !important; padding-right: 0 !important; margin-right: 0 !important; text-align: right !important; }
+    .page-header-title { font-size: 1.3rem !important; font-weight: 900 !important; color: var(--primary-teal, #307e92) !important; line-height: 1.25 !important; text-align: right !important; }
+    html.dark .page-header-title { color: #38bdf8 !important; }
+    .page-header-subtitle { font-size: 0.875rem !important; font-weight: 700 !important; color: #64748b !important; margin-top: 0.25rem !important; text-align: right !important; }
+    html.dark .page-header-subtitle { color: #cbd5e1 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Page Header Row -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">عرض الخطط الدراسية</h1>
+                <p class="page-header-subtitle">
+                    استعراض الخطط والمناهج الأكاديمية لمختلف التخصصات بالكلية وتصفية مواد المستويات الدراسية.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                {% if has_selected_filter and plans %}
+                <button type="button" onclick="printStudyPlanReport()" class="btn-print-system" style="background-color: #334155;">
+                    <span class="material-symbols-outlined text-lg">print</span>
+                    طباعة الخطة / PDF
+                </button>
+                {% endif %}
+                <a href="{% url 'renewal:plans_manage' %}#createPlanSection" class="btn-teal-action">
+                    <span class="material-symbols-outlined text-lg">add_circle</span>
+                    إضافة خطة
+                </a>
+            </div>
+        </div>
+
+        <!-- Filter Container Box -->
+        <div class="plan-container-box group-box inquiry-group-box system-card" style="position: relative !important;">
+            <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">tune</span>
+                <span>فلاتر البحث والخطط</span>
+            </span>
+
+            <!-- Filter Controls Form -->
+            <form method="GET" action="{% url 'renewal:plans_display' %}" id="plansFilterForm" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- Dropdown 1: التخصص الدراسي -->
+                    <div>
+                        <label for="majorSelect" class="form-label-system field-label">التخصص الدراسي:</label>
+                        <select id="majorSelect" name="department_id" data-api-url="/renewal/api/plans-by-department/" class="form-control-system">
+                            <option value="">-- جميع التخصصات --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}" {% if selected_dept|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                                {{ dept.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Dropdown 2: نوع الخطة -->
+                    <div>
+                        <label for="planNumberSelect" class="form-label-system field-label">الخطة الدراسية:</label>
+                        <select id="planNumberSelect" name="plan_id" class="form-control-system">
+                            <option value="">-- جميع الخطط --</option>
+                            {% for plan in available_plans %}
+                            <option value="{{ plan.id }}" {% if selected_plan|stringformat:"s" == plan.id|stringformat:"s" %}selected{% endif %}>
+                                {{ plan.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Dropdown 3: تحديد الفصل الدراسي -->
+                    <div>
+                        <label for="detailSemesterFilter" class="form-label-system field-label">المستوى / الفصل الدراسي:</label>
+                        <select id="detailSemesterFilter" name="level_id" class="form-control-system">
+                            <option value="">-- كل الفصول والمستويات --</option>
+                            {% for lvl in levels %}
+                            <option value="{{ lvl.id }}" {% if selected_level|stringformat:"s" == lvl.id|stringformat:"s" %}selected{% endif %}>
+                                المستوى {{ lvl.number }} - {{ lvl.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <a href="{% url 'renewal:plans_display' %}" class="btn-grey-action" style="text-decoration: none;">
+                        <span class="material-symbols-outlined text-base">restart_alt</span>
+                        <span>إعادة ضبط</span>
+                    </a>
+                    <button type="submit" class="btn-teal-action">
+                        <span class="material-symbols-outlined text-base">filter_alt</span>
+                        <span>عرض وتصفية المواد</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Main Content Area: Empty State Placeholder vs Plan Tables -->
+        {% if not has_selected_filter %}
+            <!-- Empty State Box -->
+            <div class="plan-container-box group-box system-card text-center py-12 px-6" style="position: relative !important;">
+                <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                    <span class="material-symbols-outlined text-base">info</span>
+                    <span>إرشادات الاستعراض</span>
+                </span>
+                <div class="pt-3 pb-2">
+                    <div class="w-16 h-16 rounded-full bg-[#eef6f8] dark:bg-slate-800 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center mx-auto shadow-inner mb-4">
+                        <span class="material-symbols-outlined text-3xl">school</span>
+                    </div>
+                    <h3 class="text-lg font-extrabold text-[#1a5f64] dark:text-[#38bdf8] mb-1">الرجاء اختيار التخصص الدراسي ونوع الخطة</h3>
+                    <p class="text-[#64748b] dark:text-slate-400 text-sm max-w-lg mx-auto font-semibold leading-relaxed">
+                        يرجى تحديد التخصص الدراسي ونوع الخطة من القوائم المنسدلة بالأعلى لعرض المواد الدراسية المقسمة على المستويات المعتمدة.
+                    </p>
+                </div>
+            </div>
+        {% else %}
+            <!-- Results Grid: Display Selected Study Plans -->
+            {% if plans %}
+                {% for plan in plans %}
+                    <div class="plan-container-box group-box system-card space-y-6" style="position: relative !important;">
+                        <!-- Floating Title Badge strictly anchored to right side border -->
+                        <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                            <span class="material-symbols-outlined text-base">list_alt</span>
+                            <span>الخطة {{ forloop.counter }} - {{ plan.name }}</span>
+                        </span>
+
+                        <!-- Dynamic Plan Header Row -->
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                            <div class="space-y-1">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="material-symbols-outlined text-2xl text-[#307e92] dark:text-[#38bdf8]">auto_stories</span>
+                                    <h2 class="text-2xl font-extrabold text-[#307e92] dark:text-white tracking-wide">{{ plan.name }}</h2>
+                                </div>
+                                <p class="text-[#64748b] dark:text-slate-400 text-sm max-w-3xl pr-8 font-semibold">
+                                    {{ plan.description|default:"هذه الخطة تشمل جميع المواد والمستويات المعتمدة." }}
+                                </p>
+                            </div>
+
+                            <!-- Total Badges -->
+                            <div class="flex items-center gap-3 self-start sm:self-auto">
+                                <div class="px-3.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shadow-xs">
+                                    <span class="material-symbols-outlined text-base text-[#307e92] dark:text-[#38bdf8]">menu_book</span>
+                                    الإجمالي: <span class="font-extrabold text-slate-900 dark:text-white mx-0.5">{{ plan.total_courses }}</span> مادة
+                                </div>
+                                <div class="px-3.5 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 shadow-xs">
+                                    <span class="material-symbols-outlined text-base text-[#b59b66]">workspace_premium</span>
+                                    الساعات: <span class="font-extrabold text-slate-900 dark:text-white mx-0.5">{{ plan.total_credits }}</span> وحدة
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Level Sub-Cards with HTML Tables -->
+                        {% if plan.levels %}
+                            <div class="space-y-6">
+                                {% for level in plan.levels %}
+                                    <div class="modern-level-card">
+                                        <!-- Level Header Bar -->
+                                        <div class="level-card-header">
+                                            <div class="level-header-right">
+                                                <div class="level-number-badge">{{ level.level_number }}</div>
+                                                <h3 class="level-title-text">
+                                                    المستوى {{ level.level_number }} - {{ level.level_name }}
+                                                </h3>
+                                            </div>
+                                            <div class="level-course-count-pill">
+                                                <span class="material-symbols-outlined text-base">menu_book</span>
+                                                <span>عدد المواد: {{ level.courses|length }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Clean Structured HTML Table -->
+                                        <div class="table-responsive-wrapper">
+                                            <table class="academic-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th class="th-index">#</th>
+                                                        <th class="th-code">رمز المادة</th>
+                                                        <th class="th-name">اسم المقرر الدراسي</th>
+                                                        <th class="th-credits">الوحدات</th>
+                                                        <th class="th-hours">الساعات</th>
+                                                        <th class="th-type">نوع المادة</th>
+                                                        <th class="th-prereq">المطلب السابق</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {% for course in level.courses %}
+                                                        <tr>
+                                                            <td class="td-index">{{ forloop.counter }}</td>
+                                                            <td class="td-code"><span class="course-code-pill">{{ course.code }}</span></td>
+                                                            <td class="td-name">{{ course.name }}</td>
+                                                            <td class="td-credits"><span class="credit-number">{{ course.credits }}</span></td>
+                                                            <td class="td-hours">{{ course.theoretical_hours }} ن / {{ course.practical_hours }} ع</td>
+                                                            <td class="td-type">
+                                                                {% if course.is_mandatory %}
+                                                                    <span class="pill-mandatory">إجباري</span>
+                                                                {% else %}
+                                                                    <span class="pill-elective">اختياري</span>
+                                                                {% endif %}
+                                                            </td>
+                                                            <td class="td-prereq">
+                                                                {% if course.prerequisites %}
+                                                                    <div class="prereq-list">
+                                                                        {% for prereq in course.prerequisites %}
+                                                                            <span class="prereq-pill">{{ prereq }}</span>
+                                                                        {% endfor %}
+                                                                    </div>
+                                                                {% else %}
+                                                                    <span class="text-slate-400 dark:text-slate-500 font-semibold text-xs">لا يوجد</span>
+                                                                {% endif %}
+                                                            </td>
+                                                        </tr>
+                                                    {% endfor %}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-10 bg-slate-50/60 dark:bg-slate-800/50 rounded-xl border border-dashed border-slate-300 dark:border-slate-700">
+                                <span class="material-symbols-outlined text-4xl text-slate-400 mb-2">folder_open</span>
+                                <p class="text-[#64748b] dark:text-slate-400 text-sm font-semibold">لا توجد مواد مضافة في هذه الخطة الدراسية بعد.</p>
+                            </div>
+                        {% endif %}
+
+                        <!-- Bottom Actions Row -->
+                        <div class="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <a href="{% url 'renewal:plans_display' %}" class="btn-grey-action" style="text-decoration: none;">
+                                <span class="material-symbols-outlined text-base">restart_alt</span>
+                                إعادة ضبط الخيارات
+                            </a>
+                            <button type="button" onclick="printStudyPlanReport()" class="btn-print-system">
+                                <span class="material-symbols-outlined text-lg">print</span>
+                                طباعة الخطة / PDF
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="plan-container-box group-box system-card text-center py-10 px-6 space-y-4" style="position: relative !important;">
+                    <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                        <span class="material-symbols-outlined text-base">folder_off</span>
+                        <span>تنبيه النتائج</span>
+                    </span>
+                    <div class="pt-2">
+                        <span class="material-symbols-outlined text-5xl text-slate-400 mb-2">folder_off</span>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">لم يتم العثور على مواد مطابقة للخيارات الحالية</h3>
+                        <p class="text-[#64748b] dark:text-slate-400 text-sm max-w-md mx-auto font-semibold mt-1">
+                            يرجى تغيير التخصص أو نوع الخطة المختارة للوصول للمواد الدراسية.
+                        </p>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/plans_display.js' %}?v=2.0.0"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const majorSelect = document.getElementById('majorSelect');
+    const planNumberSelect = document.getElementById('planNumberSelect');
+    const detailSemesterFilter = document.getElementById('detailSemesterFilter');
+    const filterForm = document.getElementById('plansFilterForm');
+
+    // Cascading Dropdown: Update available plans when department changes
+    if (majorSelect && planNumberSelect) {
+        majorSelect.addEventListener('change', async function () {
+            const deptId = majorSelect.value;
+            const currentPlanVal = planNumberSelect.value;
+            planNumberSelect.innerHTML = '<option value="">-- جاري تحميل الخطط... --</option>';
+
+            try {
+                const baseUrl = majorSelect.dataset.apiUrl || "/renewal/api/plans-by-department/";
+                const url = deptId ? `${baseUrl}?department_id=${encodeURIComponent(deptId)}` : baseUrl;
+                const response = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const res = await response.json();
+                
+                planNumberSelect.innerHTML = '<option value="">-- جميع الخطط --</option>';
+                if (res.success && res.plans && res.plans.length > 0) {
+                    res.plans.forEach(function (plan) {
+                        const option = document.createElement('option');
+                        option.value = plan.id;
+                        option.textContent = plan.name;
+                        if (String(plan.id) === String(currentPlanVal)) {
+                            option.selected = true;
+                        }
+                        planNumberSelect.appendChild(option);
+                    });
+                }
+            } catch (e) {
+                console.error('Error fetching plans:', e);
+                planNumberSelect.innerHTML = '<option value="">-- جميع الخطط --</option>';
+            }
+
+            // إرسال النموذج بعد تحديث خيارات الخطط
+            if (filterForm) {
+                filterForm.submit();
+            }
+        });
+    }
+
+    // تحديث التصفية التلقائي عند تغيير الخطة أو المستوى الدراسي
+    if (planNumberSelect && filterForm) {
+        planNumberSelect.addEventListener('change', function () {
+            filterForm.submit();
+        });
+    }
+    
+    if (detailSemesterFilter && filterForm) {
+        detailSemesterFilter.addEventListener('change', function () {
+            filterForm.submit();
+        });
+    }
+});
+</script>
+{% endblock %}

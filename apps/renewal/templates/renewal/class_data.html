@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة بيانات الفصول الدراسية | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main class-page" dir="rtl">
+    <div class="class-container">
+        
+        <!-- الهيدر الخاص بالصفحة -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة بيانات الفصول الدراسية</h1>
+                <p class="page-header-subtitle">تسجيل وتعديل الفصول الدراسية وتوثيق فترات الدراسة والامتحانات بالكلية</p>
+            </div>
+        </div>
+
+        <!-- الجزء العلوي: نموذج إدخال البيانات -->
+        <div class="group-box">
+            <span class="group-title">بيانات الفصل الدراسي</span>
+            
+            <form id="classForm" onsubmit="event.preventDefault();">
+                {% csrf_token %}
+                <div class="filters-grid-4col">
+                    <div>
+                        <label class="field-label">رمز الفصل *</label>
+                        <input type="text" id="classCode" placeholder="مثال: FALL-2026" required>
+                    </div>
+                    <div>
+                        <label class="field-label">اسم الفصل *</label>
+                        <input type="text" id="className" placeholder="مثال: خريف 2026" required>
+                    </div>
+                    <div>
+                        <label class="field-label">تاريخ البدء *</label>
+                        <input type="date" id="startDate" required>
+                    </div>
+                    <div>
+                        <label class="field-label">تاريخ الانتهاء *</label>
+                        <input type="date" id="endDate" required>
+                    </div>
+                    <div>
+                        <label class="field-label">حالة الفصل *</label>
+                        <select id="classStatus" required>
+                            <option value="مفعل">مفعل</option>
+                            <option value="غير مفعل">غير مفعل</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات للنموذج -->
+                <div class="buttons-row mt-6">
+                    <button type="button" class="btn-action btn-new" onclick="window.newClass()">
+                        <span class="material-symbols-outlined">add</span> جديد
+                    </button>
+                    <button type="button" class="btn-action btn-save" onclick="window.saveClass()">
+                        <span class="material-symbols-outlined">save</span> حفظ
+                    </button>
+                    <button type="button" class="btn-action btn-edit" onclick="window.editClass()">
+                        <span class="material-symbols-outlined">edit</span> تعديل
+                    </button>
+                    <button type="button" class="btn-action btn-exit" onclick="window.goBack()">
+                        <span class="material-symbols-outlined">logout</span> خروج
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- الجزء السفلي: عرض البيانات في جدول -->
+        <div class="group-box mt-6">
+            <span class="group-title">سجل الفصول الدراسية</span>
+            
+            <div class="overflow-x-auto">
+                <table class="data-table w-full">
+                    <thead>
+                        <tr>
+                            <th class="text-center w-16">رقم تسلسلي</th>
+                            <th class="text-center w-32">رمز الفصل</th>
+                            <th class="text-right">اسم الفصل</th>
+                            <th class="text-center w-64">فترة الدراسة</th>
+                            <th class="text-center w-28">الحالة</th>
+                            <th class="text-center w-32">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="classTableBody">
+                        <!-- سيتم تعبئة البيانات برمجياً عبر ملف class_data.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/class_data.js' %}?v=1.0.1"></script>
+{% endblock %}

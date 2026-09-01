@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}صندوق الإشعارات | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Dark Mode Overrides */
+    html.dark .notifications-container,
+    html.dark .notification-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    html.dark .notification-card.unread {
+        background-color: rgba(48, 126, 146, 0.15) !important;
+        border-right-color: #38bdf8 !important;
+    }
+    html.dark .notification-message {
+        color: #cbd5e1 !important;
+    }
+    html.dark .notification-time {
+        color: #94a3b8 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main notifications-page" dir="rtl">
+    <div class="notifications-container" style="max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem;">
+        
+        <!-- الهيدر العلوي -->
+        <div class="page-header-row" style="margin-bottom: 1.5rem;">
+            <div class="header-icon-wrapper">
+                <div>
+                    <h1 class="page-header-title" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="material-symbols-outlined" style="color: var(--primary, #307e92); font-size: 28px;">notifications_active</span>
+                        صندوق الإشعارات والتنبيهات
+                    </h1>
+                    <p class="page-header-subtitle">متابعة إشعارات اعتماد النتائج والمستجدات الأكاديمية</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- صندوق قائمة الإشعارات -->
+        <div class="group-box" style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; padding-bottom: 0.75rem; border-bottom: 1px solid #e2e8f0;">
+                <span class="group-title" style="font-weight: 800; font-size: 1rem; color: #1e293b; margin: 0;">
+                    جميع الإشعارات المسجلة
+                </span>
+                <span style="background: rgba(48, 126, 146, 0.12); color: var(--primary, #307e92); font-weight: 800; font-size: 0.8rem; padding: 0.3rem 0.8rem; border-radius: 999px;">
+                    {{ notifications|length }} إشعار
+                </span>
+            </div>
+
+            {% if notifications %}
+                <div style="display: flex; flex-direction: column; gap: 0.85rem;">
+                    {% for notif in notifications %}
+                        <div class="notification-card {% if not notif.is_read %}unread{% endif %}" 
+                             style="border-right: 4px solid var(--primary, #307e92); background: #f8fafc; padding: 1rem 1.25rem; border-radius: 8px; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; border-left: 1px solid #e2e8f0; transition: all 0.2s ease;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                <h4 style="font-weight: 700; font-size: 0.95rem; margin: 0; color: #1e293b; display: flex; align-items: center; gap: 0.4rem;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: var(--primary, #307e92);">info</span>
+                                    {{ notif.title }}
+                                </h4>
+                                <span class="notification-time" style="font-size: 0.75rem; color: #64748b; font-family: monospace;">
+                                    {{ notif.created_at|date:"Y-m-d H:i" }}
+                                </span>
+                            </div>
+                            <p class="notification-message" style="margin: 0; font-size: 0.9rem; color: #475569; line-height: 1.5;">
+                                {{ notif.message }}
+                            </p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 3rem 1rem; color: #64748b;">
+                    <span class="material-symbols-outlined" style="font-size: 48px; color: #94a3b8; display: block; margin-bottom: 0.5rem;">notifications_off</span>
+                    <h3 style="font-weight: 700; font-size: 1.1rem; margin: 0 0 0.25rem 0;">لا توجد إشعارات حالياً</h3>
+                    <p style="font-size: 0.85rem; margin: 0;">سيتم إشعارك فور اعتماد ونشر أي نتائج أو تعميمات أكاديمية جديدة.</p>
+                </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</main>
+{% endblock %}

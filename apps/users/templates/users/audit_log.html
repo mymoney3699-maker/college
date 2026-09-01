@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}أرشيف التعديلات والإضافات والحذف - كلية طرابلس{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto audit-log-page">
+    <div class="page-header-row no-print">
+        <div>
+            <h1 class="page-header-title">أرشيف التعديلات والإضافات والحذف</h1>
+            <p class="page-header-subtitle">سجل بكل التغييرات والبيانات الجديدة والمحذوفة</p>
+        </div>
+    </div>
+
+    <!-- فلترة -->
+    <div class="group-box no-print">
+        <span class="group-title">فلترة السجلات</span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block font-bold text-primary mb-1">نوع الإجراء</label>
+                <select id="filterAction" class="w-full border border-gray-300 rounded-md p-2">
+                    <option value="">-- الكل --</option>
+                    <option value="create" {% if request.GET.action == 'create' %}selected{% endif %}>إضافة</option>
+                    <option value="update" {% if request.GET.action == 'update' %}selected{% endif %}>تعديل</option>
+                    <option value="delete" {% if request.GET.action == 'delete' %}selected{% endif %}>حذف</option>
+                </select>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">الجدول</label>
+                <input type="text" id="filterModel" placeholder="بحث بأسم الجدول"
+                    class="w-full border border-gray-300 rounded-md p-2" autocomplete="off"
+                    value="{{ request.GET.model_name|default:'' }}">
+                <div id="modelSuggestions" class="search-results-list hidden mt-1"
+                    style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">المستخدم</label>
+                <input type="text" id="filterUser" placeholder="بحث بأسم المستخدم"
+                    class="w-full border border-gray-300 rounded-md p-2" autocomplete="off"
+                    value="{{ request.GET.user|default:'' }}">
+                <div id="userSuggestions" class="search-results-list hidden mt-1"
+                    style="max-height: 150px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="buttons-row mt-6 no-print">
+        <button class="btn-action btn-reset" onclick="resetFilters()"
+            style="padding: 0.6rem 2.5rem; font-size: 0.95rem; width: auto;">
+            <span class="material-symbols-outlined">cleaning_services</span> مسح
+        </button>
+    </div>
+
+    <!-- جدول السجلات -->
+    {% if request.GET.action or request.GET.model_name or request.GET.user or request.GET.page %}
+    <div class="group-box">
+        <span class="group-title">سجلات التدقيق</span>
+        <div class="overflow-x-auto">
+            <table class="data-table w-full">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>المستخدم</th>
+                        <th>الإجراء</th>
+                        <th>الجدول</th>
+                        <th>العنصر</th>
+                        <th class="no-print">التفاصيل</th>
+                        <th>عنوان IP</th>
+                        <th>التاريخ</th>
+                    </tr>
+                </thead>
+                <tbody id="logsTableBody">
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>{{ log.user.username|default:"غير معروف" }}</td>
+                        <td>
+                            <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                {% if log.action == 'create' %}bg-green-100 text-green-700
+                                {% elif log.action == 'update' %}bg-yellow-100 text-yellow-700
+                                {% elif log.action == 'delete' %}bg-red-100 text-red-700
+                                {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                {{ log.get_action_display }}
+                            </span>
+                        </td>
+                        <td>{{ log.model_name }}</td>
+                        <td>{{ log.object_repr|truncatechars:30 }}</td>
+                        <td class="no-print">
+                            {% if log.action == 'create' %}
+                            <button onclick="toggleDetails(this, 'create-{{ log.id }}')"
+                                class="text-green-600 text-xs underline">➕ عرض بيانات الإضافة</button>
+                            <div id="create-{{ log.id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs">
+                                <strong>📌 البيانات المضافة:</strong>
+                                <pre class="text-xs mt-1 overflow-x-auto">{{ log.created_data|pprint }}</pre>
+                            </div>
+                            {% elif log.action == 'update' %}
+                            <button onclick="toggleDetails(this, 'update-{{ log.id }}')"
+                                class="text-yellow-600 text-xs underline">✏️ عرض التغييرات</button>
+                            <div id="update-{{ log.id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs space-y-1">
+                                {% if log.filtered_changed_fields %}
+                                {% for field, values in log.filtered_changed_fields.items %}
+                                <div class="bg-white p-2 rounded border border-amber-100 flex flex-wrap items-center justify-between gap-2">
+                                    <span class="font-bold text-gray-800">📌 {{ field }}:</span>
+                                    <div class="flex items-center gap-2 font-mono">
+                                        <span class="text-red-600 line-through bg-red-50 px-1.5 py-0.5 rounded border border-red-100">قبل: {{ values.old|truncatechars:50 }}</span>
+                                        <span class="text-gray-400">➔</span>
+                                        <span class="text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">بعد: {{ values.new|truncatechars:50 }}</span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                                {% else %}
+                                <span class="text-gray-500">لا توجد تفاصيل لتغييرات حقيقية</span>
+                                {% endif %}
+                            </div>
+                            {% elif log.action == 'delete' %}
+                            <button onclick="toggleDetails(this, 'delete-{{ log.id }}')"
+                                class="text-red-600 text-xs underline">🗑️ عرض البيانات المحذوفة</button>
+                            <div id="delete-{{ log.id }}" class="hidden mt-2 p-2 bg-gray-100 rounded text-xs">
+                                <strong>📌 البيانات المحذوفة:</strong>
+                                <pre class="text-xs mt-1 overflow-x-auto">{{ log.deleted_data|pprint }}</pre>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.ip_address|default:"-" }}</td>
+                        <td>{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="8" class="text-center py-8 text-gray-500">
+                            <span class="material-symbols-outlined text-4xl">archive</span><br>
+                            لا توجد سجلات
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if logs.has_other_pages %}
+        <div class="flex justify-center gap-2 mt-4 no-print">
+            {% if logs.has_previous %}
+            <a href="?page={{ logs.previous_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.model_name %}&model_name={{ request.GET.model_name }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}"
+                class="btn-action btn-edit text-sm py-1 px-3">← السابق</a>
+            {% endif %}
+            <span class="px-3 py-1 bg-gray-200 rounded">صفحة {{ logs.number }} من {{ logs.paginator.num_pages }}</span>
+            {% if logs.has_next %}
+            <a href="?page={{ logs.next_page_number }}{% if request.GET.action %}&action={{ request.GET.action }}{% endif %}{% if request.GET.model_name %}&model_name={{ request.GET.model_name }}{% endif %}{% if request.GET.user %}&user={{ request.GET.user }}{% endif %}"
+                class="btn-action btn-edit text-sm py-1 px-3">التالي →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/audit_log.js' %}"></script>
+{% endblock %}

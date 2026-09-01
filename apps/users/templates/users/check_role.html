@@ -1,0 +1,55 @@
+<!-- apps/users/templates/users/check_role.html -->
+<!DOCTYPE html>
+{% load static %}
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق من دور المستخدم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl p-8">
+        <h1 class="text-3xl font-bold text-center text-primary mb-6">التحقق من دور المستخدم</h1>
+        
+        <div class="space-y-4">
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <p><strong>اسم المستخدم:</strong> {{ user.username }}</p>
+                <p><strong>البريد الإلكتروني:</strong> {{ user.email }}</p>
+                <p><strong>مدير النظام:</strong> {{ user.is_superuser|yesno:"نعم,لا" }}</p>
+                <p><strong>موظف:</strong> {{ user.is_staff|yesno:"نعم,لا" }}</p>
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="font-bold mb-2">المجموعات:</h2>
+                {% if groups %}
+                    <ul class="list-disc list-inside">
+                    {% for group in groups %}
+                        <li>{{ group.name }}</li>
+                    {% endfor %}
+                    </ul>
+                {% else %}
+                    <p class="text-gray-500">لا توجد مجموعات</p>
+                {% endif %}
+            </div>
+            
+            <div class="bg-gray-50 p-4 rounded-lg">
+                <h2 class="font-bold mb-2">الصلاحيات:</h2>
+                <ul class="list-disc list-inside">
+                    <li>طالب: {{ is_student|yesno:"نعم,لا" }}</li>
+                    <li>أستاذ: {{ is_teacher|yesno:"نعم,لا" }}</li>
+                </ul>
+            </div>
+            
+            <div class="flex gap-4 mt-6">
+                <a href="{% url 'users:dashboard_redirect' %}" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary/90 transition">
+                    الذهاب إلى لوحة التحكم
+                </a>
+                <a href="{% url 'users:logout' %}" class="bg-red-500 text-white px-6 py-2 rounded-lg hover:bg-red-600 transition">
+                    تسجيل الخروج
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

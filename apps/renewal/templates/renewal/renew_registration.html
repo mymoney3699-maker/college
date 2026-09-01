@@ -1,0 +1,681 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تجديد القيد - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 🌙 Dynamic Dark Mode Overrides for Renew Registration Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .renew-registration-page,
+    html.dark .renew-registration-container,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-title,
+    html.dark h1,
+    html.dark h2,
+    html.dark h3,
+    html.dark h4,
+    html.dark h5,
+    html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Container Boxes & Cards */
+    html.dark .group-box,
+    html.dark .inquiry-group-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+
+    /* Form Fields & Selects */
+    html.dark .field-label,
+    html.dark label {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark #majorSelect,
+    html.dark #levelSelect,
+    html.dark #seasonSelect,
+    html.dark #yearInput {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark select:disabled,
+    html.dark input:read-only {
+        background-color: #0f172a !important;
+        color: #94a3b8 !important;
+        opacity: 0.8;
+    }
+
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    /* Selection Actions Bar & Table */
+    html.dark .selection-actions-bar {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .table-responsive {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table,
+    html.dark #studentsTable {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead,
+    html.dark #studentsTable thead,
+    html.dark .data-table thead tr,
+    html.dark #studentsTable thead tr {
+        background-color: #0f172a !important;
+        border-bottom-color: #38bdf8 !important;
+    }
+
+    html.dark .data-table th,
+    html.dark #studentsTable th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table td,
+    html.dark #studentsTable td,
+    html.dark #studentsTableBody td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tr:hover td,
+    html.dark #studentsTable tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+
+    /* إخفاء التقرير المطبوع في العرض المباشر على الشاشة */
+    #printReportContainer {
+        display: none !important;
+    }
+
+    /* ============================================================
+       PRINT STYLES - تقرير ورقي رسمي أبيض وأسود معتمد (A4 Portrait)
+       ============================================================ */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 6mm;
+        }
+
+        /* إخفاء كافة عناصر الموقع والعرض التفاعلي */
+        body>*:not(#printReportContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* إظهار التقرير فقط في الطباعة */
+        #printReportContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 5px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printReportContainer * {
+            visibility: visible !important;
+        }
+
+        .print-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 22px 28px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+        }
+
+        .print-header-section {
+            text-align: center !important;
+            margin-bottom: 12px !important;
+        }
+
+        .print-college-logo {
+            max-height: 75px !important;
+            width: auto !important;
+            margin: 0 auto 6px auto !important;
+            display: block !important;
+        }
+
+        .print-country {
+            font-size: 14px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 2px !important;
+        }
+
+        .print-ministry {
+            font-size: 13px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 2px !important;
+        }
+
+        .print-college {
+            font-size: 16px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 6px !important;
+        }
+
+        .print-header-line {
+            width: 75% !important;
+            margin: 8px auto 14px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .print-title {
+            font-size: 20px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin: 8px 0 16px 0 !important;
+            letter-spacing: 1px !important;
+        }
+
+        /* معلومات التقرير الشبكية */
+        .print-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 18px 0 15px 0 !important;
+            font-size: 13.5px !important;
+            direction: rtl !important;
+        }
+
+        .print-info-right {
+            text-align: right !important;
+            line-height: 2.1 !important;
+        }
+
+        .print-info-left {
+            text-align: left !important;
+            line-height: 2.1 !important;
+            direction: rtl !important;
+        }
+
+        .info-lbl {
+            font-weight: bold !important;
+            color: #000000 !important;
+        }
+
+        .info-val {
+            color: #000000 !important;
+            font-weight: bold !important;
+        }
+
+        .print-table-container {
+            margin-top: 10px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 13px !important;
+            direction: rtl !important;
+        }
+
+        .print-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 8px 6px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+        }
+
+        .print-table td {
+            padding: 8px 6px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+        }
+
+        .empty-print-cell {
+            padding: 18px !important;
+            text-align: center !important;
+            color: #000000 !important;
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+        }
+
+        /* ============================================================
+           صندوق التوقيع — مسافة طبيعية عن الجدول (لا يلتصق بالأسفل)
+           ============================================================ */
+        .print-signature-box {
+            margin-top: 35px !important;
+            padding-top: 0 !important;
+            text-align: left !important;
+            margin-left: 20px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .signature-title {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .signature-line {
+            font-size: 13px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+            margin-top: 12px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main renew-registration-page">
+    <div class="renew-registration-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">تجديد القيد الدراسي</h1>
+                <p class="page-header-subtitle">إدارة وتوثيق تجديد القيد للطلاب</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_enrollmentrenewal' and not request.user|has_exec_perm:'renewal.change_enrollmentrenewal' and not request.user|has_exec_perm:'add_enrollmentrenewal' and not request.user|has_exec_perm:'change_enrollmentrenewal' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        <div id="jobInactiveBanner" class="job-inactive-banner {% if is_renew_job_open %}hidden{% endif %}"
+            style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+            <span class="material-symbols-outlined"
+                style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="jobInactiveBannerText">{% if not is_renew_job_open %}{{ renew_job_message|default:"خدمة 'تجديد
+                    القيد' غير مفعلة حالياً" }}{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- بوكس تجديد القيد (جماعي) -->
+        <div class="group-box inquiry-group-box">
+            <span class="group-title">تجديد القيد (جماعي)</span>
+
+            <div class="filters-grid-5col-button">
+                <div>
+                    <label class="field-label">التخصص</label>
+                    <select id="majorSelect">
+                        <option value="">-- اختر التخصص --</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">المستوى (السيمستر الذي يدرسه)</label>
+                    <select id="levelSelect">
+                        <option value="">-- الكل --</option>
+                        {% for lvl in levels %}
+                        <option value="{{ lvl.id }}">{{ lvl.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">نوع الفصل</label>
+                    <select id="seasonSelect" disabled>
+                        <option value="">-- اختر نوع الفصل --</option>
+                        <option value="spring" {% if active_semester and active_semester.type == 'spring' %}selected{% endif %}>ربيع</option>
+                        <option value="fall" {% if active_semester and active_semester.type == 'fall' %}selected{% endif %}>خريف</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">السنة الدراسية</label>
+                    <input type="text" id="yearInput"
+                        value="{% if active_semester %}{{ active_semester.year }}{% else %}2026{% endif %}" readonly>
+                </div>
+                <div>
+                    <label class="field-label">&nbsp;</label>
+                    <button id="btnLoadStudents" class="btn-action btn-search" onclick="window.loadStudents()">
+                        <span class="material-symbols-outlined">downloading</span> تحميل الطلبة
+                    </button>
+                </div>
+            </div>
+
+            <div id="studentSelectionSection" style="display: none;">
+                <!-- ================= 1. جدول الطلاب بانتظار تجديد القيد (العلوي) ================= -->
+                <div class="table-section-block mb-8">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px;">
+                        <h3
+                            style="font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 6px; margin: 0;">
+                            <span class="material-symbols-outlined" style="color: #f59e0b;">pending_actions</span>
+                            <span>الطلاب بانتظار تجديد القيد</span>
+                            <span id="unrenewedCountBadge"
+                                style="background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.8rem; font-weight: 900;">0</span>
+                        </h3>
+                    </div>
+
+                    <div class="selection-actions-bar">
+                        <div class="select-all-group">
+                            <input type="checkbox" id="selectAll" class="checkbox-input"
+                                onclick="window.toggleAll(this)">
+                            <label for="selectAll" class="checkbox-label">تحديد الكل</label>
+                        </div>
+                        <div class="actions-buttons-group">
+                            {% if request.user|has_exec_perm:'renewal.add_enrollmentrenewal' or request.user|has_exec_perm:'renewal.change_enrollmentrenewal' or request.user|has_exec_perm:'add_enrollmentrenewal' or request.user|has_exec_perm:'change_enrollmentrenewal' %}
+                            <button id="btnRenewRegistration" class="btn-action btn-save"
+                                onclick="window.renewRegistration()">
+                                <span class="material-symbols-outlined">autorenew</span> تجديد القيد
+                            </button>
+                            {% endif %}
+                            <button class="btn-action btn-exit" onclick="window.goBack()">
+                                <span class="material-symbols-outlined">arrow_back</span> رجوع
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-4">
+                        <table class="data-table" id="studentsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 8%;">تحديد</th>
+                                    <th style="width: 18%;">رقم القيد</th>
+                                    <th style="width: 32%;">اسم الطالب</th>
+                                    <th style="width: 21%;">المستوى الحالي</th>
+                                    <th style="width: 21%;">المستوى المنتقل إليه</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="5" class="empty-cell">
+                                        <span class="material-symbols-outlined text-4xl">database</span><br />
+                                        ⚡ لا توجد بيانات حالياً<br />
+                                        <span class="text-xs">الرجاء اختيار التخصص والضغط على "تحميل الطلبة"</span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="renewSuccessMessage" class="hidden"
+                        style="color: #0d9488; font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; gap: 6px; margin-top: 1rem; justify-content: flex-start; direction: rtl;">
+                        <span class="material-symbols-outlined">check_circle</span>
+                        <span>تم تجديد القيد بنجاح وانتقل الطلاب إلى جدول المجددين أدناه</span>
+                    </div>
+                </div>
+
+                <!-- ================= 2. جدول الطلاب المجدد قيدهم بالفعل (السفلي) ================= -->
+                <div class="table-section-block mt-8 pt-4" style="border-top: 1px dashed rgba(148, 163, 184, 0.3);">
+                    <div
+                        style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 8px;">
+                        <h3
+                            style="font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 6px; margin: 0;">
+                            <span class="material-symbols-outlined" style="color: #10b981;">verified</span>
+                            <span>الطلاب المجدد قيدهم بالفعل لهذا الفصل</span>
+                            <span id="renewedCountBadge"
+                                style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); padding: 2px 8px; border-radius: 9999px; font-size: 0.8rem; font-weight: 900;">0</span>
+                        </h3>
+                        <div class="actions-buttons-group">
+                            <button class="btn-action btn-print" onclick="window.printPage()">
+                                <span class="material-symbols-outlined">print</span> طباعة كشف المجددين
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive mt-3">
+                        <table class="data-table" id="renewedStudentsTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 5%;">م</th>
+                                    <th style="width: 16%;">رقم القيد</th>
+                                    <th style="width: 27%;">اسم الطالب</th>
+                                    <th style="width: 17%;">المستوى الحالي (السابق)</th>
+                                    <th style="width: 18%;">المستوى المنتقل إليه</th>
+                                    <th style="width: 17%;">نموذج التجديد / طباعة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="renewedStudentsTableBody">
+                                <tr class="empty-row">
+                                    <td colspan="6" class="empty-cell"
+                                        style="padding: 18px; text-align: center; color: #94a3b8;">
+                                        لا يوجد طلاب مجدد قيدهم بعد في هذا الفصل
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+    <div id="toastNotification">
+        <div id="toastIconCircle" class="toast-icon-circle">
+            <span id="toastIcon" class="material-symbols-outlined"
+                style="font-size: 24px; color: #10b981;">check_circle</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <p id="toastMessage"
+                style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+            </p>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         حاوية التقرير الرسمي لتقرير تجديد القيد المخصص للطباعة فقط
+         ============================================================ -->
+    <div id="printReportContainer">
+        <div class="print-page-frame">
+
+            <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
+            <div class="print-header-section"
+                style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+                <!-- اليمين: العربية -->
+                <div class="print-header-ar"
+                    style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                    <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                    <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+                </div>
+
+                <!-- الوسط: الشعار الدائري -->
+                <div class="print-header-logo-box"
+                    style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                    <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                        style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                        onerror="this.style.display='none'">
+                </div>
+
+                <!-- اليسار: الإنجليزية -->
+                <div class="print-header-en"
+                    style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                    <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                    <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                    <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                    <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                    <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE
+                        AND TECHNOLOGY</div>
+                </div>
+            </div>
+            <div class="print-header-line" style="width:100%;margin:6px 0 10px;border-top:1.5px solid #000;"></div>
+            <div class="print-title"
+                style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير تجديد
+                القيد</div>
+
+            <!-- 2. معلومات التقرير (اليمين: التخصص ثم المستوى | اليسار: التاريخ ثم عدد الطلاب) -->
+            <div class="print-info-grid">
+                <div class="print-info-right">
+                    <div><span class="info-lbl">التخصص:</span> <span id="printDeptName" class="info-val">جميع التخصصات /
+                            غير محدد</span></div>
+                    <div><span class="info-lbl">المستوى الدراسي:</span> <span id="printLevelName"
+                            class="info-val">الكل</span></div>
+                </div>
+                <div class="print-info-left">
+                    <div><span class="info-lbl">التاريخ:</span> <span id="printDateVal" class="info-val">—</span></div>
+                    <div><span class="info-lbl">عدد الطلاب:</span> <span id="printCountVal" class="info-val">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. جدول التقرير الرسمي — بدون عمود المستوى/الفصل -->
+            <div class="print-table-container">
+                <table class="print-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 9%;">م</th>
+                            <th style="width: 25%;">رقم القيد</th>
+                            <th style="width: 42%;">اسم الطالب</th>
+                            <th style="width: 24%;">التخصص</th>
+                        </tr>
+                    </thead>
+                    <tbody id="printTableBody">
+                        <tr>
+                            <td colspan="4" class="empty-print-cell">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 4. صندوق التوقيع الرسمي — margin-top: 35px بدلاً من auto -->
+            <div class="print-signature-box" data-official>
+                <span class="off-name"
+                    style="display: block; font-size: 13.5px; font-weight: bold; min-height: 1.3em;"></span>
+                <span class="off-pos"
+                    style="display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px;">المسجل العام
+                    بالكلية</span>
+                <span class="signature-line" style="display: block; font-size: 12.5px; letter-spacing: 1px;">التوقيع
+                    والختم: ....................................</span>
+            </div>
+
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script id="renew-job-data" type="application/json">
+    {
+        "isOpen": {% if is_renew_job_open == False %}false{% else %}true{% endif %},
+        "message": "{{ renew_job_message|default:''|escapejs }}"
+    }
+</script>
+<script>
+    try {
+        const jobData = JSON.parse(document.getElementById('renew-job-data').textContent);
+        window.IS_RENEW_JOB_OPEN = jobData.isOpen;
+        window.RENEW_JOB_MESSAGE = jobData.message;
+    } catch (e) {
+        window.IS_RENEW_JOB_OPEN = true;
+        window.RENEW_JOB_MESSAGE = "";
+    }
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/renew_registration.js' %}?v=2.4.1"></script>
+{% endblock %}

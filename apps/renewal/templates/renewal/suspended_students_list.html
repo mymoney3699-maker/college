@@ -1,0 +1,527 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}قائمة الطلاب الموقوف قيدهم | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+.suspended-page-container {
+    width: 100%;
+    max-width: 1350px;
+    margin: 0 auto;
+    padding: 1rem 1.25rem;
+    direction: rtl;
+    text-align: right;
+    box-sizing: border-box;
+}
+
+/* 1. بانر الهيدر الموحد بلون السايدبار */
+.suspended-header-banner {
+    background: linear-gradient(135deg, #307e92 0%, #256677 100%);
+    background-color: #307e92;
+    border-radius: 18px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px -5px rgba(48, 126, 146, 0.25);
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.suspended-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+}
+
+.suspended-header-icon {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+.suspended-header-icon .material-symbols-outlined {
+    font-size: 32px;
+    color: #fef08a;
+}
+
+.suspended-header-title {
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin: 0;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.suspended-header-subtitle {
+    font-size: 0.88rem;
+    color: #e0f2fe;
+    margin: 0.35rem 0 0 0;
+    opacity: 0.95;
+}
+
+/* 2. شريط الفلترة والبحث */
+.filter-card {
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+}
+
+.filter-form {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #475569;
+    margin-bottom: 0.4rem;
+}
+
+.filter-input, .filter-select {
+    width: 100%;
+    padding: 0.55rem 0.85rem;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    font-size: 0.88rem;
+    color: #0f172a;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.filter-input:focus, .filter-select:focus {
+    outline: none;
+    border-color: #307e92;
+    background: #ffffff;
+}
+
+.btn-filter-submit {
+    background: #307e92;
+    color: #ffffff;
+    border: none;
+    padding: 0.55rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-filter-submit:hover {
+    background: #256677;
+    transform: translateY(-1px);
+}
+
+.btn-filter-reset {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    padding: 0.55rem 1rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.88rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 3. جدول البيانات */
+.table-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    overflow: hidden;
+}
+
+.table-header-bar {
+    padding: 1rem 1.25rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.table-header-title {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+}
+
+.custom-table th {
+    background: #f1f5f9;
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.custom-table td {
+    padding: 0.85rem 1rem;
+    font-size: 0.86rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.custom-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+.badge-status-suspended {
+    background: #ffedd5;
+    color: #c2410c;
+    padding: 0.25rem 0.65rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 900;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.action-btn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0.35rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-decoration: none;
+    background: #f1f5f9;
+    color: #307e92;
+    border: 1px solid #cbd5e1;
+    transition: all 0.2s ease;
+}
+
+.action-btn-link:hover {
+    background: #e0f2fe;
+    color: #0284c7;
+    border-color: #38bdf8;
+}
+
+/* 4. الحاوية السفلية للأزرار والإجراءات */
+.bottom-actions-card {
+    margin-top: 1.5rem;
+    padding: 1.25rem;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.bottom-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.btn-action-primary {
+    background: #307e92;
+    color: #ffffff;
+    border: none;
+    padding: 0.65rem 1.35rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action-primary:hover {
+    background: #256677;
+    transform: translateY(-1px);
+}
+
+.btn-action-print {
+    background: #eab308;
+    color: #0f172a;
+    border: none;
+    padding: 0.65rem 1.35rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-action-print:hover {
+    background: #ca8a04;
+    transform: translateY(-1px);
+}
+
+.btn-action-secondary {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 0.65rem 1.25rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.9rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-action-secondary:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* ============================================================
+   🌙 Dark Mode Overrides
+   ============================================================ */
+html.dark .suspended-header-banner {
+    background: linear-gradient(135deg, #296c7d 0%, #1e525f 100%) !important;
+    background-color: #296c7d !important;
+}
+
+html.dark .filter-card,
+html.dark .table-card,
+html.dark .bottom-actions-card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+html.dark .filter-label {
+    color: #cbd5e1 !important;
+}
+
+html.dark .filter-input, html.dark .filter-select {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .table-header-bar {
+    background-color: #1e293b !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .table-header-title {
+    color: #f8fafc !important;
+}
+
+html.dark .custom-table th {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .custom-table td {
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .custom-table tbody tr:hover {
+    background-color: #1a2332 !important;
+}
+
+html.dark .badge-status-suspended {
+    background: rgba(249, 115, 22, 0.2) !important;
+    color: #fb923c !important;
+}
+
+html.dark .action-btn-link,
+html.dark .btn-action-secondary {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="suspended-page-container">
+
+    <!-- 1. بانر الهيدر الموحد بلون السايدبار (بدون أزرار) -->
+    <div class="suspended-header-banner">
+        <div class="suspended-header-info">
+            <div class="suspended-header-icon">
+                <span class="material-symbols-outlined">pause_circle</span>
+            </div>
+            <div>
+                <h1 class="suspended-header-title">قائمة الطلاب الموقوف قيدهم</h1>
+                <p class="suspended-header-subtitle">
+                    سجل ومتابعة قرارات إيقاف القيد الأكاديمي للطلاب
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. بطاقة البحث والفلترة -->
+    <div class="filter-card">
+        <form method="GET" action="" class="filter-form">
+            <div class="filter-group" style="flex: 2;">
+                <label class="filter-label">بحث باسم الطالب أو رقم القيد:</label>
+                <input type="text" name="search" value="{{ search_query }}" placeholder="اكتب اسم الطالب أو رقم القيد..." class="filter-input">
+            </div>
+
+            <div class="filter-group">
+                <label class="filter-label">القسم العلمي:</label>
+                <select name="department" class="filter-select">
+                    <option value="">جميع الأقسام</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if selected_dept_id == dept.id|stringformat:"s" %}selected{% endif %}>
+                        {{ dept.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <button type="submit" class="btn-filter-submit">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">search</span>
+                    <span>فلترة</span>
+                </button>
+                {% if search_query or selected_dept_id %}
+                <a href="?" class="btn-filter-reset">إلغاء</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    <!-- 3. جدول البيانات -->
+    <div class="table-card">
+        <div class="table-header-bar">
+            <h2 class="table-header-title">
+                <span class="material-symbols-outlined" style="color: #ea580c; font-size: 20px;">pause_circle</span>
+                <span>إجمالي الطلاب الموقوف قيدهم: {{ total_count }}</span>
+            </h2>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>رقم القيد</th>
+                        <th>اسم الطالب</th>
+                        <th>القسم العلمي</th>
+                        <th>المستوى</th>
+                        <th>الحالة الأكاديمية</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td style="font-family: monospace; font-weight: 800; color: #307e92;">{{ student.student_id|default:"--" }}</td>
+                        <td style="font-weight: 800;">{{ student.name }}</td>
+                        <td>{{ student.department.name|default:"--" }}</td>
+                        <td>
+                            <span style="font-weight: 700;">المستوى {{ student.level.number|default:"--" }}</span>
+                        </td>
+                        <td>
+                            <span class="badge-status-suspended">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">pause</span>
+                                {{ student.student_status.name|default:"موقوف قيده" }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{% url 'renewal:suspend_student_page' %}" class="action-btn-link" title="إدارة حالة القيد">
+                                <span class="material-symbols-outlined" style="font-size: 15px;">settings</span>
+                                <span>إدارة القيد</span>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: #64748b;">
+                            <span class="material-symbols-outlined" style="font-size: 48px; color: #cbd5e1; display: block; margin-bottom: 0.5rem;">check_circle</span>
+                            <div style="font-size: 1rem; font-weight: 800;">لا يوجد طلاب موقوف قيدهم حالياً</div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4. الحاوية السفلية المخصصة للأزرار والإجراءات أسفل الجدول -->
+    <div class="bottom-actions-card">
+        <div class="bottom-actions-group">
+            <a href="{% url 'renewal:notifications' %}" class="btn-action-secondary">
+                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                <span>العودة لمركز الإشعارات</span>
+            </a>
+            <a href="{% url 'renewal:dashboard' %}" class="btn-action-secondary">
+                <span class="material-symbols-outlined" style="font-size: 18px;">dashboard</span>
+                <span>لوحة التحكم</span>
+            </a>
+        </div>
+
+        <div class="bottom-actions-group">
+            <a href="{% url 'renewal:suspend_student_page' %}" class="btn-action-primary">
+                <span class="material-symbols-outlined" style="font-size: 18px;">admin_panel_settings</span>
+                <span>إدارة إيقاف واسترجاع القيد</span>
+            </a>
+            <button type="button" onclick="window.print()" class="btn-action-print">
+                <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
+                <span>طباعة الكشف</span>
+            </button>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}اعتماد ونشر نتائج الكنترول - منظومة الكلية{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'grades/css/publish_results.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+    <div class="max-w-7xl mx-auto space-y-6">
+        
+        <!-- Page Header -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title text-3xl sm:text-4xl">اعتماد ونشر نتائج الكنترول (اعتماد الدرجات)</h1>
+                <p class="page-header-subtitle">
+                    إدارة وتتبع نتائج الامتحانات للمواد الدراسية ونشرها فورياً لبوابة نتائج الطلاب أو إرجاعها قيد المراجعة.
+                </p>
+            </div>
+            {% if not request.user|has_exec_perm:'grades.publish_grades' and not request.user|has_exec_perm:'grades.change_grade' and not request.user|has_exec_perm:'publish_grades' and not request.user|has_exec_perm:'change_grade' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_grade_approval_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="jobInactiveBannerText">{% if not is_grade_approval_job_open %}{{ grade_approval_job_message|default:"خدمة 'اعتماد الدرجات' غير مفعلة حالياً" }}{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- Quick Stats Cards Container -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+            <div class="stat-card-compact">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">إجمالي المواد الدراسية</span>
+                    <span class="text-2xl font-black text-slate-800 dark:text-slate-100 leading-tight" id="stat-total-courses">0</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-[#307e92]/10 dark:bg-[#38bdf8]/10 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">menu_book</span>
+                </div>
+            </div>
+
+            <div class="stat-card-compact">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">المواد المعتمدة والمنشورة</span>
+                    <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-tight" id="stat-published-courses">0</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">verified</span>
+                </div>
+            </div>
+
+            <div class="stat-card-compact">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">مواد قيد المراجعة والتدقيق</span>
+                    <span class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-tight" id="stat-pending-courses">0</span>
+                </div>
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">pending_actions</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Master Filter & Search Box Container -->
+        <div class="plan-container-box group-box system-card space-y-5" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side -->
+            <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">tune</span>
+                <span>خيارات الاعتماد والفترة الأكاديمية</span>
+            </span>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-5 pt-2">
+                <!-- Semester Filter -->
+                <div class="space-y-1.5">
+                    <label for="semester-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">الفصل الدراسي:</label>
+                    <select id="semester-select" class="form-control-system {% if not is_grade_approval_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important;" title="{{ grade_approval_job_message|default:'خدمة اعتماد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                        <option value="" selected>-- كافة الفصول الدراسية --</option>
+                        {% for sem in semesters %}
+                        <option value="{{ sem.id }}" {% if sem.is_active %}selected{% endif %}>
+                            {{ sem.get_type_display }} {{ sem.year }} {% if sem.is_active %}(الفصل الحالي){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Department Filter -->
+                <div class="space-y-1.5">
+                    <label for="department-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">القسم العلمي / التخصص:</label>
+                    <select id="department-select" class="form-control-system {% if not is_grade_approval_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important;" title="{{ grade_approval_job_message|default:'خدمة اعتماد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                        <option value="">-- كافة الأقسام العلمية --</option>
+                        {% for dep in departments %}
+                        <option value="{{ dep.id }}">{{ dep.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Period Filter -->
+                <div class="space-y-1.5">
+                    <label for="period-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">فترة الامتحانات المطلوب نشرها:</label>
+                    <select id="period-select" class="form-control-system highlight-period {% if not is_grade_approval_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important;" title="{{ grade_approval_job_message|default:'خدمة اعتماد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                        <option value="midterm" selected>درجات الامتحان النصفي (Midterm)</option>
+                        <option value="final">الدرجات النهائية الشاملة (Final)</option>
+                    </select>
+                </div>
+
+                <!-- Quick Search Input -->
+                <div class="space-y-1.5 md:col-span-3">
+                    <label for="search-input" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">بحث بكود أو اسم المادة:</label>
+                    <div class="relative">
+                        <input type="text" id="search-input" class="form-control-system pr-10 {% if not is_grade_approval_job_open %}opacity-50 cursor-not-allowed{% endif %}" placeholder="أدخل كود أو اسم المادة الدراسية لتصفية القائمة..." autocomplete="off" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important;" title="{{ grade_approval_job_message|default:'خدمة اعتماد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                        <span class="material-symbols-outlined absolute right-3 top-2.5 text-[#64748b] text-xl">search</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" class="btn-grey-action" id="btn-reset-filters">
+                    <span class="material-symbols-outlined text-lg">restart_alt</span>
+                    إعادة ضبط
+                </button>
+                <button type="button" class="btn-teal-action {% if not is_grade_approval_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-fetch-courses" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;" title="{{ grade_approval_job_message|default:'خدمة اعتماد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                    <span class="material-symbols-outlined text-lg">filter_list</span>
+                    تحديث كشف الكنترول للمواد
+                </button>
+            </div>
+        </div>
+
+        <!-- Master Results Table Container Box -->
+        <div class="plan-container-box group-box system-card space-y-4" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side -->
+            <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">table_chart</span>
+                <span>كشف المواد وحالات الاعتماد للنشر (<span id="table-count-badge">0 مادة</span>)</span>
+            </span>
+
+            <div class="table-responsive-wrapper pt-2">
+                <table class="academic-table" id="publish-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 50px;">#</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">كود المادة</th>
+                            <th scope="col" class="px-6 py-3.5">اسم المادة الدراسية</th>
+                            <th scope="col" class="px-6 py-3.5">القسم العلمي</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 90px;">المستوى</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">الطلاب المسجلون</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">المكتمل رصدهم</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 130px;">المحجوبين (الكنترول)</th>
+                            <th scope="col" class="px-4 py-3.5 text-center" style="width: 160px;">حالة النشر والاعتماد</th>
+                            <th scope="col" class="px-6 py-3.5 text-center" style="width: 190px;">إجراء الكنترول</th>
+                        </tr>
+                    </thead>
+                    <tbody id="publish-table-body">
+                        <tr>
+                            <td colspan="10" class="text-center py-12 text-[#64748b] dark:text-slate-400">
+                                <span class="material-symbols-outlined text-5xl text-[#94a3b8] mb-2">rule</span>
+                                <p class="text-base font-semibold">يرجى اختيار الفصل الدراسي والفترة والضغط على "تحديث كشف الكنترول للمواد"</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- نافذة التأكيد قبل الاعتماد والنشر (Confirmation Modal) -->
+<div id="publish-modal" class="modal-backdrop hidden">
+    <div class="modal-card">
+        <div class="modal-header">
+            <span class="material-symbols-outlined modal-icon text-green">verified</span>
+            <h3 class="modal-title" id="modal-title">تأكيد اعتماد ونشر نتيجة المادة</h3>
+        </div>
+        <div class="modal-body">
+            <p id="modal-description">هل أنت تأكد من رغبتك في اعتماد ونشر نتائج هذه المادة للطلاب؟</p>
+            <div class="modal-info-box">
+                <div class="info-item"><strong>كود واسم المادة:</strong> <span id="modal-course-name">-</span></div>
+                <div class="info-item"><strong>الفترة الأكاديمية:</strong> <span id="modal-period-name">-</span></div>
+                <div class="info-item"><strong>عدد الطلاب المسجلين:</strong> <span id="modal-students-count">0</span></div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn-modal-cancel" id="btn-modal-cancel">إلغاء</button>
+            <button type="button" class="btn-modal-confirm {% if not is_grade_approval_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-modal-confirm" {% if not is_grade_approval_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>تأكيد الاعتماد والنشر 🚀</button>
+        </div>
+    </div>
+</div>
+
+<div id="toastNotification" style="position: fixed; bottom: 30px; left: 30px; z-index: 99999; transform: translateY(80px); opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-width: 380px; width: 100%; background: #ffffff; border-right: 4px solid #10b981; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 16px 20px; display: flex; align-items: center; gap: 12px; direction: rtl; pointer-events: auto;">
+    <span id="toastIcon" class="material-symbols-outlined" style="font-size: 28px; color: #10b981; flex-shrink: 0;">check_circle</span>
+    <p id="toastMessage" style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #1e293b;"></p>
+</div>
+<div id="toast-container" class="toast-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.IS_GRADE_APPROVAL_JOB_OPEN = "{{ is_grade_approval_job_open|yesno:'true,false' }}" === "true";
+    window.GRADE_APPROVAL_JOB_MESSAGE = "{{ grade_approval_job_message|escapejs }}";
+    window.CAN_PUBLISH_GRADES = {% if request.user|has_exec_perm:'grades.publish_grades' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'publish_grades' or request.user|has_exec_perm:'change_grade' %}true{% else %}false{% endif %};
+</script>
+<script src="{% static 'grades/js/publish_results.js' %}?v=1.0.2"></script>
+{% endblock %}

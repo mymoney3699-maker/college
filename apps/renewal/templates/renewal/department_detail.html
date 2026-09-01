@@ -1,0 +1,748 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}تفاصيل والتحليل الأكاديمي لـ {{ department.name }} | كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<!-- Bootstrap 5 CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.rtl.min.css">
+<style>
+/* ============================================================
+   تنسيقات Bootstrap 5 المخصصة لصفحة تفاصيل القسم
+   ============================================================ */
+.department-detail-page {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    color: #1e293b;
+}
+
+/* كروت الإحصائيات */
+.stat-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+.stat-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+.stat-icon-box {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+/* أزرار الإجراءات والطباعة */
+.btn-custom-primary {
+    background-color: #307e92;
+    color: #ffffff;
+    border: none;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    transition: all 0.2s ease;
+}
+.btn-custom-primary:hover {
+    background-color: #256576;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(48, 126, 146, 0.3);
+}
+
+.btn-custom-print {
+    background-color: #0d9488;
+    color: #ffffff;
+    border: none;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.5rem 1.25rem;
+    transition: all 0.2s ease;
+}
+.btn-custom-print:hover {
+    background-color: #0f766e;
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3);
+}
+
+.btn-custom-secondary {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+.btn-custom-secondary:hover {
+    background-color: #e2e8f0;
+    color: #0f172a;
+}
+
+/* التبويبات بحسابات Bootstrap */
+.nav-tabs-custom {
+    border-bottom: 2px solid #e2e8f0;
+    background: #f8fafc;
+    border-radius: 12px 12px 0 0;
+    padding: 0.5rem 0.75rem 0;
+}
+.nav-tabs-custom .nav-link {
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #64748b;
+    font-weight: 700;
+    font-size: 0.875rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.2s ease;
+}
+.nav-tabs-custom .nav-link:hover {
+    color: #307e92;
+    background: rgba(48, 126, 146, 0.05);
+}
+.nav-tabs-custom .nav-link.active {
+    color: #307e92;
+    background: #ffffff;
+    border-bottom-color: #307e92;
+    font-weight: 800;
+}
+
+/* جدول البيانات */
+.table-custom {
+    font-size: 0.875rem;
+}
+.table-custom thead th {
+    background-color: #f1f5f9;
+    color: #334155;
+    font-weight: 800;
+    border-bottom: 2px solid #cbd5e1;
+}
+
+/* 🌙 Dynamic Dark Mode Support */
+html.dark body {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+}
+html.dark .department-detail-page {
+    color: #f8fafc !important;
+}
+html.dark .department-detail-page .text-dark {
+    color: #f8fafc !important;
+}
+html.dark .department-detail-page .text-muted {
+    color: #94a3b8 !important;
+}
+html.dark .stat-card {
+    background: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+html.dark .card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+html.dark .card-header {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+html.dark .nav-tabs-custom {
+    background-color: #0f172a !important;
+    border-bottom-color: #334155 !important;
+}
+html.dark .nav-tabs-custom .nav-link {
+    color: #94a3b8 !important;
+}
+html.dark .nav-tabs-custom .nav-link.active {
+    background-color: #1e293b !important;
+    color: #38bdf8 !important;
+    border-bottom-color: #38bdf8 !important;
+}
+html.dark .table-custom thead th {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+}
+html.dark .table-custom td {
+    border-color: #334155 !important;
+    color: #e2e8f0 !important;
+}
+html.dark .btn-custom-secondary {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+html.dark .form-select {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+/* 🏷️ شارات الفئات والصفات بهوية النظام الهادئة والمميزة */
+.badge-role-dept-head {
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1px solid #bae6fd !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.badge-role-faculty {
+    background-color: #f0fdfa !important;
+    color: #0f766e !important;
+    border: 1px solid #99f6e4 !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.badge-role-staff {
+    background-color: #f8fafc !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 700 !important;
+    font-size: 0.8rem !important;
+    padding: 0.35rem 0.65rem !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.badge-course-item {
+    background-color: #f1f5f9 !important;
+    color: #1e293b !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+    font-size: 0.75rem !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 6px !important;
+    display: inline-block !important;
+}
+
+/* Dark Mode Badges */
+html.dark .badge-role-dept-head {
+    background-color: rgba(3, 105, 161, 0.25) !important;
+    color: #7dd3fc !important;
+    border-color: rgba(3, 105, 161, 0.5) !important;
+}
+
+html.dark .badge-role-faculty {
+    background-color: rgba(15, 118, 110, 0.25) !important;
+    color: #5eead4 !important;
+    border-color: rgba(15, 118, 110, 0.5) !important;
+}
+
+html.dark .badge-role-staff {
+    background-color: rgba(71, 85, 105, 0.25) !important;
+    color: #e2e8f0 !important;
+    border-color: rgba(71, 85, 105, 0.5) !important;
+}
+
+html.dark .badge-course-item {
+    background-color: #334155 !important;
+    color: #f8fafc !important;
+    border-color: #475569 !important;
+}
+
+/* الطباعة */
+@media print {
+    .no-print { display: none !important; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="container-fluid py-4 department-detail-page" dir="rtl">
+
+    <!-- 🏛️ ترويسة تفاصيل القسم والـ Breadcrumb -->
+    <div class="row align-items-center mb-4">
+        <div class="col-md-7">
+            <nav aria-label="breadcrumb" class="mb-1">
+                <ol class="breadcrumb mb-0" style="font-size: 0.8rem; font-weight: 700;">
+                    {% if request.user.role != 'academic_dept' %}
+                    <li class="breadcrumb-item"><a href="{% url 'renewal:department_list' %}" class="text-decoration-none text-muted">دليل الأقسام</a></li>
+                    {% endif %}
+                    <li class="breadcrumb-item active text-dark" aria-current="page">{{ department.code }} - {{ department.name }}</li>
+                </ol>
+            </nav>
+            <h1 class="h3 fw-bold text-dark d-flex align-items-center gap-2 m-0">
+                <span class="material-symbols-outlined text-primary fs-2">corporate_fare</span>
+                <span>{{ department.name }}</span>
+                <span class="badge bg-teal-subtle text-teal border border-teal-subtle font-monospace ms-1 px-2 py-1 fs-6" style="color:#0d9488; background:#ccfbf1;">
+                    {{ department.code }}
+                </span>
+                {% if department.is_active %}
+                <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 fs-6">
+                    ● نشط
+                </span>
+                {% else %}
+                <span class="badge bg-danger-subtle text-danger rounded-pill px-3 py-1 fs-6">
+                    ⚠️ قسم غير مفعّل (أرشيف فقط)
+                </span>
+                {% endif %}
+            </h1>
+        </div>
+
+        <!-- أزرار التفاعل والتنقل السريع بين الأقسام -->
+        <div class="col-md-5 d-flex justify-content-md-end align-items-center gap-2 mt-3 mt-md-0 flex-wrap">
+            {% if not request.user|has_exec_perm:'renewal.change_department' and not request.user|has_exec_perm:'change_department' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+            {% if request.user.role != 'academic_dept' %}
+            <div class="d-flex align-items-center bg-white p-1 rounded border shadow-sm">
+                <label class="small fw-bold text-muted px-2">التنقل السريع:</label>
+                <select onchange="if(this.value) window.location.href=this.value;" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: auto;">
+                    {% for dept in all_departments %}
+                    <option value="{% url 'renewal:department_detail' dept_code=dept.code %}" {% if dept.id == department.id %}selected{% endif %}>
+                        {{ dept.name }} ({{ dept.code }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            {% endif %}
+
+            <!-- 🖨️ زر طباعة التقرير الشامل للقسم المختار -->
+            <button type="button" onclick="window.printDepartmentSummaryReport()" class="btn btn-custom-primary btn-sm d-flex align-items-center gap-1 shadow-sm no-print">
+                <span class="material-symbols-outlined fs-5">print</span>
+                <span>طباعة التقرير الشامل</span>
+            </button>
+
+            {% if request.user.role != 'academic_dept' %}
+            <a href="{% url 'renewal:department_list' %}" class="btn btn-custom-secondary btn-sm d-flex align-items-center gap-1 no-print">
+                <span class="material-symbols-outlined fs-5">arrow_back</span>
+                <span>رجوع للدليل</span>
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not department.is_active %}
+    <!-- ⚠️ تنبيه عند إيقاف/تجميد القسم -->
+    <div class="alert alert-danger d-flex align-items-center shadow-sm mb-4 no-print" role="alert">
+        <span class="material-symbols-outlined fs-2 me-3">warning</span>
+        <div>
+            <h5 class="alert-heading fw-bold mb-1">⚠️ هذا القسم العلمي غير مفعّل حالياً (موقوف - أرشيف فقط)</h5>
+            <p class="small mb-0">يُحظر إجراء أي عمليات تجديد قيد، تنزيل مواد، أو إضافة أعضاء جدد بهذا القسم. جميع الاستعلامات والتقارير التاريخية تظل متاحة فقط.</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- 📊 كروت الإحصائيات العلوية الأساسية -->
+    <div class="row g-3 mb-4">
+        
+        <!-- كرت 1: إجمالي الطلاب -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">إجمالي الطلاب المسجلين</span>
+                    <h3 class="fw-extrabold text-dark mb-1">{{ total_all_students|default:total_students }}</h3>
+                    <div class="d-flex flex-wrap gap-1">
+                        <span class="badge bg-success-subtle text-success">منتظم: {{ regular_students_count|default:active_students }}</span>
+                        <span class="badge bg-warning-subtle text-warning">موقوف: {{ suspended_students_count|default:suspended_students }}</span>
+                        <span class="badge bg-danger-subtle text-danger">مسحوب: {{ withdrawn_students_count|default:withdrawn_students }}</span>
+                    </div>
+                </div>
+                <div class="stat-icon-box bg-primary-subtle text-primary">
+                    <span class="material-symbols-outlined">groups</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- كرت 2: هيئة التدريس -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">هيئة التدريس والأساتذة</span>
+                    <h3 class="fw-extrabold text-teal mb-1" style="color: #0d9488;">{{ faculty_count }}</h3>
+                    <span class="badge bg-teal-subtle text-teal">أساتذة نشطون بالقسم</span>
+                </div>
+                <div class="stat-icon-box bg-teal-subtle text-teal" style="background-color: #ccfbf1; color: #0d9488;">
+                    <span class="material-symbols-outlined">record_voice_over</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- كرت 3: انخفاض الأداء (GPA < 2.0) -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">تنبيه انخفاض الأداء (GPA &lt; 2.0)</span>
+                    <h3 class="fw-extrabold text-danger mb-1">{{ low_gpa_count }}</h3>
+                    <span class="badge bg-danger-subtle text-danger">تحت الإنذار / تعثر</span>
+                </div>
+                <div class="stat-icon-box bg-danger-subtle text-danger">
+                    <span class="material-symbols-outlined">warning</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- كرت 4: المواد والشعب المعتمدة -->
+        <div class="col-12 col-sm-6 col-lg-3">
+            <div class="stat-card d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-bold d-block mb-1">المواد الشعب بالقسم</span>
+                    <h3 class="fw-extrabold text-indigo mb-1" style="color: #4f46e5;">{{ courses_count }}</h3>
+                    <span class="badge bg-indigo-subtle text-indigo" style="background-color: #e0e7ff; color: #4f46e5;">شعبة: {{ groups_count }}</span>
+                </div>
+                <div class="stat-icon-box bg-indigo-subtle text-indigo" style="background-color: #e0e7ff; color: #4f46e5;">
+                    <span class="material-symbols-outlined">menu_book</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 📊 قسم التحليلات والرسوم البيانية التفاعلية للقسم -->
+    <div class="card border-0 shadow-sm rounded-3 mb-4 no-print">
+        <div class="card-header bg-white border-bottom py-3">
+            <h5 class="card-title fw-bold text-dark d-flex align-items-center gap-2 m-0">
+                <span class="material-symbols-outlined text-primary fs-4">analytics</span>
+                <span>التحليلات والرسوم البيانية التفاعلية للقسم</span>
+            </h5>
+            <p class="text-muted small fw-semibold mb-0 mt-1">لوحة إحصائية شاملة لأداء وحالات الطلاب والمقررات الأكثر رسوباً ومسار المعدل التراكمي</p>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                
+                <div class="col-12 col-lg-6">
+                    <div class="card border bg-light mb-3">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-1">
+                                    <span class="material-symbols-outlined text-success fs-5">pie_chart</span>
+                                    1. توزيع حالات طلاب القسم
+                                </h6>
+                                <span class="badge bg-white text-dark border">Doughnut</span>
+                            </div>
+                            <div class="position-relative w-100 d-flex justify-content-center align-items-center" style="height: 240px;">
+                                <canvas id="chartStudentStatus"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card border bg-light">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-1">
+                                    <span class="material-symbols-outlined text-indigo fs-5" style="color: #4f46e5;">show_chart</span>
+                                    2. مسار متوسط المعدل التراكمي حسب المستوى
+                                </h6>
+                                <span class="badge bg-white text-dark border">Line Chart</span>
+                            </div>
+                            <div class="position-relative w-100 d-flex justify-content-center align-items-center" style="height: 240px;">
+                                <canvas id="chartGpaTrend"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-12 col-lg-6">
+                    <div class="card border bg-light h-100">
+                        <div class="card-body p-3 d-flex flex-column justify-content-between">
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center pb-2 mb-2 border-bottom flex-wrap gap-2">
+                                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-1">
+                                        <span class="material-symbols-outlined text-danger fs-5">bar_chart</span>
+                                        3. أكثر 5 مواد إخفاقاً
+                                    </h6>
+                                    <div class="d-flex align-items-center bg-white px-2 py-1 rounded border">
+                                        <label for="deptLevelFilter" class="small fw-bold me-1 text-muted">المستوى:</label>
+                                        <select id="deptLevelFilter" onchange="window.loadTopFailedCoursesOnly(this.value)" class="form-select form-select-sm fw-bold border-0 bg-transparent" style="width: auto;">
+                                            <option value="all">—— جميع المستويات ——</option>
+                                            {% for lvl in levels %}
+                                            <option value="{{ lvl.id }}">{{ lvl.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="text-muted extra-small fw-semibold mb-2" style="font-size: 0.75rem;">تتحدث نتائج الرسم الشريطي فور تحديد المستوى الدراسي من القائمة أعلاه.</p>
+                            </div>
+                            <div class="position-relative w-100 d-flex justify-content-center align-items-center py-2" style="height: 460px;">
+                                <canvas id="chartTopFailedCourses"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 📑 تبويبات البيانات والصفوف التفصيلية (Bootstrap Nav Tabs) -->
+    <div class="card border-0 shadow-sm rounded-3 overflow-hidden" x-data="{ activeTab: 'students' }">
+        
+        <!-- أزرار التبويبات -->
+        <ul class="nav nav-tabs nav-tabs-custom no-print" id="deptDetailTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button @click="activeTab = 'students'" :class="{ 'active': activeTab === 'students' }" class="nav-link d-flex align-items-center gap-1" type="button">
+                    <span class="material-symbols-outlined fs-5">groups</span>
+                    <span>الطلاب المقيدين بالقسم ({{ total_students }})</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button @click="activeTab = 'faculty'" :class="{ 'active': activeTab === 'faculty' }" class="nav-link d-flex align-items-center gap-1" type="button">
+                    <span class="material-symbols-outlined fs-5">badge</span>
+                    <span>أعضاء هيئة التدريس والموظفين ({{ total_faculty_staff_count|default:faculty_count }})</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button @click="activeTab = 'courses'" :class="{ 'active': activeTab === 'courses' }" class="nav-link d-flex align-items-center gap-1" type="button">
+                    <span class="material-symbols-outlined fs-5">menu_book</span>
+                    <span>المقررات الدراسية ({{ courses_count }})</span>
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button @click="activeTab = 'groups'" :class="{ 'active': activeTab === 'groups' }" class="nav-link d-flex align-items-center gap-1" type="button">
+                    <span class="material-symbols-outlined fs-5">diversity_3</span>
+                    <span>المجموعات والشعب ({{ groups_count }})</span>
+                </button>
+            </li>
+        </ul>
+
+        <div class="card-body p-4">
+            
+            <!-- 👥 تبويب 1: الطلاب المقيدين بالقسم (عرض جدول الطلاب المباشر + زر طباعة كشف الطلاب) -->
+            <div x-show="activeTab === 'students'">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                    <h6 class="fw-bold text-dark m-0 d-flex align-items-center gap-2">
+                        <span class="material-symbols-outlined text-primary fs-5">groups</span>
+                        <span>كشف الطلاب المقيدين بقسم {{ department.name }} ({{ total_students }} طالب)</span>
+                    </h6>
+                    <!-- 🖨️ زر طباعة قائمة طلاب القسم الأبجدي الرباعي المباشر -->
+                    <button type="button" onclick="window.printDepartmentStudentsReport()" class="btn btn-custom-print d-flex align-items-center gap-2 shadow-sm">
+                        <span class="material-symbols-outlined fs-5">print</span>
+                        <span>طباعة قائمة طلاب القسم (مرتب أبجديًا)</span>
+                    </button>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom text-end align-middle" id="deptStudentsTable">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 50px;">#</th>
+                                <th class="text-center" style="width: 120px;">رقم القيد</th>
+                                <th class="text-start">اسم الطالب الثلاثي / الرباعي</th>
+                                <th class="text-center" style="width: 140px;">القسم الأكاديمي</th>
+                                <th class="text-center" style="width: 110px;">المستوى</th>
+                                <th class="text-center" style="width: 120px;">المجموعة / الشعبة</th>
+                                <th class="text-center" style="width: 100px;">حالة الطالب</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in students_data %}
+                            {% with st=item.student|default:item %}
+                            <tr>
+                                <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                                <td class="text-center font-monospace fw-bold text-primary">{% firstof st.student_id st.id %}</td>
+                                <td class="text-start fw-bold text-dark">{% firstof st.full_name st.name %}</td>
+                                <td class="text-center fw-semibold text-secondary">{{ department.name }}</td>
+                                <td class="text-center fw-semibold">{% firstof st.level.name st.level "المستوى 1" %}</td>
+                                <td class="text-center fw-bold text-info">{% firstof st.group.name st.group_name "عام" %}</td>
+                                <td class="text-center">
+                                    {% if st.status == 'منتظم' or st.status == 'مستمر' or st.is_active %}
+                                    <span class="badge bg-success-subtle text-success">● منتظم</span>
+                                    {% else %}
+                                    <span class="badge bg-warning-subtle text-warning">{% firstof st.status "موقوف" %}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center text-muted py-4 fw-semibold">
+                                    لا يوجد طلاب مقيدين بهذا القسم حالياً.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 👨‍🏫 تبويب 2: أعضاء هيئة التدريس والموظفين -->
+            <div x-show="activeTab === 'faculty'" style="display: none;">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-teal fs-5" style="color: #0d9488;">badge</span>
+                    أعضاء هيئة التدريس والموظفين التابعين لقسم {{ department.name }}
+                </h6>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom text-end align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 45px;">#</th>
+                                <th class="text-center" style="width: 120px;">الرقم الوظيفي</th>
+                                <th class="text-start">الاسم الكامل</th>
+                                <th class="text-center" style="width: 140px;">الفئة / الصفة</th>
+                                <th class="text-center" style="width: 160px;">المسمى الوظيفي / التخصص</th>
+                                <th class="text-center" style="width: 160px;">بيانات التواصل</th>
+                                <th class="text-start" style="width: 220px;">المواد المسندة / المهام</th>
+                                <th class="text-center" style="width: 90px;">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for person in faculty_and_staff_list %}
+                            <tr>
+                                <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                                <td class="text-center font-monospace fw-bold text-teal" style="color: #0d9488;">{{ person.identifier }}</td>
+                                <td class="text-start fw-bold text-dark">{{ person.name }}</td>
+                                <td class="text-center">
+                                    <span class="{{ person.category_badge|default:'badge-role-faculty' }}">
+                                        {% if person.category_icon %}<span class="material-symbols-outlined" style="font-size: 14px; vertical-align: middle;">{{ person.category_icon }}</span>{% endif %}
+                                        <span>{{ person.category|default:"عضو هيئة تدريس" }}</span>
+                                    </span>
+                                </td>
+                                <td class="text-center fw-semibold text-secondary">{{ person.title_or_spec }}</td>
+                                <td class="text-center font-monospace small text-muted">
+                                    <div>{{ person.phone|default:"-" }}</div>
+                                    <div class="extra-small text-muted">{{ person.email|default:"" }}</div>
+                                </td>
+                                <td>
+                                    {% if person.assigned_courses_list %}
+                                    <div class="d-flex flex-wrap gap-1">
+                                        {% for cname in person.assigned_courses_list %}
+                                        <span class="badge-course-item">
+                                            {{ cname }}
+                                        </span>
+                                        {% endfor %}
+                                    </div>
+                                    {% else %}
+                                    <span class="text-muted small">{{ person.assigned_info }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    {% if person.is_active %}
+                                    <span class="badge bg-success-subtle text-success">نشط</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger">غير نشط</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center text-muted py-4 fw-semibold">لا يوجد أعضاء هيئة تدريس أو موظفين مسجلين بهذا القسم حالياً.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 📚 تبويب 3: المقررات الدراسية المعتمدة -->
+            <div x-show="activeTab === 'courses'" style="display: none;">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-teal fs-5" style="color: #0d9488;">menu_book</span>
+                    المقررات الدراسية المعتمدة بقسم {{ department.name }}
+                </h6>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom text-end align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 50px;">#</th>
+                                <th class="text-center" style="width: 120px;">رمز المادة</th>
+                                <th class="text-start" style="width: 140px;">اسم المقرر الدراسي</th>
+                                <th class="text-center" style="width: 90px;">الساعات</th>
+                                <th class="text-center" style="width: 140px;">المستوى الدراسي</th>
+                                <th class="text-center" style="width: 100px;">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cr in courses %}
+                            <tr>
+                                <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                                <td class="text-center font-monospace fw-bold text-teal" style="color: #0d9488;">{{ cr.code }}</td>
+                                <td class="text-start fw-bold text-dark">{{ cr.name }}</td>
+                                <td class="text-center fw-bold text-warning">{{ cr.credits }}</td>
+                                <td class="text-center fw-semibold text-secondary">{{ cr.level.name|default:"المستوى 1" }}</td>
+                                <td class="text-center">
+                                    {% if cr.is_active %}
+                                    <span class="badge bg-success-subtle text-success">نشطة</span>
+                                    {% else %}
+                                    <span class="badge bg-danger-subtle text-danger">غير مفعلة</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4 fw-semibold">لا توجد مواد دراسية مسجلة لهذا القسم.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 🏫 تبويب 4: المجموعات والشعب -->
+            <div x-show="activeTab === 'groups'" style="display: none;">
+                <h6 class="fw-bold text-dark mb-3 d-flex align-items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo fs-5" style="color: #4f46e5;">diversity_3</span>
+                    المجموعات والشعب بالقسم
+                </h6>
+
+                <div class="table-responsive">
+                    <table class="table table-hover table-bordered table-custom text-end align-middle">
+                        <thead>
+                            <tr>
+                                <th class="text-center" style="width: 50px;">#</th>
+                                <th class="text-start" style="width: 110x;">اسم المجموعة / الشعبة</th>
+                                <th class="text-center" style="width: 140px;">المستوى</th>
+                                <th class="text-center" style="width: 130px;">السنة الدراسية</th>
+                                <th class="text-center" style="width: 130px;">الفصل الدراسي</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for gr in groups %}
+                            <tr>
+                                <td class="text-center fw-bold">{{ forloop.counter }}</td>
+                                <td class="text-start fw-bold text-dark">{{ gr.name }}</td>
+                                <td class="text-center fw-semibold text-secondary">{{ gr.level.name|default:"المستوى 1" }}</td>
+                                <td class="text-center font-monospace">{{ gr.academic_year }}</td>
+                                <td class="text-center fw-semibold">{{ gr.semester }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4 fw-semibold">لا توجد شعب أو مجموعات مسجلة لهذا القسم.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<!-- 🏛️ سطر جلب المسؤولين المتكامل -->
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script>
+    window.DEPT_NAME = "{{ department.name|escapejs }}";
+    window.DEPT_CODE = "{{ department.code|escapejs }}";
+</script>
+<script src="{% static 'renewal/js/department_detail.js' %}?v=2.4.0"></script>
+{% endblock %}

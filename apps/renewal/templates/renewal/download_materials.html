@@ -1,0 +1,665 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تنزيل المواد - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main download-materials-page" dir="rtl">
+    <div class="download-materials-container" style="max-width: 1280px; margin: 0 auto; width: 100%; display: block; box-sizing: border-box;">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">واجهة تنزيل المواد الدراسية</h1>
+                <p class="page-header-subtitle">إدارة تنزيل المواد للطلاب حسب الفصل الدراسي</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_courseregistration' and not request.user|has_exec_perm:'renewal.change_courseregistration' and not request.user|has_exec_perm:'add_courseregistration' and not request.user|has_exec_perm:'change_courseregistration' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_download_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+               <span id="jobInactiveBannerText">{% if not is_download_job_open %}{{ download_job_message }}{% endif %}</span>
+            </div>
+        </div>
+
+        <div class="group-box inquiry-group-box">
+            <span class="group-title">تنزيل مواد الفصل (جماعي)</span>
+
+            <div class="download-filters-row">
+                <div class="filter-item">
+                    <label class="field-label">التخصص</label>
+                    <select id="majorSelect" class="filter-control">
+                        <option value="">اختر التخصص</option>
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="field-label">المستوى/الفصل</label>
+                    <select id="levelSelect" class="filter-control">
+                        <option value="">-- اختر المستوى --</option>
+                        {% for level in levels %}
+                        <option value="{{ level.id }}">{{ level.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-item">
+                    <label class="field-label">نوع الفصل</label>
+                    <select id="seasonSelect" disabled class="filter-control">
+                        {% if active_semester %}
+                        <option value="{{ active_semester.type }}" selected>{{ active_semester.get_type_display }}</option>
+                        {% else %}
+                        <option value="">— لا يوجد فصل فعّال —</option>
+                        {% endif %}
+                    </select>
+                    <input type="hidden" id="seasonSelectValue" value="{% if active_semester %}{{ active_semester.type }}{% endif %}">
+                </div>
+                <div class="filter-item">
+                    <label class="field-label">السنة الدراسية</label>
+                    <input type="text" id="yearInput" class="filter-control" value="{% if active_semester %}{{ active_semester.year }}{% else %}{% endif %}" readonly>
+                </div>
+                <div class="filter-item filter-btn-item">
+                    <label class="field-label">&nbsp;</label>
+                    <button id="btnFetchStudents" class="btn-action btn-search filter-action-btn" onclick="window.loadStudentsData()" style="background-color: #307e92;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">downloading</span> تحميل الطلبة
+                    </button>
+                </div>
+                <div class="filter-item filter-btn-item">
+                    <label class="field-label">&nbsp;</label>
+                    <button id="btnShowSemesterCourses" class="btn-action btn-search filter-action-btn" onclick="window.viewSemesterPlan()" style="background-color: #0d9488;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">library_books</span> عرض مواد الفصل
+                    </button>
+                </div>
+            </div>
+
+            <!-- جدول الطلاب داخل القروب بوكس -->
+            <div id="studentTableWrapper" style="display: block;">
+                <!-- شريط تحديد الكل فوق الجدول -->
+                <div class="select-all-bar" style="display: flex; align-items: center; gap: 8px; padding: 4px 10px; background: #f1f5f9; border-radius: 6px 6px 0 0; border-bottom: 2px solid #307e92; margin-bottom: 0;">
+                    <div class="select-all-group" style="display: flex; align-items: center; gap: 6px;">
+                        <input type="checkbox" id="selectAll" class="checkbox-input" onclick="window.toggleAllStudents(this)" style="width: 14px; height: 14px; cursor: pointer; accent-color: #307e92;">
+                        <label for="selectAll" class="checkbox-label" style="font-weight: 700; font-size: 0.75rem; color: #1e293b; cursor: pointer;">تحديد الكل</label>
+                    </div>
+                    <span style="color: #64748b; font-size: 0.7rem; font-weight: 600;" id="selectedCount">(0 طالب محدد)</span>
+                </div>
+
+                <div class="table-responsive" style="overflow-x: auto; border-radius: 0 0 6px 6px; border: 1px solid #e2e8f0; border-top: none; background: white;">
+                    <table class="data-table" id="studentsTable" style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+                        <thead>
+                            <tr style="background: #f1f5f9; border-bottom: 2px solid #307e92;">
+                                <th style="width: 40px; text-align: center; padding: 5px 6px; font-weight: 700; color: #1e293b; font-size: 0.7rem;">تحديد</th>
+                                <th style="text-align: center; padding: 5px 6px; font-weight: 700; color: #1e293b; font-size: 0.7rem;">رقم القيد</th>
+                                <th style="text-align: right; padding: 5px 6px; font-weight: 700; color: #1e293b; font-size: 0.7rem;">اسم الطالب</th>
+                                <th style="text-align: center; padding: 5px 6px; font-weight: 700; color: #1e293b; font-size: 0.7rem;">المستوى الحالي</th>
+                                <th style="text-align: center; width: 220px; padding: 5px 6px; font-weight: 700; color: #1e293b; font-size: 0.7rem;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="studentsTableBody">
+                            <tr class="empty-row">
+                                <td colspan="5" class="empty-cell" style="text-align: center; padding: 20px; color: #94a3b8; font-size: 0.75rem;">لا توجد بيانات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- الأزرار السفلية -->
+        <div id="studentSelectionSection" style="display: block;">
+            <div class="buttons-row mt-6" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;">
+                {% if request.user|has_exec_perm:'renewal.add_courseregistration' or request.user|has_exec_perm:'renewal.change_courseregistration' or request.user|has_exec_perm:'add_courseregistration' or request.user|has_exec_perm:'change_courseregistration' %}
+                <button id="btnDownloadMaterials" class="btn-action btn-save" onclick="window.downloadMaterials()" style="background-color: #0f766e; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">library_add</span> تنزيل المواد للمحددين
+                </button>
+                {% endif %}
+                <button class="btn-action btn-print" onclick="window.printPage()" style="background-color: #b59b66; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">print</span> طباعة التقرير
+                </button>
+                <button class="btn-action btn-exit" onclick="window.goBack()" style="background-color: #64748b; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> رجوع
+                </button>
+            </div>
+
+            <!-- 🔄 زر عرض الطلاب المسجلين مسبقاً -->
+            <div id="registeredStudentsToggleBar" style="display:none; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                <button onclick="window.toggleRegisteredStudentsTable()" style="background-color: #0e7490; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                    <span id="registeredToggleLabel">عرض الطلاب الذين تم تنزيل موادهم لهذا الفصل</span>
+                    <span id="registeredStudentsBadge" style="background:#0e7490; border:1px solid white; border-radius:10px; padding:1px 8px; font-size:0.65rem;">0</span>
+                </button>
+            </div>
+
+            <!-- 📖 جدول الطلاب المسجلين مسبقاً (Hidden افتراضياً) -->
+            <div id="registeredStudentsSection" style="display: none; margin-top: 8px;">
+                <div style="background:#f0fdfa; border:1px solid #99f6e4; border-radius:6px; overflow:hidden;">
+                    <div style="padding: 6px 12px; background:#0e7490; color:white; font-weight:700; font-size:0.75rem; display:flex; align-items:center; gap:6px;">
+                        <span class="material-symbols-outlined" style="font-size:15px;">assignment_turned_in</span>
+                        الطلاب الذين تم تنزيل موادهم لهذا الفصل
+                    </div>
+                    <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+                        <thead>
+                            <tr style="background:#ccfbf1; border-bottom:1px solid #99f6e4;">
+                                <th style="padding:5px 8px; text-align:center; font-weight:700; color:#064e3b; font-size:0.7rem; width:120px;">رقم القيد</th>
+                                <th style="padding:5px 8px; text-align:right; font-weight:700; color:#064e3b; font-size:0.7rem;">اسم الطالب</th>
+                                <th style="padding:5px 8px; text-align:center; font-weight:700; color:#064e3b; font-size:0.7rem; width:240px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody id="registeredStudentsTableBody">
+                            <tr>
+                                <td colspan="3" style="text-align:center; padding:12px; color:#64748b; font-size:0.75rem;">لا توجد بيانات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Modal: عرض مواد الفصل الدراسي ===== -->
+        <div id="semesterCoursesSection" style="display:none; position:fixed; inset:0; z-index:9990; background:rgba(15,23,42,0.55); backdrop-filter:blur(2px); overflow-y:auto; padding:20px;">
+            <div style="max-width:760px; margin:40px auto; background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden;">
+
+                <!-- Header -->
+                <div style="background:linear-gradient(135deg,#0f766e,#0e7490); padding:14px 20px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-outlined" style="color:white; font-size:20px;">menu_book</span>
+                        <span id="semesterCoursesTitle" style="color:white; font-weight:700; font-size:0.9rem;">مواد الفصل الدراسي</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button onclick="window.printSemesterPlan()" style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:5px; padding:4px 12px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">print</span> طباعة
+                        </button>
+                        <button onclick="window.closeSemesterView()" style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:5px; padding:4px 12px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">close</span> إغلاق
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div id="semesterCoursesTableWrapper" style="overflow-x:auto; padding:0 0 12px 0;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                        <thead>
+                            <tr style="background:#f1f5f9; border-bottom:2px solid #0f766e;">
+                                <th style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:100px;">رمز المادة</th>
+                                <th style="padding:8px 10px; text-align:right; font-weight:700; color:#1e293b; font-size:0.72rem;">اسم المادة</th>
+                                <th style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:70px;">الوحدات</th>
+                                <th style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:130px;">المتطلب السابق</th>
+                            </tr>
+                        </thead>
+                        <tbody id="semesterCoursesTableBody">
+                            <tr class="empty-row">
+                                <td colspan="4" style="text-align:center; padding:30px; color:#94a3b8; font-size:0.8rem;">⏳ جاري التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer count -->
+                <div style="padding:8px 16px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:0.72rem; color:#64748b; font-weight:600; text-align:left;">
+                    <span id="semesterCoursesCount">0</span> مادة دراسية
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Success Toast Notification -->
+        <div id="toastNotification" style="position: fixed; bottom: 30px; left: 30px; z-index: 9999; transform: translateY(80px); opacity: 0; transition: all 0.3s ease; max-width: 350px; width: 100%; background: white; border-right: 4px solid #10b981; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.15); padding: 16px 20px; display: flex; align-items: center; gap: 12px;">
+            <span id="toastIcon" class="material-symbols-outlined" style="font-size: 28px; color: #10b981;">check_circle</span>
+            <p id="toastMessage" style="margin: 0; font-size: 0.9rem; font-weight: 700; color: #1e293b;"></p>
+        </div>
+
+        <!-- وعاء التقرير الرسمي المخصص للطباعة فقط -->
+        <div id="printReportContainer"></div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 📐 Single Line Filter Controls Alignment */
+    .download-filters-row {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        align-items: flex-end !important;
+        gap: 12px !important;
+        margin-bottom: 14px !important;
+        width: 100% !important;
+    }
+
+    .download-filters-row .filter-item {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 150px !important;
+        min-width: 130px !important;
+        gap: 0 !important;
+        position: relative !important;
+    }
+
+    .download-filters-row .filter-item.filter-btn-item {
+        flex: 0 0 auto !important;
+        min-width: auto !important;
+    }
+
+    .download-filters-row .field-label {
+        display: flex !important;
+        align-items: center !important;
+        font-weight: 700 !important;
+        font-size: 0.78rem !important;
+        color: #475569 !important;
+        white-space: nowrap !important;
+        line-height: 1.2 !important;
+        height: 18px !important;
+        margin: 0 0 4px 0 !important;
+        padding: 0 !important;
+    }
+
+    html.dark .download-filters-row .field-label {
+        color: #38bdf8 !important;
+    }
+
+    .download-filters-row .filter-control,
+    .download-filters-row input#yearInput,
+    .download-filters-row .custom-select-trigger,
+    .download-filters-row .filter-action-btn {
+        height: 38px !important;
+        min-height: 38px !important;
+        max-height: 38px !important;
+        box-sizing: border-box !important;
+        border-radius: 6px !important;
+        font-size: 0.8rem !important;
+        font-weight: 600 !important;
+        margin: 0 !important;
+    }
+
+    .download-filters-row input#yearInput {
+        width: 100% !important;
+        padding: 0 10px !important;
+        line-height: 36px !important;
+        border: 1.5px solid #cbd5e1 !important;
+        background-color: #f8fafc !important;
+        color: #475569 !important;
+        cursor: not-allowed !important;
+    }
+
+    html.dark .download-filters-row input#yearInput {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #cbd5e1 !important;
+    }
+
+    .download-filters-row .custom-select-wrapper {
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        position: relative !important;
+    }
+
+    .download-filters-row .custom-select-trigger {
+        width: 100% !important;
+        padding: 0 10px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        border: 1.5px solid #cbd5e1 !important;
+    }
+
+    .download-filters-row select.custom-select-converted {
+        display: none !important;
+    }
+
+    .download-filters-row .filter-action-btn {
+        padding: 0 14px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 4px !important;
+        color: white !important;
+        border: none !important;
+        cursor: pointer !important;
+        font-weight: 700 !important;
+    }
+
+    /* 🌙 Global Dark Mode Sweep for Download Materials Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .download-materials-page,
+    html.dark .download-materials-container,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-title,
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Container Boxes & Group Cards */
+    html.dark .group-box,
+    html.dark .inquiry-group-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+
+    /* Labels, Controls & Selects */
+    html.dark .field-label,
+    html.dark label {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark input[type="email"],
+    html.dark #seasonSelect,
+    html.dark #yearInput,
+    html.dark #majorSelect,
+    html.dark #levelSelect {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark select:disabled,
+    html.dark input:read-only {
+        background-color: #0f172a !important;
+        color: #94a3b8 !important;
+        opacity: 0.8;
+    }
+
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    /* Select All Bar & Table Wrapper */
+    html.dark .select-all-bar,
+    html.dark div[style*="background: #f1f5f9"],
+    html.dark div[style*="background:#f1f5f9"] {
+        background-color: #0f172a !important;
+        border-bottom-color: #38bdf8 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .select-all-bar label,
+    html.dark #selectedCount {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .table-responsive,
+    html.dark div[style*="background: white"],
+    html.dark div[style*="background:white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    /* Data Tables & Rows */
+    html.dark .data-table,
+    html.dark #studentsTable,
+    html.dark #semesterCoursesTableWrapper table {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead tr,
+    html.dark #studentsTable thead tr,
+    html.dark tr[style*="background: #f1f5f9"],
+    html.dark tr[style*="background:#f1f5f9"] {
+        background-color: #0f172a !important;
+        border-bottom-color: #38bdf8 !important;
+    }
+
+    html.dark .data-table th,
+    html.dark #studentsTable th,
+    html.dark #semesterCoursesTableWrapper th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table td,
+    html.dark #studentsTable td,
+    html.dark #studentsTableBody td,
+    html.dark #semesterCoursesTableBody td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tr:hover td,
+    html.dark #studentsTable tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    /* Registered Students Box */
+    html.dark #registeredStudentsSection div[style*="background:#f0fdfa"] {
+        background-color: #0f172a !important;
+        border-color: #0e7490 !important;
+    }
+
+    html.dark #registeredStudentsSection tr[style*="background:#ccfbf1"] th {
+        background-color: #0c4a6e !important;
+        color: #38bdf8 !important;
+        border-color: #0e7490 !important;
+    }
+
+    /* Sub-row (Student Downloaded/Eligible Courses Table) */
+    html.dark .sub-row,
+    html.dark tr[id^="sub-row-"] {
+        background-color: #0f172a !important;
+    }
+
+    html.dark .sub-row td,
+    html.dark tr[id^="sub-row-"] td {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .sub-row div[style*="background: linear-gradient"],
+    html.dark .sub-row div[style*="background:linear-gradient"] {
+        background: #1e293b !important;
+        border-color: #0d9488 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+
+    html.dark .sub-row table {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .sub-row thead tr,
+    html.dark .sub-row tr[style*="background-color: #ccfbf1"] {
+        background-color: #0f172a !important;
+        color: #2dd4bf !important;
+    }
+
+    html.dark .sub-row thead th {
+        border-bottom-color: #0d9488 !important;
+        color: #2dd4bf !important;
+    }
+
+    html.dark .sub-row tbody tr,
+    html.dark .sub-row tr[style*="background: white"] {
+        background-color: #1e293b !important;
+        border-bottom-color: #334155 !important;
+    }
+
+    html.dark .sub-row tbody tr:hover {
+        background-color: #334155 !important;
+    }
+
+    html.dark .sub-row tbody td {
+        background-color: transparent !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .sub-row tbody td span[style*="color: #1e293b"] {
+        color: #f8fafc !important;
+    }
+
+    html.dark .sub-row tbody td span[style*="color: #475569"] {
+        color: #94a3b8 !important;
+    }
+
+    html.dark .sub-row td[style*="background: #ecfdf5"] {
+        background: #064e3b !important;
+        color: #6ee7b7 !important;
+        border-bottom-color: #059669 !important;
+    }
+
+    /* Modal Styling */
+    html.dark #semesterCoursesSection div[style*="background:white"],
+    html.dark #semesterCoursesSection div[style*="background: white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark #semesterCoursesSection div[style*="background:#f8fafc"] {
+        background-color: #0f172a !important;
+        border-top-color: #334155 !important;
+        color: #94a3b8 !important;
+    }
+
+    /* Toast Notification */
+    html.dark #toastNotification {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #f8fafc !important;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+
+    #printReportContainer { display: none !important; }
+
+    @media print {
+        @page { size: A4 portrait; margin: 6mm 6mm; }
+
+        body > *:not(#printReportContainer) {
+            display: none !important; visibility: hidden !important;
+            height: 0 !important; overflow: hidden !important;
+        }
+
+        #printReportContainer {
+            display: block !important; visibility: visible !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
+            right: 0 !important; width: 100% !important; margin: 0 !important;
+            padding: 5px !important; background: #fff !important; color: #000 !important;
+            direction: rtl !important; z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        }
+        #printReportContainer * { visibility: visible !important; }
+
+        .print-page-frame {
+            border: 2px solid #000 !important; padding: 22px 28px !important;
+            margin: 0 auto !important; width: 100% !important; min-height: 275mm !important;
+            box-sizing: border-box !important; background: #fff !important; color: #000 !important;
+            direction: rtl !important; font-family: 'Segoe UI', Tahoma, sans-serif !important;
+            display: flex !important; flex-direction: column !important; justify-content: flex-start !important;
+        }
+
+        .print-header-section {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin-bottom: 6px !important;
+            direction: rtl !important;
+        }
+        .print-header-ar {
+            flex: 1 !important;
+            text-align: center !important;
+            font-size: 11.5px !important;
+            line-height: 1.5 !important;
+            color: #000 !important;
+        }
+        .print-header-logo-box {
+            flex: 0 0 95px !important;
+            text-align: center !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            padding: 0 10px !important;
+        }
+        .print-college-logo {
+            max-height: 75px !important;
+            max-width: 75px !important;
+            width: auto !important;
+            object-fit: contain !important;
+            display: block !important;
+            margin: 0 auto !important;
+        }
+        .print-header-en {
+            flex: 1 !important;
+            text-align: center !important;
+            font-size: 10px !important;
+            line-height: 1.35 !important;
+            color: #000 !important;
+            direction: ltr !important;
+            font-family: Arial, 'Segoe UI', Tahoma, sans-serif !important;
+        }
+        .print-header-line { width: 100% !important; margin: 6px 0 10px !important; border-top: 1.5px solid #000 !important; }
+        .print-main-title { font-size: 16.5px !important; font-weight: 900 !important; color: #000 !important; text-align: center !important; margin: 4px 0 10px !important; }
+
+        .print-info-grid {
+            display: flex !important; justify-content: space-between !important;
+            align-items: flex-start !important; margin: 10px 0 10px !important;
+            font-size: 13px !important; direction: rtl !important;
+        }
+        .print-info-right { text-align: right !important; line-height: 1.9 !important; }
+        .print-info-left  { text-align: left !important; line-height: 1.9 !important; direction: rtl !important; }
+        .info-lbl { font-weight: bold !important; color: #000 !important; }
+        .info-val { font-weight: bold !important; color: #000 !important; }
+
+        .print-table-container { margin-bottom: 20px !important; }
+        .print-table { width: 100% !important; border-collapse: collapse !important; font-size: 13px !important; direction: rtl !important; }
+        .print-table th { border: 1.5px solid #000 !important; padding: 8px 6px !important; font-weight: bold !important; text-align: center !important; background: #fff !important; color: #000 !important; }
+        .print-table td { border: 1px solid #000 !important; padding: 8px 6px !important; color: #000 !important; background: #fff !important; }
+        .empty-print-cell { text-align: center !important; padding: 18px !important; font-weight: bold !important; }
+
+        .print-signature-box {
+            margin-top: 35px !important; padding-top: 0 !important;
+            text-align: left !important; margin-left: 20px !important;
+            page-break-inside: avoid !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+    const isDownloadJobOpen = "{{ is_download_job_open|yesno:'true,false' }}" === "true";
+    window.is_download_job_open = isDownloadJobOpen;
+    window.IS_DOWNLOAD_JOB_OPEN = isDownloadJobOpen;
+    window.DOWNLOAD_JOB_MESSAGE = "{{ download_job_message|escapejs }}";
+    window.CAN_DOWNLOAD_MATERIALS = {% if request.user|has_exec_perm:'renewal.add_courseregistration' or request.user|has_exec_perm:'renewal.change_courseregistration' or request.user|has_exec_perm:'add_courseregistration' or request.user|has_exec_perm:'change_courseregistration' %}true{% else %}false{% endif %};
+</script>
+<script src="{% static 'renewal/js/download_materials.js' %}?v=1.0.29"></script>
+{% endblock %}

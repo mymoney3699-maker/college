@@ -1,0 +1,1106 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم قسم الخريجين | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+    :root {
+        --grad-teal: #307e92;
+        --grad-teal-dark: #1e5563;
+        --grad-gold: #b59b66;
+        --grad-emerald: #10b981;
+        --grad-amber: #f59e0b;
+        --grad-rose: #f43f5e;
+        --grad-indigo: #6366f1;
+        --grad-bg-card: #ffffff;
+        --grad-card-border: #e2e8f0;
+        --grad-text-main: #0f172a;
+        --grad-text-muted: #64748b;
+        --grad-bg-subtle: #f8fafc;
+    }
+
+    html.dark {
+        --grad-bg-card: #1e293b;
+        --grad-card-border: #334155;
+        --grad-text-main: #f8fafc;
+        --grad-text-muted: #94a3b8;
+        --grad-bg-subtle: #0f172a;
+    }
+
+    .grad-dashboard {
+        width: 100%;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0.75rem 1.25rem 3.5rem 1.25rem;
+    }
+
+    /* Hero Banner Header - Clean & Purely Informative (No Buttons) */
+    .grad-hero-banner {
+        position: relative;
+        background: linear-gradient(135deg, #1e5563 0%, #307e92 55%, #18444f 100%);
+        border-radius: 20px;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2.25rem;
+        color: #ffffff;
+        box-shadow: 0 12px 32px -4px rgba(30, 85, 99, 0.32);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        overflow: hidden;
+    }
+
+    .grad-hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -70px;
+        left: -70px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .grad-hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -60px;
+        right: 20%;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(181, 155, 102, 0.22) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .grad-banner-title {
+        font-size: clamp(1.5rem, 2.4vw, 2.05rem);
+        font-weight: 900;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+    }
+
+    .grad-banner-desc {
+        font-size: 0.98rem;
+        color: rgba(255, 255, 255, 0.92);
+        margin: 0;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    /* 4 High-Impact KPI Metric Cards */
+    .grad-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.35rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .grad-kpi-card {
+        background: var(--grad-bg-card);
+        border: 1px solid var(--grad-card-border);
+        border-radius: 18px;
+        padding: 1.5rem 1.6rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s;
+    }
+
+    .grad-kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .grad-kpi-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+    }
+
+    .kpi-card-total::after { background: linear-gradient(90deg, #6366f1, #3b82f6); }
+    .kpi-card-ready::after { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-card-issued::after { background: linear-gradient(90deg, #307e92, #0284c7); }
+    .kpi-card-pending::after { background: linear-gradient(90deg, #f59e0b, #d97706); }
+
+    .grad-kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1.1rem;
+    }
+
+    .grad-kpi-icon-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .kpi-card-total .grad-kpi-icon-box { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+    .kpi-card-ready .grad-kpi-icon-box { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .kpi-card-issued .grad-kpi-icon-box { background: rgba(48, 126, 146, 0.12); color: #307e92; }
+    .kpi-card-pending .grad-kpi-icon-box { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+
+    .grad-kpi-label {
+        font-size: 0.86rem;
+        font-weight: 700;
+        color: var(--grad-text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .grad-kpi-value {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.2rem;
+        font-weight: 900;
+        line-height: 1;
+        color: var(--grad-text-main);
+    }
+
+    .grad-kpi-footer {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--grad-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding-top: 0.85rem;
+        border-top: 1px dashed var(--grad-card-border);
+    }
+
+    /* Quick Shortcuts Grid */
+    .grad-shortcuts-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.15rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .grad-shortcut-card {
+        background: var(--grad-bg-card);
+        border: 1px solid var(--grad-card-border);
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-decoration: none;
+        color: var(--grad-text-main);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+        transition: all 0.22s ease;
+    }
+
+    .grad-shortcut-card:hover {
+        border-color: var(--grad-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(48, 126, 146, 0.15);
+    }
+
+    .grad-shortcut-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        background: rgba(48, 126, 146, 0.1);
+        color: var(--grad-teal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .grad-shortcut-info h4 {
+        margin: 0;
+        font-size: 0.94rem;
+        font-weight: 800;
+        color: var(--grad-text-main);
+    }
+
+    .grad-shortcut-info p {
+        margin: 0.2rem 0 0 0;
+        font-size: 0.78rem;
+        color: var(--grad-text-muted);
+    }
+
+    /* Charts Row */
+    .grad-charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1.6fr;
+        gap: 1.35rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .grad-chart-card {
+        background: var(--grad-bg-card);
+        border: 1px solid var(--grad-card-border);
+        border-radius: 18px;
+        padding: 1.5rem 1.65rem;
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .grad-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.35rem;
+        padding-bottom: 0.9rem;
+        border-bottom: 1px solid var(--grad-card-border);
+    }
+
+    .grad-card-title {
+        font-size: 1.05rem;
+        font-weight: 900;
+        color: var(--grad-text-main);
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        margin: 0;
+    }
+
+    .grad-card-subtitle {
+        font-size: 0.8rem;
+        color: var(--grad-text-muted);
+        font-weight: 600;
+        margin: 0.25rem 0 0 0;
+    }
+
+    .grad-chart-container {
+        position: relative;
+        flex: 1;
+        min-height: 270px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Table Section */
+    .grad-table-card {
+        background: var(--grad-bg-card);
+        border: 1px solid var(--grad-card-border);
+        border-radius: 18px;
+        padding: 1.5rem 1.65rem;
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2.25rem;
+    }
+
+    .grad-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        margin-top: 1rem;
+    }
+
+    .grad-table th {
+        background: var(--grad-bg-subtle);
+        color: var(--grad-text-muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+        padding: 0.9rem 1.1rem;
+        text-align: right;
+        border-bottom: 1.5px solid var(--grad-card-border);
+    }
+
+    .grad-table td {
+        padding: 0.95rem 1.1rem;
+        border-bottom: 1px solid var(--grad-card-border);
+        font-size: 0.88rem;
+        font-weight: 700;
+        color: var(--grad-text-main);
+        vertical-align: middle;
+    }
+
+    .grad-table tr:hover td {
+        background: rgba(48, 126, 146, 0.03);
+    }
+
+    .grad-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.3rem 0.75rem;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .status-badge-issued {
+        background: rgba(48, 126, 146, 0.12);
+        color: var(--grad-teal);
+    }
+
+    .status-badge-ready {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    @media (max-width: 1200px) {
+        .grad-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .grad-shortcuts-grid { grid-template-columns: repeat(2, 1fr); }
+        .grad-charts-row { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+        .grad-kpi-grid { grid-template-columns: 1fr; }
+        .grad-shortcuts-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main grad-dashboard" dir="rtl">
+    <div class="grad-wrapper">
+
+        <!-- ===== 1. رأس الصفحة والترحيب (Hero Banner) ===== -->
+        <div class="grad-hero-banner" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+            <div style="position: relative; z-index: 2;">
+                <h1 class="grad-banner-title">
+                    <span class="material-symbols-outlined" style="font-size: 36px;">school</span>
+                    <span>لوحة تحكم قسم وإدارة الخريجين</span>
+                </h1>
+                <p class="grad-banner-desc">متابعة الخريجين، توثيق إخلاء الطرف، إصدار إفادات التخرج، وإحصائيات التخصصات الأكاديمية</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; position: relative; z-index: 2;">
+                <button type="button" onclick="printStatisticalReport()" class="grad-btn-print grad-btn-print-stat" title="طباعة اللوحة متضمنة جميع الرسوم البيانية والإحصائيات بدقة عالية" style="display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.68rem 1.25rem; border-radius: 12px; font-size: 0.9rem; font-weight: 800; text-decoration: none; cursor: pointer; transition: all 0.25s; border: 1.5px solid transparent; white-space: nowrap; background: #ffffff; color: #1e5563; box-shadow: 0 4px 14px rgba(0,0,0,0.12);">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+                    <span>طباعة التقرير الإحصائي والرسومات البيانية</span>
+                </button>
+                <button type="button" onclick="printStandardReport()" class="grad-btn-print grad-btn-print-std" title="طباعة ملخص البيانات النصية والجداول القياسية بشكل منظم" style="display: inline-flex; align-items: center; gap: 0.55rem; padding: 0.68rem 1.25rem; border-radius: 12px; font-size: 0.9rem; font-weight: 800; text-decoration: none; cursor: pointer; transition: all 0.25s; border: 1.5px solid rgba(255,255,255,0.35); white-space: nowrap; background: rgba(255,255,255,0.16); color: #ffffff; backdrop-filter: blur(8px);">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+                    <span>طباعة التقرير العادي</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 2. بطاقات مؤشرات الأداء الـ 4 الكبرى (KPIs) ===== -->
+        <div class="grad-kpi-grid">
+            
+            <!-- إجمالي الخريجين -->
+            <div class="grad-kpi-card kpi-card-total">
+                <div class="grad-kpi-top">
+                    <div>
+                        <div class="grad-kpi-label">إجمالي الخريجين المسجلين</div>
+                        <div class="grad-kpi-value">{{ total_graduates }}</div>
+                    </div>
+                    <div class="grad-kpi-icon-box">
+                        <span class="material-symbols-outlined" style="font-size: 26px;">groups</span>
+                    </div>
+                </div>
+                <div class="grad-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+                    <span>كافة الطلاب المتخرجين بقاعدة البيانات</span>
+                </div>
+            </div>
+
+            <!-- أتموا إخلاء الطرف وجاهزون للإفادة -->
+            <div class="grad-kpi-card kpi-card-ready">
+                <div class="grad-kpi-top">
+                    <div>
+                        <div class="grad-kpi-label">أتموا إخلاء الطرف (جاهز للإفادة)</div>
+                        <div class="grad-kpi-value" style="color: #10b981;">{{ completed_clearance_ready_for_cert }}</div>
+                    </div>
+                    <div class="grad-kpi-icon-box">
+                        <span class="material-symbols-outlined" style="font-size: 26px;">verified</span>
+                    </div>
+                </div>
+                <div class="grad-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: #10b981;">check_circle</span>
+                    <span>جاهزون لطباعة وإصدار الإفادة فوراً</span>
+                </div>
+            </div>
+
+            <!-- إفادات التخرج الصادرة المعتمدة -->
+            <div class="grad-kpi-card kpi-card-issued">
+                <div class="grad-kpi-top">
+                    <div>
+                        <div class="grad-kpi-label">إفادات التخرج الصادرة المعتمدة</div>
+                        <div class="grad-kpi-value" style="color: #307e92;">{{ completed_clearance_issued }}</div>
+                    </div>
+                    <div class="grad-kpi-icon-box">
+                        <span class="material-symbols-outlined" style="font-size: 26px;">description</span>
+                    </div>
+                </div>
+                <div class="grad-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: #307e92;">lock</span>
+                    <span>تم توثيقها برقم تسلسلي رسمي</span>
+                </div>
+            </div>
+
+            <!-- خريجون قيد إجراءات إخلاء الطرف -->
+            <div class="grad-kpi-card kpi-card-pending">
+                <div class="grad-kpi-top">
+                    <div>
+                        <div class="grad-kpi-label">قيد إجراءات إخلاء الطرف</div>
+                        <div class="grad-kpi-value" style="color: #f59e0b;">{{ pending_clearance }}</div>
+                    </div>
+                    <div class="grad-kpi-icon-box">
+                        <span class="material-symbols-outlined" style="font-size: 26px;">pending_actions</span>
+                    </div>
+                </div>
+                <div class="grad-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 16px; color: #f59e0b;">hourglass_top</span>
+                    <span>بانتظار استكمال متطلبات وإجراءات الإخلاء</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== 3. اختصارات العمليات والخدمات السريعة ===== -->
+        <div class="grad-shortcuts-grid">
+            <a href="{% url 'renewal:clearance' %}" class="grad-shortcut-card">
+                <div class="grad-shortcut-icon">
+                    <span class="material-symbols-outlined">assignment_turned_in</span>
+                </div>
+                <div class="grad-shortcut-info">
+                    <h4>توثيق إخلاء طرف جديد</h4>
+                    <p>فحص استحقاق وتجميد العمليات</p>
+                </div>
+            </a>
+
+            <a href="{% url 'renewal:graduation_certificate' %}" class="grad-shortcut-card">
+                <div class="grad-shortcut-icon">
+                    <span class="material-symbols-outlined">badge</span>
+                </div>
+                <div class="grad-shortcut-info">
+                    <h4>إصدار إفادة التخرج</h4>
+                    <p>توليد الإفادة وطباعتها برقم رسمي</p>
+                </div>
+            </a>
+
+            <a href="{% url 'renewal:graduation_archive' %}" class="grad-shortcut-card">
+                <div class="grad-shortcut-icon">
+                    <span class="material-symbols-outlined">archive</span>
+                </div>
+                <div class="grad-shortcut-info">
+                    <h4>أرشيف إفادات التخرج</h4>
+                    <p>سجل ووثائق الإفادات الصادرة</p>
+                </div>
+            </a>
+
+            <a href="{% url 'renewal:return_graduate' %}" class="grad-shortcut-card">
+                <div class="grad-shortcut-icon">
+                    <span class="material-symbols-outlined">history_edu</span>
+                </div>
+                <div class="grad-shortcut-info">
+                    <h4>سجل الخريجين العام</h4>
+                    <p>استعراض ملفات وسجلات التخرج</p>
+                </div>
+            </a>
+        </div>
+
+        <!-- ===== 4. الرسوم البيانية والتحليلات التفاعلية ===== -->
+        <div class="grad-charts-row">
+            
+            <!-- Chart 1: توزيع حالة إخلاء الطرف والإفادات -->
+            <div class="grad-chart-card">
+                <div class="grad-card-header">
+                    <div>
+                        <h3 class="grad-card-title">
+                            <span class="material-symbols-outlined" style="color: var(--grad-teal);">pie_chart</span>
+                            حالة إخلاء الطرف وإصدار الإفادات
+                        </h3>
+                        <p class="grad-card-subtitle">نسبة الجاهزين للإفادة مقابل الصادرة وقيد الإجراء</p>
+                    </div>
+                </div>
+                <div class="grad-chart-container">
+                    <canvas id="clearanceStatusChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: توزيع الخريجين وإخلاء الطرف بالأقسام -->
+            <div class="grad-chart-card">
+                <div class="grad-card-header">
+                    <div>
+                        <h3 class="grad-card-title">
+                            <span class="material-symbols-outlined" style="color: var(--grad-gold);">bar_chart</span>
+                            الخريجون وإخلاء الطرف حسب الأقسام العلمية
+                        </h3>
+                        <p class="grad-card-subtitle">مقارنة إجمالي الخريجين وحالات إخلاء الطرف المنجزة لكل تخصص</p>
+                    </div>
+                </div>
+                <div class="grad-chart-container">
+                    <canvas id="departmentsGradChart"></canvas>
+                </div>
+            </div>
+
+        <!-- ===== 4.5. الطلاب المرصودون والمؤهلون لإخلاء الطرف تلقائياً ===== -->
+        <div class="grad-table-card" style="border: 2px solid #0d9488; background: linear-gradient(to bottom, #f0fdfa, #ffffff);">
+            <div class="grad-card-header">
+                <div>
+                    <h3 class="grad-card-title" style="color: #0f766e;">
+                        <span class="material-symbols-outlined" style="color: #0d9488;">verified_user</span>
+                        الطلاب الجاهزون لإخلاء الطرف آلياً ({{ ready_for_clearance_count }})
+                    </h3>
+                    <p class="grad-card-subtitle">طلاب أتموا تصفية واجتياز جميع مواد الخطة الدراسية بنجاح ومستعدون لإخلاء الطرف</p>
+                </div>
+                <span class="grad-status-badge status-badge-ready" style="background: #ccfbf1; color: #0f766e; border-color: #99f6e4;">
+                    <span class="material-symbols-outlined" style="font-size: 15px;">auto_awesome</span>
+                    رصد آلي لحظي
+                </span>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="grad-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>اسم الطالب</th>
+                            <th>القسم العلمي</th>
+                            <th>الخطة الدراسية</th>
+                            <th>تاريخ الاستيفاء</th>
+                            <th>الحالة</th>
+                            <th>الإجراء المباشر</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in ready_for_clearance_students %}
+                        <tr>
+                            <td style="font-family: monospace; font-weight: 800; color: #0d9488;">{{ st.student_id }}</td>
+                            <td style="font-weight: 700;">{{ st.name }} {{ st.father_name }} {{ st.last_name }}</td>
+                            <td>{{ st.department.name|default:"-" }}</td>
+                            <td>{{ st.study_plan.name|default:"-" }}</td>
+                            <td>{{ st.clearance_ready_date|date:"Y-m-d H:i"|default:"مؤخراً" }}</td>
+                            <td>
+                                <span class="grad-status-badge status-badge-ready" style="background: #dcfce7; color: #166534; border-color: #86efac;">
+                                    <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                    مؤهل للإخلاء والتخرج 🎓
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'renewal:clearance' %}?student_id={{ st.student_id }}" style="background: #0d9488; color: #ffffff; padding: 5px 12px; border-radius: 6px; font-weight: 700; text-decoration: none; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 4px rgba(13, 148, 136, 0.2);">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">assignment_turned_in</span>
+                                    <span>بدء إخلاء الطرف</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 24px; color: #64748b; font-weight: 600;">
+                                <span class="material-symbols-outlined" style="font-size: 32px; display: block; margin-bottom: 6px; color: #94a3b8;">task_alt</span>
+                                لا يوجد طلاب بانتظار إخلاء الطرف حالياً (كافة الخريجين تم إخلاء طرفهم أو لم يكملوا المواد بعد).
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- ===== 5. جدول أحدث عمليات إخلاء الطرف وإصدار الإفادات ===== -->
+        <div class="grad-table-card">
+            <div class="grad-card-header">
+                <div>
+                    <h3 class="grad-card-title">
+                        <span class="material-symbols-outlined" style="color: var(--grad-teal);">history</span>
+                        أحدث سجلات إخلاء الطرف والتخرج المعتمدة
+                    </h3>
+                    <p class="grad-card-subtitle">قائمة بالطلاب الذين تم توثيق إخلاء طرفهم وحالة إصدار الإفادة الرسمية</p>
+                </div>
+                <a href="{% url 'renewal:graduation_archive' %}" style="color: var(--grad-teal); font-weight: 800; font-size: 0.88rem; text-decoration: none;">
+                    عرض كل الأرشيف ←
+                </a>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="grad-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>اسم الطالب</th>
+                            <th>القسم العلمي</th>
+                            <th>تاريخ إخلاء الطرف</th>
+                            <th>درجة المشروع</th>
+                            <th>حالة الإفادة</th>
+                            <th>رقم الإفادة</th>
+                            <th>الإجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recent_clearances %}
+                        <tr>
+                            <td style="font-family: monospace; font-weight: 800; color: var(--grad-teal);">{{ item.student.student_id }}</td>
+                            <td>{{ item.student.name }}</td>
+                            <td>{{ item.student.department.name|default:"-" }}</td>
+                            <td>{{ item.clearance_date|date:"Y-m-d" }}</td>
+                            <td><strong>{{ item.graduation_project_grade }}</strong></td>
+                            <td>
+                                {% if item.is_certificate_issued %}
+                                    <span class="grad-status-badge status-badge-issued">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">check_circle</span>
+                                        تم إصدار الإفادة
+                                    </span>
+                                {% else %}
+                                    <span class="grad-status-badge status-badge-ready">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">schedule</span>
+                                        جاهز للإصدار
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td style="font-family: monospace;">{{ item.certificate_number|default:"-" }}</td>
+                            <td>
+                                <a href="{% url 'renewal:graduation_certificate' %}?student_id={{ item.student.student_id }}" style="color: var(--grad-teal); font-weight: 800; text-decoration: none; font-size: 0.82rem; display: inline-flex; align-items: center; gap: 0.2rem;">
+                                    <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+                                    <span>طباعة / إصدار</span>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" style="text-align: center; padding: 2.5rem; color: var(--grad-text-muted);">
+                                لا توجد سجلات إخلاء طرف مسجلة حتى الآن.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<script id="graduates-dashboard-data" type="application/json">
+{
+    "readyCount": {{ completed_clearance_ready_for_cert|default:0 }},
+    "issuedCount": {{ completed_clearance_issued|default:0 }},
+    "pendingCount": {{ pending_clearance|default:0 }},
+    "departmentsSummary": {{ departments_summary_json|default:"[]"|safe }}
+}
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const dataEl = document.getElementById('graduates-dashboard-data');
+    const dashData = dataEl ? JSON.parse(dataEl.textContent) : {};
+    const readyCount = Number(dashData.readyCount) || 0;
+    const issuedCount = Number(dashData.issuedCount) || 0;
+    const pendingCount = Number(dashData.pendingCount) || 0;
+    const deptSummary = Array.isArray(dashData.departmentsSummary) ? dashData.departmentsSummary : [];
+
+    // 1. Doughnut Chart: Clearance & Certificate Status
+    const ctx1 = document.getElementById('clearanceStatusChart');
+    if (ctx1) {
+        new Chart(ctx1.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['جاهز لإصدار الإفادة', 'تم إصدار الإفادة', 'قيد إجراءات الإخلاء'],
+                datasets: [{
+                    data: [readyCount, issuedCount, pendingCount],
+                    backgroundColor: ['#10b981', '#307e92', '#f59e0b'],
+                    borderWidth: 2,
+                    borderColor: '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            font: { family: 'Tajawal', size: 12, weight: '700' },
+                            padding: 14,
+                            usePointStyle: true
+                        }
+                    }
+                },
+                cutout: '68%'
+            }
+        });
+    }
+
+    // 2. Bar Chart: Departments Graduation Breakdown
+    const ctx2 = document.getElementById('departmentsGradChart');
+    if (ctx2 && deptSummary && deptSummary.length > 0) {
+        const labels = deptSummary.map(d => d.name);
+        const gradData = deptSummary.map(d => d.graduates_count);
+        const clearData = deptSummary.map(d => d.cleared_count);
+
+        new Chart(ctx2.getContext('2d'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'إجمالي الخريجين',
+                        data: gradData,
+                        backgroundColor: '#6366f1',
+                        borderRadius: 6,
+                        maxBarThickness: 32
+                    },
+                    {
+                        label: 'تم إخلاء الطرف',
+                        data: clearData,
+                        backgroundColor: '#10b981',
+                        borderRadius: 6,
+                        maxBarThickness: 32
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        ticks: { font: { family: 'Tajawal', size: 11, weight: '700' } },
+                        grid: { display: false }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0, font: { family: 'Outfit', size: 11, weight: '700' } },
+                        grid: { color: 'rgba(0, 0, 0, 0.05)' }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: { family: 'Tajawal', size: 12, weight: '700' },
+                            usePointStyle: true
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+
+// 🖨️ آلية الطباعة في الخلفية عبر Hidden Iframe بدون فتح صفحات جديدة
+function printViaHiddenIframe(htmlContent) {
+    const oldIframe = document.getElementById('reportPrintHiddenIframe');
+    if (oldIframe) oldIframe.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'reportPrintHiddenIframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '-9999px';
+    iframe.style.bottom = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    const triggerPrint = () => {
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                console.error("Print Error:", err);
+            }
+            setTimeout(() => {
+                if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+            }, 3000);
+        }, 350);
+    };
+
+    const images = doc.images;
+    let loaded = 0;
+    const total = images.length;
+
+    if (total === 0) {
+        triggerPrint();
+    } else {
+        for (let i = 0; i < total; i++) {
+            if (images[i].complete) {
+                loaded++;
+                if (loaded === total) triggerPrint();
+            } else {
+                images[i].onload = images[i].onerror = () => {
+                    loaded++;
+                    if (loaded === total) triggerPrint();
+                };
+            }
+        }
+        setTimeout(triggerPrint, 1500);
+    }
+}
+
+async function fetchGradOfficials() {
+    let registrarName = "أ. المسجل العام";
+    let registrarPos = "المسجل العام بالكلية";
+    try {
+        const res = await fetch('/users/api/officials/');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.officials)) {
+            const reg = data.officials.find(o => 
+                (o.position_key && o.position_key.includes('registrar')) ||
+                (o.position && (o.position.includes('مسجل عام') || o.position.includes('المسجل العام')))
+            );
+            if (reg && reg.name) {
+                registrarName = reg.name;
+                if (reg.position) registrarPos = reg.position;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch officials:", e);
+    }
+    return { registrarName, registrarPos };
+}
+
+window.printStatisticalReport = async function() {
+    const { registrarName, registrarPos } = await fetchGradOfficials();
+    const dataEl = document.getElementById('graduates-dashboard-data');
+    const dashData = dataEl ? JSON.parse(dataEl.textContent) : {};
+
+    let doughnutImg = '';
+    let barImg = '';
+    const c1 = document.getElementById('clearanceStatusChart');
+    const c2 = document.getElementById('departmentsGraduationChart');
+    if (c1) { try { doughnutImg = c1.toDataURL('image/png'); } catch (e) {} }
+    if (c2) { try { barImg = c2.toDataURL('image/png'); } catch (e) {} }
+
+    const deptSummary = Array.isArray(dashData.departmentsSummary) ? dashData.departmentsSummary : [];
+    let deptRows = '';
+    deptSummary.forEach((d, idx) => {
+        deptRows += `
+            <tr style="border-bottom: 1px solid #000; text-align: center;">
+                <td style="padding: 6px 10px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 6px 10px; text-align: right; font-weight: bold;">${d.department__name || 'قسم أكاديمي'}</td>
+                <td style="padding: 6px 10px;">${d.total_grads || 0}</td>
+                <td style="padding: 6px 10px;">${d.cleared_grads || 0}</td>
+                <td style="padding: 6px 10px; font-weight: bold;">${d.rate || 0}%</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير الإحصائي والرسوم البيانية - إدارة الخريجين</title>
+    <style>
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print { body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; } }
+        body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; background: #fff; color: #000; margin: 0; padding: 0; direction: rtl; }
+        .print-sheet { border: 2px solid #000; padding: 22px 28px; box-sizing: border-box; background: #fff; width: 100%; }
+        .header-box { text-align: center; margin-bottom: 12px; }
+        .college-logo { width: 75px; height: 75px; object-fit: contain; display: block; margin: 0 auto 6px auto; }
+        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
+        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .divider-line { border-bottom: 2px solid #000; margin: 10px 0 12px 0; width: 100%; }
+        .report-main-title { font-size: 20px; font-weight: 900; text-align: center; margin: 8px 0 14px 0; }
+        .kpi-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+        .kpi-table th, .kpi-table td { border: 1px solid #000; padding: 7px 10px; text-align: center; }
+        .kpi-table th { background: #f0f0f0; font-weight: 900; }
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; }
+        .data-table th, .data-table td { border: 1px solid #000; padding: 6px 8px; }
+        .data-table th { background: #f0f0f0; font-weight: bold; }
+        .charts-container { display: flex; gap: 15px; margin-bottom: 16px; page-break-inside: avoid; }
+        .chart-box { flex: 1; border: 1px solid #000; padding: 10px; text-align: center; }
+        .chart-img { max-width: 100%; max-height: 220px; object-fit: contain; }
+        .signatures-area { display: flex; justify-content: flex-end; margin-top: 36px; page-break-inside: avoid; }
+        .sig-card { text-align: center; min-width: 180px; }
+    </style>
+</head>
+<body>
+    <div class="print-sheet">
+        <div class="header-box">
+            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
+            <div class="header-title-1">دولة ليبيا</div>
+            <div class="header-title-2">وزارة التعليم التقني والفني</div>
+            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
+            <div class="divider-line"></div>
+            <div class="report-main-title">التقرير الإحصائي والرسوم البيانية لقسم وإدارة الخريجين</div>
+        </div>
+
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الخريجين</th>
+                    <th>أتموا إخلاء الطرف</th>
+                    <th>تم إصدار الإفادة</th>
+                    <th>قيد الإجراءات</th>
+                    <th>تاريخ التقرير</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_graduates|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ completed_clearance_ready_for_cert|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ completed_clearance_issued|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ pending_clearance|default:0 }}</td>
+                    <td>${new Date().toLocaleDateString('ar-LY')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="charts-container">
+            ${doughnutImg ? `
+            <div class="chart-box">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">مؤشر حالات إخلاء الطرف والإفادات</div>
+                <img src="${doughnutImg}" class="chart-img">
+            </div>` : ''}
+            ${barImg ? `
+            <div class="chart-box">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">مقارنة إحصائيات الخريجين بالأقسام</div>
+                <img src="${barImg}" class="chart-img">
+            </div>` : ''}
+        </div>
+
+        ${deptRows ? `
+        <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px;">جدول تفصيل الخريجين حسب التخصصات والأقسام:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">#</th>
+                    <th style="text-align: right;">القسم الأكاديمي</th>
+                    <th style="text-align: center; width: 110px;">إجمالي الخريجين</th>
+                    <th style="text-align: center; width: 110px;">أتموا الإخلاء</th>
+                    <th style="text-align: center; width: 100px;">نسبة الإنجاز</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRows}
+            </tbody>
+        </table>` : ''}
+
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
+                <div style="font-weight: 600; font-size: 12px; margin-bottom: 28px;">${registrarPos}</div>
+                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+    printViaHiddenIframe(html);
+};
+
+window.printStandardReport = async function() {
+    const { registrarName, registrarPos } = await fetchGradOfficials();
+    const dataEl = document.getElementById('graduates-dashboard-data');
+    const dashData = dataEl ? JSON.parse(dataEl.textContent) : {};
+    const deptSummary = Array.isArray(dashData.departmentsSummary) ? dashData.departmentsSummary : [];
+    let deptRows = '';
+    deptSummary.forEach((d, idx) => {
+        deptRows += `
+            <tr style="border-bottom: 1px solid #000; text-align: center;">
+                <td style="padding: 7px 10px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 7px 10px; text-align: right; font-weight: bold;">${d.department__name || 'قسم أكاديمي'}</td>
+                <td style="padding: 7px 10px;">${d.total_grads || 0} خريج</td>
+                <td style="padding: 7px 10px;">${d.cleared_grads || 0} خريج</td>
+                <td style="padding: 7px 10px; font-weight: bold;">${d.rate || 0}%</td>
+                <td style="padding: 7px 10px;">معتمد</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير العادي لإدارة الخريجين</title>
+    <style>
+        @page { size: A4 portrait; margin: 10mm; }
+        @media print { body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; } }
+        body { font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif; background: #fff; color: #000; margin: 0; padding: 0; direction: rtl; }
+        .print-sheet { border: 2px solid #000; padding: 22px 28px; box-sizing: border-box; background: #fff; width: 100%; }
+        .header-box { text-align: center; margin-bottom: 12px; }
+        .college-logo { width: 75px; height: 75px; object-fit: contain; display: block; margin: 0 auto 6px auto; }
+        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
+        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .divider-line { border-bottom: 2px solid #000; margin: 10px 0 12px 0; width: 100%; }
+        .report-main-title { font-size: 20px; font-weight: 900; text-align: center; margin: 8px 0 14px 0; }
+        .kpi-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }
+        .kpi-table th, .kpi-table td { border: 1px solid #000; padding: 8px 10px; text-align: center; }
+        .kpi-table th { background: #f0f0f0; font-weight: 900; }
+        .data-table { width: 100%; border-collapse: collapse; margin-bottom: 18px; font-size: 12px; }
+        .data-table th, .data-table td { border: 1px solid #000; padding: 7px 10px; }
+        .data-table th { background: #f0f0f0; font-weight: bold; }
+        .signatures-area { display: flex; justify-content: flex-end; margin-top: 36px; page-break-inside: avoid; }
+        .sig-card { text-align: center; min-width: 180px; }
+    </style>
+</head>
+<body>
+    <div class="print-sheet">
+        <div class="header-box">
+            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
+            <div class="header-title-1">دولة ليبيا</div>
+            <div class="header-title-2">وزارة التعليم التقني والفني</div>
+            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
+            <div class="divider-line"></div>
+            <div class="report-main-title">تقرير ملخص مؤشرات وبيانات قسم وإدارة الخريجين</div>
+        </div>
+
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الخريجين المسجلين</th>
+                    <th>أتموا إجراءات إخلاء الطرف</th>
+                    <th>تم إصدار إفادة التخرج</th>
+                    <th>قيد إجراءات إخلاء الطرف</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_graduates|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ completed_clearance_ready_for_cert|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ completed_clearance_issued|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ pending_clearance|default:0 }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px;">أولاً: بيان تفصيلي بتوزيع الخريجين حسب الأقسام العلمية:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 40px; text-align: center;">#</th>
+                    <th style="text-align: right;">القسم الأكاديمي</th>
+                    <th style="width: 120px; text-align: center;">إجمالي الخريجين</th>
+                    <th style="width: 120px; text-align: center;">أتموا الإخلاء</th>
+                    <th style="width: 110px; text-align: center;">نسبة الإنجاز</th>
+                    <th style="width: 100px; text-align: center;">الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRows || '<tr><td colspan="6" style="text-align:center;">لا توجد بيانات للأقسام</td></tr>'}
+            </tbody>
+        </table>
+
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
+                <div style="font-weight: 600; font-size: 12px; margin-bottom: 28px;">${registrarPos}</div>
+                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+    printViaHiddenIframe(html);
+};
+</script>
+{% endblock %}

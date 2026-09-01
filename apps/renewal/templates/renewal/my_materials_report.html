@@ -1,0 +1,315 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تقرير المواد المسجلة | كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+/* Academic Info Cards & Elements */
+.info-card {
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.info-card-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+.info-card-value {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #0f172a;
+}
+
+.val-highlight {
+    color: #307e92 !important;
+    font-family: monospace;
+    font-weight: 900;
+}
+
+.val-success {
+    color: #16a34a !important;
+}
+
+.report-summary-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f0fdf4;
+    border: 1.5px solid #86efac;
+    border-radius: 8px;
+    padding: 0.85rem 1.25rem;
+    margin-top: 1rem;
+    font-weight: 800;
+    color: #166534;
+}
+
+/* 🌙 Dark Mode Styles for Materials Report */
+html.dark .materials-report-page,
+html.dark .materials-report-container {
+    background-color: transparent !important;
+    color: #f8fafc !important;
+}
+
+html.dark .group-box {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .group-title {
+    background-color: #0f172a !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
+
+html.dark .info-card {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+html.dark .info-card-label,
+html.dark .info-card > div:first-child {
+    color: #94a3b8 !important;
+}
+
+html.dark .info-card-value,
+html.dark .info-card > div:last-child {
+    color: #f8fafc !important;
+}
+
+html.dark .val-highlight {
+    color: #38bdf8 !important;
+}
+
+html.dark .val-success {
+    color: #34d399 !important;
+}
+
+html.dark input[name="q"] {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .field-label {
+    color: #38bdf8 !important;
+}
+
+html.dark table {
+    border-color: #334155 !important;
+    background-color: #1e293b !important;
+}
+
+html.dark thead tr {
+    background-color: #0f172a !important;
+}
+
+html.dark thead th {
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html.dark .report-table-row {
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .report-table-row td {
+    color: #f8fafc !important;
+    background-color: #1e293b !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .report-summary-bar {
+    background-color: #0f172a !important;
+    border-color: #15803d !important;
+    color: #4ade80 !important;
+}
+
+html.dark .report-summary-bar span {
+    color: #f8fafc !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main materials-report-page" dir="rtl">
+    <div class="materials-report-container" style="max-width: 1200px; margin: 0 auto; padding: 1rem 0.5rem;">
+
+        <!-- ===== الهيدر الموحد لجميع صفحات النظام ===== -->
+        <div class="page-header-row no-print" style="margin-bottom: 1.5rem;">
+            <div>
+                <h1 class="page-header-title">تقرير المواد الدراسية المسجلة</h1>
+                <p class="page-header-subtitle">استعراض المقررات المسجلة وطباعة الكشف الرسمي للطلبة في الفصل الحالي</p>
+            </div>
+        </div>
+
+        <!-- ===== شريط البحث والإجراءات ===== -->
+        <div class="group-box no-print" style="margin-bottom: 1.5rem; padding: 1.25rem;">
+            <span class="group-title">البحث واستدعاء بيانات الطالبة</span>
+            
+            <form method="GET" action="{% url 'renewal:my_materials_report' %}" id="materialsSearchForm" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 280px;">
+                    <label for="materialsSearchInput" class="field-label" style="font-weight: 800; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">
+                        🔍 رقم القيد / الرقم الوطني / الاسم:
+                    </label>
+                    <input type="text" id="materialsSearchInput" name="q" value="{{ search_query }}" 
+                           placeholder="أدخل رقم القيد (مثل: 261001) أو الرقم الوطني أو اسم الطالبة..." 
+                           autocomplete="off"
+                           style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.95rem; font-weight: 700;">
+                </div>
+                
+                <div style="display: flex; gap: 0.6rem; align-items: center;">
+                    <button type="submit" id="btnSearchSubmit" class="btn-action btn-save" style="padding: 0.6rem 1.4rem; font-size: 0.92rem; font-weight: 800; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">search</span>
+                        <span>بحث</span>
+                    </button>
+
+                    {% if search_query %}
+                    <a href="{% url 'renewal:my_materials_report' %}" class="btn-action" style="padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.3rem; background: #e2e8f0; color: #475569; text-decoration: none;" title="مسح وإعادة ضبط">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">restart_alt</span>
+                        <span>إعادة ضبط</span>
+                    </a>
+                    {% endif %}
+
+                    {% if student %}
+                    <!-- زر الطباعة التفاعلي الرسمي -->
+                    <button type="button" class="btn-action btn-edit" onclick="printMyMaterialsReport()" style="padding: 0.6rem 1.4rem; font-size: 0.92rem; font-weight: 800; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">print</span>
+                        <span>طباعة التقرير / PDF</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+
+        <!-- ===== منطقة العرض الرئيسية ===== -->
+        <div id="reportPrintArea" class="report-printable-area">
+
+            {% if student %}
+
+            <!-- ===== صندوق بيانات الطالبة الأكاديمية ===== -->
+            <div class="group-box" style="margin-bottom: 1.5rem;">
+                <span class="group-title">بيانات الطالبة الأكاديمية</span>
+
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; padding: 0.5rem 0.25rem;" class="print-grid">
+                    <div class="info-card">
+                        <div class="info-card-label">الاسم الكامل</div>
+                        <div class="info-card-value" id="printStudentName">
+                            {% if student.full_name %}{{ student.full_name }}{% else %}{{ student.name }} {{ student.father_name|default:"" }} {{ student.grandfather_name|default:"" }} {{ student.last_name|default:"" }}{% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-label">رقم القيد</div>
+                        <div class="info-card-value val-highlight" id="printStudentId">{{ student.student_id|default:"--" }}</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-label">الرقم الوطني / الهوية</div>
+                        <div class="info-card-value" id="printStudentNationalId">{{ student.national_id|default:"--" }}</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-label">القسم العلمي / التخصص</div>
+                        <div class="info-card-value" id="printStudentDept">{{ student.department.name|default:"عام" }}</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-label">المستوى الدراسي</div>
+                        <div class="info-card-value" id="printStudentLevel">{{ student.level.name|default:"المستوى الأول" }}</div>
+                    </div>
+
+                    <div class="info-card">
+                        <div class="info-card-label">الفصل الدراسي الحالي</div>
+                        <div class="info-card-value val-success" id="activeSemesterDisplay">
+                            {% if semester_display_name %}{{ semester_display_name }}{% elif active_semester %}{{ active_semester.get_type_display }} {{ active_semester.year }}{% else %}ربيع 2026{% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== جدول المقررات المسجلة ===== -->
+            <div class="group-box" style="margin-bottom: 1.5rem;">
+                <span class="group-title">المقررات الدراسية المسجلة للفصل الحالي</span>
+
+                <div style="overflow-x: auto; margin-top: 0.5rem;">
+                    <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+                        <thead>
+                            <tr style="background-color: #307e92; color: #ffffff;">
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: right; font-size: 0.9rem; width: 50px;">#</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: right; font-size: 0.9rem; width: 140px;">رمز المادة</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: right; font-size: 0.9rem;">اسم المادة الدراسية</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center; font-size: 0.9rem; width: 120px;">الوحدات</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center; font-size: 0.9rem; width: 120px;">المحاولة</th>
+                                <th style="padding: 0.75rem 1rem; font-weight: 800; text-align: center; font-size: 0.9rem; width: 140px;">تاريخ التنزيل</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% if registered_courses %}
+                                {% for course in registered_courses %}
+                                <tr class="report-table-row" style="border-bottom: 1px solid #e2e8f0;">
+                                    <td style="padding: 0.75rem 1rem; font-weight: 800;">{{ forloop.counter }}</td>
+                                    <td style="padding: 0.75rem 1rem; font-family: monospace; font-weight: 900; color: #307e92;">{{ course.course_code }}</td>
+                                    <td style="padding: 0.75rem 1rem; font-weight: 800;">{{ course.course_name }}</td>
+                                    <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 800;">{{ course.units }}</td>
+                                    <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700; color: #475569;">{{ course.attempt_number }}</td>
+                                    <td style="padding: 0.75rem 1rem; text-align: center; font-size: 0.85rem; font-weight: 600; color: #64748b;">{{ course.registration_date|date:"Y-m-d" }}</td>
+                                </tr>
+                                {% endfor %}
+                            {% else %}
+                                <tr>
+                                    <td colspan="6" style="text-align: center; padding: 2.5rem 1rem; color: #64748b; font-weight: 700;">
+                                        لا توجد مواد دراسية مسجلة لهذه الطالبة في الفصل الدراسي الحالي.
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- شريط الملخص الأكاديمي -->
+                <div class="report-summary-bar">
+                    <div>
+                        <span>عدد المواد المسجلة: </span>
+                        <span style="font-size: 1.1rem; margin-right: 0.3rem;">{{ total_courses_count }}</span>
+                    </div>
+                    <div>
+                        <span>مجموع الوحدات المعتمَدة: </span>
+                        <span style="font-size: 1.1rem; margin-right: 0.3rem;">{{ total_units }} وحدة</span>
+                    </div>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="group-box" style="text-align: center; padding: 4rem 1rem; color: #64748b;">
+                <span class="material-symbols-outlined" style="font-size: 3.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block;">person_search</span>
+                <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a;">لم يتم العثور على سجل الطالبة</h3>
+                {% if search_query %}
+                <p style="font-size: 0.95rem; margin-top: 0.4rem; font-weight: 700; color: #ef4444;">
+                    لا توجد أي طالبة مطابقة للبحث: <span style="font-family: monospace; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">{{ search_query }}</span>
+                </p>
+                <p style="font-size: 0.85rem; margin-top: 0.25rem; color: #64748b;">يرجى التأكد من كتابة رقم القيد أو الرقم الوطني بشكل صحيح.</p>
+                {% else %}
+                <p style="font-size: 0.9rem; margin-top: 0.25rem;">يرجى استخدام شريط البحث أعلاه لإدخال رقم القيد أو الرقم الوطني المطلوب.</p>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+
+{% block extra_js %}
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/my_materials_report.js' %}?v=2.4.0"></script>
+{% endblock %}

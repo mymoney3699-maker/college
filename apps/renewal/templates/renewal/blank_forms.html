@@ -1,0 +1,473 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}النماذج والاستمارات الإدارية الفارغة - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       صفحة النماذج والاستمارات الإدارية الفارغة - Blank Forms Page
+       ============================================================ */
+    .blank-forms-page {
+        direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    .blank-forms-container {
+        max-width: 1280px;
+        margin: 0 auto;
+        padding: 0 1rem 2rem 1rem;
+    }
+
+    /* الهيدر الرئيسي */
+    .blank-forms-header-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.75rem;
+        flex-wrap: wrap;
+    }
+    .blank-forms-title {
+        color: #307e92;
+        font-size: 1.75rem;
+        font-weight: 900;
+        margin: 0 0 0.25rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+    .blank-forms-subtitle {
+        color: #64748b;
+        font-size: 0.92rem;
+        font-weight: 600;
+        margin: 0;
+    }
+
+    /* مربع البحث عن النماذج */
+    .forms-search-box {
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+    .forms-search-input-wrapper {
+        position: relative;
+        max-width: 500px;
+    }
+    .forms-search-input-wrapper .material-symbols-outlined {
+        position: absolute;
+        top: 50%;
+        right: 12px;
+        transform: translateY(-50%);
+        color: #307e92;
+        font-size: 22px;
+    }
+    .forms-search-input {
+        width: 100%;
+        padding: 10px 42px 10px 14px;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        font-size: 0.95rem;
+        font-weight: 600;
+        outline: none;
+        transition: all 0.2s ease;
+        box-sizing: border-box;
+    }
+    .forms-search-input:focus {
+        border-color: #307e92;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
+    }
+
+    /* شبكة النماذج الإدارية */
+    .forms-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .form-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.5rem;
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+        position: relative;
+        overflow: hidden;
+    }
+    .form-card:hover {
+        transform: translateY(-3px);
+        border-color: #307e92;
+        box-shadow: 0 10px 25px rgba(48, 126, 146, 0.12);
+    }
+    .form-card::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0; left: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #307e92, #b59b66);
+    }
+
+    .form-card-top {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    .form-icon-container {
+        width: 52px;
+        height: 52px;
+        border-radius: 12px;
+        background: #f0f7f9;
+        color: #307e92;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        border: 1px solid #d0e3e8;
+    }
+    .form-icon-container .material-symbols-outlined {
+        font-size: 28px;
+    }
+
+    .form-card-info h3 {
+        font-size: 1.1rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0 0 4px 0;
+    }
+    .form-card-info p {
+        font-size: 0.85rem;
+        color: #64748b;
+        margin: 0;
+        line-height: 1.5;
+    }
+
+    .form-card-badge {
+        display: inline-block;
+        font-size: 0.72rem;
+        font-weight: 800;
+        padding: 3px 10px;
+        border-radius: 20px;
+        background: #f1f5f9;
+        color: #475569;
+        margin-top: 8px;
+    }
+
+    .form-card-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px dashed #e2e8f0;
+    }
+
+    .btn-form-print {
+        flex: 1;
+        background-color: #b59b66;
+        color: #ffffff;
+        padding: 9px 16px;
+        border: none;
+        border-radius: 8px;
+        font-weight: 800;
+        font-size: 0.88rem;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: background 0.2s ease;
+    }
+    .btn-form-print:hover {
+        background-color: #9c8352;
+    }
+
+    /* =========================================================
+       DARK MODE SUPPORT - دعم الوضع الليلي المظلم
+       ========================================================= */
+    html.dark .blank-forms-title {
+        color: #38bdf8 !important;
+    }
+    html.dark .blank-forms-subtitle {
+        color: #94a3b8 !important;
+    }
+    html.dark .forms-search-box {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    html.dark .forms-search-input {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    html.dark .form-card {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    html.dark .form-card-info h3 {
+        color: #f8fafc !important;
+    }
+    html.dark .form-card-info p {
+        color: #94a3b8 !important;
+    }
+    html.dark .form-card-badge {
+        background: #334155 !important;
+        color: #cbd5e1 !important;
+    }
+    html.dark .form-card-actions {
+        border-top-color: #334155 !important;
+    }
+    html.dark .form-icon-container {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #38bdf8 !important;
+    }
+
+    /* =========================================================
+       PRINT STYLES — النماذج الرسمية الفارغة (A4 Portrait)
+       ========================================================= */
+    #printBlankFormsContainer { display: none !important; }
+
+    @media print {
+        @page { size: A4 portrait; margin: 6mm 6mm; }
+
+        body > *:not(#printBlankFormsContainer) {
+            display: none !important; visibility: hidden !important;
+            height: 0 !important; overflow: hidden !important;
+        }
+
+        #printBlankFormsContainer {
+            display: block !important; visibility: visible !important;
+            position: absolute !important; top: 0; left: 0; right: 0;
+            width: 100% !important; margin: 0 !important; padding: 4px !important;
+            background: #ffffff !important; color: #000000 !important;
+            direction: rtl !important; z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
+        }
+
+        #printBlankFormsContainer * { visibility: visible !important; }
+
+        .print-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 20px 28px !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important; color: #000000 !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif !important;
+            display: flex !important; flex-direction: column !important;
+            justify-content: flex-start !important;
+        }
+
+        .bf-header { text-align: center !important; margin-bottom: 14px !important; }
+        .bf-logo   { max-height: 75px !important; width: auto !important; margin: 0 auto 6px !important; display: block !important; }
+        .bf-gov    { font-size: 13px !important; font-weight: bold !important; margin-bottom: 2px !important; color: #000 !important; }
+        .bf-college{ font-size: 16.5px !important; font-weight: 900 !important; margin-bottom: 6px !important; color: #000 !important; }
+        .bf-line   { width: 75% !important; margin: 8px auto 14px !important; border-top: 1.5px solid #000 !important; }
+        .bf-title  { font-size: 19px !important; font-weight: 900 !important; text-align: center !important; margin: 6px 0 14px !important; color: #000 !important; text-decoration: underline !important; }
+
+        .bf-fields-list {
+            margin-bottom: 20px !important; font-size: 13.5px !important; font-weight: bold !important;
+        }
+        .bf-field-row {
+            display: flex !important; align-items: baseline !important; gap: 8px !important; margin-bottom: 14px !important;
+        }
+        .bf-lbl { font-weight: 900 !important; white-space: nowrap !important; color: #000 !important; }
+        .bf-dots { border-bottom: 1.5px dotted #000 !important; flex: 1 !important; min-height: 1.2em !important; }
+        .bf-table {width: calc(100% - 20px); margin: 0 10px 22px 10px; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000; direction: rtl;}
+        .bf-table th, .bf-table td { border: 1.5px solid #000 !important; padding: 8px 6px !important; text-align: center !important; color: #000 !important; }
+        .bf-table th { font-weight: 900 !important; background: #ffffff !important; font-size: 13.5px !important; }
+        .bf-table td.empty-cell { height: 32px !important; }
+
+        .bf-signatures-row {
+            display: flex !important; justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin-top: 35px !important;
+            padding-top: 15px !important;
+        }
+        .bf-sig-col { text-align: center !important; width: 45% !important; }
+        .bf-sig-title { font-size: 13.5px !important; font-weight: 900 !important; margin-top: 4px !important; }
+        .bf-off-name { font-size: 13.5px !important; font-weight: 900 !important; min-height: 1.3em !important; color: #000 !important; }
+        .bf-sig-dots { font-size: 12.5px !important; font-weight: 900 !important; margin-top: 12px !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main blank-forms-page">
+    <div class="blank-forms-container">
+        
+        <!-- الهيدر العلوي -->
+        <div class="blank-forms-header-row">
+            <div>
+                <h1 class="blank-forms-title">
+                    <span class="material-symbols-outlined" style="font-size: 32px;">description</span>
+                    النماذج والاستمارات الإدارية الفارغة
+                </h1>
+                <p class="blank-forms-subtitle">عرض وطباعة الاستمارات والنماذج الورقية الرسمية الجاهزة للاستخدام</p>
+            </div>
+        </div>
+
+        <!-- شريط تصفية وتصفح النماذج -->
+        <div class="forms-search-box">
+            <div class="forms-search-input-wrapper">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="searchFormsInput" class="forms-search-input" placeholder="ابحث باسم النموذج أو الاستمارة..." onkeyup="filterFormCards()">
+            </div>
+        </div>
+
+        <!-- شبكة النماذج الـ 6 -->
+        <div class="forms-grid" id="formsGrid">
+
+            <!-- 1. نموذج طلب تجديد قيد فصلي -->
+            <div class="form-card" data-title="تجديد قيد فصلي">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container">
+                            <span class="material-symbols-outlined">autorenew</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>استمارة طلب تجديد قيد فصلي</h3>
+                            <p>استمارة ورقية مخصصة لطلاب الكلية لتقديم طلب تجديد القيد الدراسي للفصل الجديد.</p>
+                            <span class="form-card-badge">قسم القبول والتسجيل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('renew_registration')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. نموذج طلب إيقاف قيد فصلي -->
+            <div class="form-card" data-title="إيقاف قيد فصلي">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container" style="color: #e11d48; background: #fff1f2; border-color: #fecaca;">
+                            <span class="material-symbols-outlined">pause_circle</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>استمارة طلب إيقاف قيد فصلي (تعهد رقم 2)</h3>
+                            <p>نموذج وتعهد رسمي لإيقاف قيد الطالب لمدة فصل دراسي واحد وفق اللوائح.</p>
+                            <span class="form-card-badge">قسم القبول والتسجيل</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('suspend_student')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. نموذج طلب سحب ملف / مستندات -->
+            <div class="form-card" data-title="سحب ملف مستندات">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container" style="color: #475569; background: #f8fafc; border-color: #cbd5e1;">
+                            <span class="material-symbols-outlined">folder_delete</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>استمارة طلب سحب ملف ومستندات</h3>
+                            <p>نموذج وتعهد لسحب الأوراق والملف الأصلي للطالب بشكل نهائي من الكلية.</p>
+                            <span class="form-card-badge">أرشيف المسجل العام</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('student_withdrawal')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+            <!-- 4. نموذج إخلاء طرف -->
+            <div class="form-card" data-title="إخلاء طرف">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container" style="color: #0f766e; background: #f0fdf4; border-color: #bbf7d0;">
+                            <span class="material-symbols-outlined">verified</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>نموذج إخلاء طرف رسمـي</h3>
+                            <p>نموذج إخلاء الطرف المعتمد يشمل المكتبة، القسم المختص، والتدريب الميداني والمشروع.</p>
+                            <span class="form-card-badge">إدارة الكلية والمسجل العام</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('clearance')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+            <!-- 5. نموذج طعن في نتائج الامتحانات -->
+            <div class="form-card" data-title="طعن في نتائج الامتحانات">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container" style="color: #d97706; background: #fffbeb; border-color: #fde68a;">
+                            <span class="material-symbols-outlined">gavel</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>نموذج طعن في نتائج الامتحانات</h3>
+                            <p>استمارة تقديم طعن حضوري مع خانات الإيصال المالي وتوقيع الأستاذ واللجنة.</p>
+                            <span class="form-card-badge">لجنة الطعون والامتحانات</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('grade_appeal')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. نموذج طلب معادلة مواد دراسية -->
+            <div class="form-card" data-title="معادلة مواد دراسية">
+                <div>
+                    <div class="form-card-top">
+                        <div class="form-icon-container" style="color: #2563eb; background: #eff6ff; border-color: #bfdbfe;">
+                            <span class="material-symbols-outlined">published_with_changes</span>
+                        </div>
+                        <div class="form-card-info">
+                            <h3>نموذج طلب معادلة مواد دراسية</h3>
+                            <p>استمارة تقديم مواد سابقة لمعادلتها واحتساب الساعات الأكاديمية.</p>
+                            <span class="form-card-badge">لجنة المعادلات الدراسية</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-card-actions">
+                    <button type="button" class="btn-form-print" onclick="printBlankForm('equivalent_courses')">
+                        <span class="material-symbols-outlined">print</span> طباعة النموذج
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- حاوية طباعة النماذج الرسمية الفارغة -->
+    <div id="printBlankFormsContainer"></div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script id="blank-forms-meta" type="application/json">
+{
+    "todayDate": "{{ today_date }}"
+}
+</script>
+<script>
+window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/blank_forms.js' %}?v=1.0.6"></script>
+{% endblock %}

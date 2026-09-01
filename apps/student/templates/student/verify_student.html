@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق من صحة القيد - كلية طرابلس</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Cairo -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-slate-900/80 backdrop-blur-md rounded-2xl border border-slate-800 shadow-2xl p-6 text-white text-center">
+        <!-- Logo / Header -->
+        <div class="mb-6">
+            <div class="w-16 h-16 bg-gradient-to-tr from-amber-500 to-yellow-400 rounded-full flex items-center justify-center mx-auto shadow-lg mb-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+            </div>
+            <h2 class="text-xl font-bold tracking-wide">كلية العلوم والتقنية طرابلس</h2>
+            <p class="text-slate-400 text-xs mt-1">نظام التحقق الإلكتروني من قيد الطلاب</p>
+        </div>
+
+        {% if success %}
+            <!-- Verification Success -->
+            <div class="space-y-4">
+                <!-- Status Badge -->
+                <div class="inline-flex items-center gap-1.5 py-1 px-3 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span class="w-2.5 h-2.5 bg-emerald-400 rounded-full animate-ping"></span>
+                    <span>✅ قيد نشط ومعتمد</span>
+                </div>
+
+                <!-- Student Image -->
+                <div class="relative w-28 h-28 mx-auto mt-4">
+                    <div class="w-full h-full rounded-full overflow-hidden border-4 border-slate-800 shadow-md">
+                        {% if student.photo %}
+                            <img src="{{ student.photo.url }}" alt="صورة الطالب" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full bg-slate-800 flex items-center justify-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Student Information Table -->
+                <div class="bg-slate-950/50 rounded-xl p-4 border border-slate-800/80 text-right space-y-3 mt-4">
+                    <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
+                        <span class="text-slate-400 text-sm">اسم الطالب:</span>
+                        <span class="font-bold text-slate-100">{{ student.get_full_name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
+                        <span class="text-slate-400 text-sm">رقم القيد:</span>
+                        <span class="font-mono font-bold text-amber-400">{{ student.student_id }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
+                        <span class="text-slate-400 text-sm">الحالة الأكاديمية:</span>
+                        <span class="font-semibold text-slate-200">{{ student.student_status.name|default:"-" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
+                        <span class="text-slate-400 text-sm">القسم:</span>
+                        <span class="font-semibold text-slate-200">{{ student.department.name|default:"-" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center border-b border-slate-800/50 pb-2">
+                        <span class="text-slate-400 text-sm">هل تخرج:</span>
+                        {% if student.is_graduated %}
+                            <span class="font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded text-xs">نعم (متخرج 🎓)</span>
+                        {% else %}
+                            <span class="font-semibold text-slate-300 bg-slate-800 px-2 py-0.5 rounded text-xs">لا (مستمر بالدراسة 📚)</span>
+                        {% endif %}
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 text-sm">المستوى الدراسي:</span>
+                        <span class="font-semibold text-slate-200">{{ student.level.name|default:"-" }}</span>
+                    </div>
+                </div>
+
+                <!-- Footer Verified Info -->
+                <p class="text-slate-500 text-[10px] mt-4">تم التحقق رقمياً وتوليد هذه البيانات مباشرة من قاعدة بيانات الكلية الرسمية في {% now "Y-m-d H:i:s" %}</p>
+            </div>
+        {% else %}
+            <!-- Verification Failure / Tampered QR -->
+            <div class="space-y-4 py-6">
+                <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto shadow-inner border border-red-500/20 mb-3 text-red-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-red-500 font-bold text-lg">فشل التحقق الأمني</h3>
+                <p class="text-slate-300 text-sm px-4">{{ message }}</p>
+                <div class="bg-red-500/5 border border-red-500/10 rounded-lg p-3 text-xs text-red-400 leading-relaxed mt-4">
+                    تنبيه: التوقيع الرقمي أو مفتاح الـ QR المرفق بالرابط غير متطابق مع البيانات. يرجى التأكد من مسح رمز الـ QR الأصلي الصادر من لوحة تحكم الطالب الرسمية للكلية.
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- زر تسجيل الدخول في أسفل الصفحة -->
+        <div class="mt-6">
+            <a href="{% url 'users:login' %}?force=1" class="w-full inline-flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition-all duration-200 shadow-lg hover:shadow-amber-500/20">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-950" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                <span>تسجيل الدخول</span>
+            </a>
+        </div>
+
+        <div class="mt-6 pt-4 border-t border-slate-800/80">
+            <span class="text-[10px] text-slate-500">© {% now "Y" %} كلية العلوم والتقنية طرابلس. جميع الحقوق محفوظة.</span>
+        </div>
+    </div>
+</body>
+</html>

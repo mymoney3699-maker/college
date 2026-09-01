@@ -1,0 +1,413 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم قسم القبول والتسجيل | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/dashboard.css' %}?v=5.0.0">
+{% endblock %}
+
+{% block content %}
+<!-- ===== الحاوية الرئيسية للوحة تحكم القبول والتسجيل ===== -->
+<div class="dashboard-container">
+
+    <!-- ===== ترويسة الطباعة الرسمية للكلية (تظهر فقط عند الطباعة المباشرة) ===== -->
+    <div class="print-official-header">
+        <div class="print-official-header-ar">
+            <div class="p-gov">دولة ليبيا</div>
+            <div class="p-inst">حكومة الوحدة الوطنية</div>
+            <div class="p-inst">وزارة التعليم التقني والفني</div>
+            <div class="p-clg">كلية طرابلس للعلوم والتقنية</div>
+            <div class="p-dept">قسم القبول والتسجيل وشؤون الطلاب</div>
+        </div>
+        <div class="print-official-logo">
+            <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" onerror="this.style.display='none';">
+        </div>
+        <div class="print-official-header-en">
+            <div class="p-gov-en">State of Libya</div>
+            <div class="p-inst-en">Government of National Unity</div>
+            <div class="p-inst-en">Ministry of Technical & Vocational Education</div>
+            <div class="p-clg-en">Tripoli College of Science & Technology</div>
+            <div class="p-dept-en">Admission & Registration Dept.</div>
+        </div>
+    </div>
+    <div class="print-official-divider"></div>
+    <div class="print-official-title">تقرير مؤشرات ورسوم لوحة تحكم القبول والتسجيل - {{ current_semester }}</div>
+
+    <!-- ===== 1. رأس الصفحة والبانر المطور بهوية المنظومة (شاشة فقط) ===== -->
+    <div class="dashboard-header-banner no-print">
+        <div class="header-banner-info">
+            <div class="header-banner-icon">
+                <span class="material-symbols-outlined">how_to_reg</span>
+            </div>
+            <div>
+                <div class="header-banner-title-row">
+                    <h1 class="header-banner-title">لوحة تحكم قسم القبول والتسجيل</h1>
+                    <span class="header-banner-badge">{{ current_semester }}</span>
+                </div>
+                <p class="header-banner-subtitle">
+                    المنظومة المركزية لإدارة عمليات القيد، والتسجيل الفصلي، ومتابعة الحالات الأكاديمية للطلاب
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 2. شريط أزرار التقارير والطباعة الرسمية ===== -->
+    <div class="dashboard-toolbar-row no-print">
+        <div class="toolbar-title-hint">
+            <span class="material-symbols-outlined">print</span>
+            <span>التقارير والمخرجات الإحصائية الرسمية للقبول والتسجيل</span>
+        </div>
+        <div class="toolbar-buttons-group">
+            <button type="button" onclick="window.printDashboardVisual()" class="btn-print-visual">
+                <span class="material-symbols-outlined">print</span>
+                <span>طباعة المؤشرات والرسوم</span>
+            </button>
+            <button type="button" onclick="window.printOfficialDataReport()" class="btn-print-official">
+                <span class="material-symbols-outlined">description</span>
+                <span>تقرير إحصائي رسمي شامل</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 3. الصف الأول: كروت الإحصائيات الخمسة المخصصة للتسجيل ===== -->
+    <div class="stats-grid">
+        
+        <!-- كرت 1: الطلاب المسجلون بالفصل النشط -->
+        <div class="stat-card stat-teal">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">المسجلون بالفصل الحالي</span>
+                    <h3 class="stat-card-number" id="totalActive">{{ semester_registered_count|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-teal">
+                    <span class="material-symbols-outlined">verified</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-teal">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                    قيد فصلي مجدد ومعتمد
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 2: الطلبة المنتسبون الجدد -->
+        <div class="stat-card stat-indigo">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">الطلبة المنتسبون الجدد</span>
+                    <h3 class="stat-card-number" id="newStudents">{{ new_students_count|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-indigo">
+                    <span class="material-symbols-outlined">person_add</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-sub">المستجدون وطلاب المستوى الأول</span>
+            </div>
+        </div>
+
+        <!-- كرت 3: الطلاب المنتظمون (دراسة نشطة) -->
+        <div class="stat-card stat-teal">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">الطلاب المنتظمون</span>
+                    <h3 class="stat-card-number" id="totalRegular">{{ regular_students_count|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-teal" style="background-color: #ecfdf5; color: #10b981;">
+                    <span class="material-symbols-outlined">school</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-teal" style="background-color: #ecfdf5; color: #059669;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">groups</span>
+                    حالة قيد منتظمة
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 4: موقوفو القيد -->
+        <div class="stat-card stat-amber">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">موقوفو القيد</span>
+                    <h3 class="stat-card-number" id="totalSuspended">{{ suspended_students_count|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-amber">
+                    <span class="material-symbols-outlined">pause_circle</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-amber">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">pending</span>
+                    إيقاف قيد فصلي معتمد
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 5: مسحوبو الملفات -->
+        <div class="stat-card stat-rose">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">مسحوبو الملفات</span>
+                    <h3 class="stat-card-number" id="withdrawnStudents">{{ withdrawn_students_count|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-rose">
+                    <span class="material-symbols-outlined">person_off</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-sub text-danger fw-bold">سحب ملف معتمد</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 4. الصف الثاني: الدويرة + كرت الإجمالي الموحد ===== -->
+    <div class="middle-section">
+        <!-- المخطط 1: الحالات الأكاديمية (الدويرة) -->
+        <div class="chart-card chart-card-status">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined" style="color: #307e92; font-size: 22px;">donut_large</span>
+                    <h2 class="chart-card-title">توزيع الطلاب حسب الحالات الأكاديمية المعتمدة</h2>
+                </div>
+                <span class="chart-badge-pill">الحالات الخمس</span>
+            </div>
+            <div class="chart-card-body chart-card-body-status">
+                <canvas id="statusChart"></canvas>
+            </div>
+        </div>
+
+        <!-- كرت إجمالي طلاب الكلية الموحد -->
+        <div class="total-card">
+            <div class="total-card-icon-wrapper">
+                <span class="material-symbols-outlined text-3xl text-yellow-300">school</span>
+            </div>
+            <div class="total-card-label">إجمالي طلاب الكلية المسجلين</div>
+            <div class="total-card-number" id="totalStudents">{{ total_all_students|default:"0" }}</div>
+            <div class="total-card-sub">قاعدة البيانات المركزية لكافة التخصصات والمستويات</div>
+            <div class="total-card-stats">
+                <span class="total-tag">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+                    {{ departments_count|default:"0" }} أقسام وتخصصات
+                </span>
+                <span class="total-tag">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">auto_stories</span>
+                    8 مستويات دراسية
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 6. الصف الثالث: الفصول والتخصصات ===== -->
+    <div class="bottom-section">
+        <!-- المخطط 2: المستويات الدراسية -->
+        <div class="chart-card chart-card-main">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined" style="color: #0284c7; font-size: 22px;">bar_chart</span>
+                    <h2 class="chart-card-title">توزيع وكثافة الطلاب حسب المستويات الدراسية</h2>
+                </div>
+                <span class="chart-badge-pill">المستويات 1 - 8</span>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="semesterChart"></canvas>
+            </div>
+        </div>
+
+        <!-- المخطط 3: الأقسام والتخصصات -->
+        <div class="chart-card chart-card-side">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined" style="color: #eab308; font-size: 22px;">domain</span>
+                    <h2 class="chart-card-title">توزيع الطلاب حسب الأقسام والتخصصات</h2>
+                </div>
+                <span class="chart-badge-pill">الأقسام العلمية</span>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="departmentChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 7. الصف الرابع: جداول الأنشطة الإدارية الحديثة ===== -->
+    <div class="dashboard-tables-grid no-print">
+        
+        <!-- جدول 1: أحدث عمليات تجديد القيد -->
+        <div class="dashboard-table-card">
+            <div class="dashboard-table-header">
+                <h6 class="dashboard-table-title">
+                    <span class="material-symbols-outlined text-primary fs-5">history_edu</span>
+                    أحدث عمليات تجديد القيد والتسجيل الفصلي
+                </h6>
+                <a href="{% url 'renewal:renewed_students_list' %}" class="btn btn-sm btn-light border small py-1 px-2 fw-semibold">عرض الكل</a>
+            </div>
+            <div class="table-responsive">
+                <table class="dashboard-table text-end align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 28%;">الطالب</th>
+                            <th style="width: 22%;">رقم القيد</th>
+                            <th style="width: 22%;">القسم</th>
+                            <th style="width: 14%;">المستوى</th>
+                            <th style="width: 14%;">التاريخ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for renewal in recent_renewals %}
+                        <tr>
+                            <td class="fw-bold text-dark text-truncate">{{ renewal.student.name }}</td>
+                            <td class="font-monospace fw-bold text-teal" style="color: #0d9488;">{{ renewal.student.student_id }}</td>
+                            <td class="text-muted small text-truncate">{{ renewal.student.department.name|default:"-" }}</td>
+                            <td class="font-monospace">{{ renewal.level.name|default:"-" }}</td>
+                            <td class="text-muted small font-monospace">{{ renewal.renewal_date|date:"Y-m-d" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">لا توجد عمليات تجديد قيد مسجلة مؤخراً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- جدول 2: أحدث الطلاب المسجلين بالمنظومة -->
+        <div class="dashboard-table-card">
+            <div class="dashboard-table-header">
+                <h6 class="dashboard-table-title">
+                    <span class="material-symbols-outlined text-success fs-5">how_to_reg</span>
+                    أحدث الطلاب المقيدين بالمنظومة
+                </h6>
+                <a href="{% url 'renewal:student_list' %}" class="btn btn-sm btn-light border small py-1 px-2 fw-semibold">دليل الطلاب</a>
+            </div>
+            <div class="table-responsive">
+                <table class="dashboard-table text-end align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 28%;">الاسم الكامل</th>
+                            <th style="width: 22%;">رقم القيد</th>
+                            <th style="width: 22%;">القسم</th>
+                            <th style="width: 14%;">الحالة</th>
+                            <th style="width: 14%;">فصل الالتحاق</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in recent_students %}
+                        <tr>
+                            <td class="fw-bold text-dark text-truncate">{{ st.name }} {{ st.last_name }}</td>
+                            <td class="font-monospace fw-bold text-teal" style="color: #0d9488;">{{ st.student_id }}</td>
+                            <td class="text-muted small text-truncate">{{ st.department.name|default:"-" }}</td>
+                            <td>
+                                {% if st.student_status.name == 'منتظم' %}
+                                <span class="badge bg-success-subtle text-success">منتظم</span>
+                                {% elif st.student_status.name == 'موقوف قيده' %}
+                                <span class="badge bg-warning-subtle text-warning">موقوف</span>
+                                {% elif st.student_status.name == 'مسحوبة ملف' %}
+                                <span class="badge bg-danger-subtle text-danger">مسحوب</span>
+                                {% else %}
+                                <span class="badge bg-secondary-subtle text-secondary">{{ st.student_status.name }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted small">{{ st.enrollment_semester|default:"-" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">لا يوجد طلاب مقيدون مؤخراً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== التوقيعات الرسمية للإدارة (تظهر فقط عند الطباعة المباشرة) ===== -->
+    <div class="print-official-signatures">
+        <div class="p-sig-box">
+            <div class="p-sig-name">أ. احمد محمد علي محمود</div>
+            <div class="p-sig-title">المسجل العام بالكلية</div>
+            <div class="p-sig-line">التوقيع والختم: .......................................</div>
+        </div>
+        <div class="p-sig-box">
+            <div class="p-sig-name">د. عميد الكلية</div>
+            <div class="p-sig-title">إدارة كلية طرابلس للعلوم والتقنية</div>
+            <div class="p-sig-line">التوقيع والختم: .......................................</div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ============================================================
+     📄 8. منطقة التقرير الإحصائي الرسمي للطباعة المباشرة (Hidden on Screen)
+     ============================================================ -->
+<div id="official-report-print-area" style="display: none;">
+    <table>
+        <tbody>
+            <tr>
+                <td style="text-align: right; font-weight: bold;">إجمالي طلاب الكلية المسجلين</td>
+                <td style="text-align: center; font-weight: bold; font-family: monospace;">{{ total_all_students }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; font-weight: bold;">المسجلون بالفصل الحالي</td>
+                <td style="text-align: center; font-weight: bold; font-family: monospace;">{{ semester_registered_count }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; font-weight: bold;">الطلاب المنتظمون</td>
+                <td style="text-align: center; font-weight: bold; font-family: monospace;">{{ regular_students_count }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; font-weight: bold;">موقوفو القيد</td>
+                <td style="text-align: center; font-weight: bold; font-family: monospace;">{{ suspended_students_count }}</td>
+            </tr>
+            <tr>
+                <td style="text-align: right; font-weight: bold;">مسحوبو الملفات</td>
+                <td style="text-align: center; font-weight: bold; font-family: monospace;">{{ withdrawn_students_count }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <table>
+        <tbody>
+            {% for dept in departments_data %}
+            <tr>
+                <td style="text-align: center; font-weight: bold;">{{ forloop.counter }}</td>
+                <td style="font-weight: bold;">{{ dept.name }}</td>
+                <td style="text-align: center; font-weight: bold;">{{ dept.count }}</td>
+                <td style="text-align: center; font-family: monospace;">
+                    {% if total_all_students > 0 %}
+                        {% widthratio dept.count total_all_students 100 %}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" style="text-align: center;">لا توجد بيانات للأقسام</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- ===== تمرير البيانات باستخدام json_script ===== -->
+{{ semesters_json|json_script:"semesters-data" }}
+{{ departments_json|json_script:"departments-data" }}
+{{ status_json|json_script:"status-data" }}
+{{ totals_json|json_script:"totals-data" }}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+    window.CURRENT_SEMESTER_NAME = "{{ current_semester|default:'الفصل الدراسي الحالي'|escapejs }}";
+</script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/renewal.js' %}?v=5.1.0"></script>
+{% endblock %}

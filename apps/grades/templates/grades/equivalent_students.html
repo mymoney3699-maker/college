@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}كشف الطلبة المعادَلين ومتغيري المسار | كلية طرابلس للعلوم والتقنية{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ===================================================
+       إخفاء حاوية التقرير المطبوع في الشاشة العادية
+       =================================================== */
+    #reportPrintContainer {
+        display: none !important;
+    }
+
+    /* ===================================================
+       أنماط الطباعة الرسمية - الاتجاه العمودي (Portrait)
+       =================================================== */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        /* إخفاء جميع عناصر الشاشة والواجهة */
+        body>*:not(#reportPrintContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* إظهار التقرير المطبوع فقط */
+        #reportPrintContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #reportPrintContainer * {
+            visibility: visible !important;
+        }
+
+        /* إطار الصفحة الخارجي */
+        .rpt-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        /* ① الترويسة (الشعار فوق والكلام تحته في المنتصف) */
+        .rpt-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .rpt-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .rpt-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        /* الخط الفاصل */
+        .rpt-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        /* عنوان التقرير */
+        .rpt-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        /* ② معلومات التقرير الفلاتر */
+        .rpt-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.8 !important;
+            color: #000 !important;
+        }
+
+        .rpt-info-right {
+            text-align: right !important;
+        }
+
+        .rpt-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .rpt-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        /* ③ الجدول المطبوع - خط منظم 10px */
+        .rpt-table-container {
+            margin-top: 6px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .rpt-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .rpt-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .rpt-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .rpt-empty-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        /* ④ صندوق التوقيع جهة اليسار في الأسفل */
+        .rpt-signature-box {
+            margin-top: 30px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .rpt-signature-box .off-name {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1em !important;
+        }
+
+        .rpt-signature-box .off-pos {
+            display: block !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #000000 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .rpt-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main equivalent-students-page" dir="rtl">
+    <div class="equivalent-students-container">
+
+        <!-- الهيدر العلوي في الشاشة -->
+        <div class="page-header-row no-print">
+            <div class="header-icon-wrapper">
+                <div>
+                    <h1 class="page-header-title">كشف الطلبة المعادَلين ومتغيري المسار الأكاديمي</h1>
+                    <p class="page-header-subtitle">استعراض وتتبع الطلبة المعادَلين، معاينة المواد المعفاة، وتصدير
+                        التقارير الرسمية</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- شريط البحث والخيارات مطابق لصفحة بيانات الطالب -->
+        <div class="group-box student-data-group no-print mb-6">
+            <span class="group-title">البحث عن طالب معادل</span>
+
+            <div class="student-search-box">
+                <div class="filters-grid-2col" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">رقم
+                            القيد للبحث</label>
+                        <input type="text" id="searchRegNum" placeholder="أدخل رقم القيد للبحث"
+                            value="{{ search_query }}"
+                            style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1; font-family: monospace; font-weight: 600;">
+                    </div>
+                    <div>
+                        <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">اسم
+                            الطالب للبحث</label>
+                        <input type="text" id="searchName" placeholder="أدخل اسم الطالب للبحث"
+                            style="width: 100%; padding: 0.65rem 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1;">
+                    </div>
+                </div>
+                <div class="buttons-row-left mt-2"
+                    style="display: flex; gap: 0.5rem; justify-content: flex-start; margin-top: 0.75rem;">
+                    <button type="button" class="btn-action btn-search" onclick="window.searchStudent()"
+                        style="padding: 0.55rem 1.4rem; background: #307e92; color: #fff; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span class="material-symbols-outlined">search</span> بحث
+                    </button>
+                    <button type="button" class="btn-action btn-reset" onclick="window.clearSearchResults()"
+                        style="padding: 0.55rem 1.4rem; background: #475569; color: #fff; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 0.4rem;">
+                        <span class="material-symbols-outlined">cleaning_services</span> تفريغ
+                    </button>
+                </div>
+                <div id="searchResults" class="search-results-list hidden"
+                    style="margin-top: 0.75rem; max-height: 250px; overflow-y: auto; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+                </div>
+            </div>
+
+            <!-- فلاتر القسم والسنة الإضافية -->
+            <div
+                style="margin-top: 1rem; padding-top: 0.85rem; border-top: 1px dashed #cbd5e1; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; align-items: end;">
+                <div>
+                    <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">التخصص
+                        الحالي</label>
+                    <select id="filterDept" class="filter-select" onchange="window.filterEquivalentTable()"
+                        style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff;">
+                        <option value="الكل">كافة الأقسام والتخصصات</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem;">السنة
+                        الدراسية</label>
+                    <input type="text" id="filterYear" placeholder="مثال: 2026" oninput="window.filterEquivalentTable()"
+                        class="filter-input"
+                        style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1;">
+                </div>
+            </div>
+        </div>
+
+        <!-- أزرار الإجراءات وتصدير PDF -->
+        <div class="buttons-row no-print mb-4"
+            style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="font-weight: 700; color: #334155;">
+                إجمالي الطلبة المعروضين: <span style="color: #0284c7; font-size: 1.1rem;" id="totalCountDisplay">{{
+                    total_count|default:0 }}</span> طالب
+            </div>
+            <div>
+                <button type="button" id="printReportBtn" class="btn-action btn-save"
+                    style="background: #16a34a; color: #fff; padding: 0.6rem 1.75rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <span class="material-symbols-outlined">print</span>
+                    تصدير PDF / طباعة التقرير الرسمي
+                </button>
+            </div>
+        </div>
+
+        <!-- جدول التفاعل والعرض الرئيسي -->
+        <div class="group-box no-print">
+            <span class="group-title">سجل وقائمة الطلبة المعادَلين ومتغيري المسار الأكاديمي</span>
+
+            <div class="table-responsive" style="margin-top: 1rem;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse; background: #fff;">
+                    <thead>
+                        <tr style="background: var(--primary, #307e92); color: #fff; text-align: right;">
+                            <th style="padding: 0.85rem 1rem; width: 50px; text-align: center;">#</th>
+                            <th style="padding: 0.85rem 1rem;">رقم القيد</th>
+                            <th style="padding: 0.85rem 1rem;">اسم الطالب</th>
+                            <th style="padding: 0.85rem 1rem;">التخصص الحالي</th>
+                            <th style="padding: 0.85rem 1rem;">المستوى</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center;">المواد المعفاة</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center;">تاريخ المعادلة</th>
+                            <th style="padding: 0.85rem 1rem; width: 140px; text-align: center;">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="equivalentStudentsTableBody">
+                        {% for st in students_list %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter
+                                }}</td>
+                            <td
+                                style="padding: 0.85rem 1rem; font-family: monospace; font-weight: 700; color: #0284c7;">
+                                {{ st.id }}</td>
+                            <td style="padding: 0.85rem 1rem; font-weight: 700; color: #1e293b;">{{ st.name }}</td>
+                            <td style="padding: 0.85rem 1rem; color: #0f766e; font-weight: 600;">{{ st.current_dept }}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; color: #64748b;">{{ st.level }}</td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <span class="badge"
+                                    style="background: #dcfce7; color: #15803d; padding: 0.35rem 0.75rem; border-radius: 12px; font-weight: 700;">
+                                    {{ st.exempted_count }} مواد
+                                </span>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center; color: #64748b; font-size: 0.85rem;">
+                                {{ st.date }}</td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;">
+                                <div style="display: inline-flex; align-items: center; gap: 0.4rem; justify-content: center; flex-wrap: wrap;">
+                                    <button type="button" data-student-index="{{ forloop.counter0 }}"
+                                        class="btn-action btn-print js-show-details"
+                                        style="padding: 0.4rem 0.75rem; font-size: 0.85rem; background: #0284c7; color: #fff; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;"
+                                        title="عرض تفاصيل المواد المعادلة">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                                        عرض التفاصيل
+                                    </button>
+
+                                    <button type="button" data-student-index="{{ forloop.counter0 }}"
+                                        class="btn-action btn-save js-print-single-student"
+                                        style="padding: 0.4rem 0.75rem; font-size: 0.85rem; background: #16a34a; color: #fff; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 0.3rem;"
+                                        title="طباعة التقرير الرسمي الشامل لمعادلة الطالب وتغيير المسار">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">print</span>
+                                        طباعة
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8"
+                                style="padding: 2.5rem; text-align: center; color: #64748b; font-weight: 700;">
+                                ℹ️ لا توجد سجلات مطابقة للطلبة المعادَلين بناءً على المعايير المحددة.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ============================================================
+     حاوية التقرير الرسمي العمودية المخصصة للطباعة (A4 Portrait)
+     ============================================================ -->
+<div id="reportPrintContainer">
+    <div class="rpt-page-frame">
+
+        <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line"
+            style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="rpt-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">
+            كشف الطلبة المعادَلين ومتغيري المسار الأكاديمي</div>
+
+        <!-- ② معلومات التقرير الفلاتر -->
+        <div class="rpt-info-grid">
+            <div class="rpt-info-right">
+                <div><span class="rpt-lbl">التخصص الحالي:</span> <span id="rptPrintDept" class="rpt-val">كافة الأقسام
+                        والتخصصات</span></div>
+            </div>
+            <div class="rpt-info-left">
+                <div><span class="rpt-lbl">السنة الدراسية:</span> <span id="rptPrintYear" class="rpt-val">جميع
+                        السنين</span></div>
+                <div><span class="rpt-lbl">إجمالي المعادلين:</span> <span id="rptPrintTotal" class="rpt-val">0
+                        طالب</span></div>
+            </div>
+        </div>
+
+        <!-- ③ جدول التقرير المطبوع العمودي (Portrait A4) -->
+        <div class="rpt-table-container">
+            <table class="rpt-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 14%;">رقم القيد</th>
+                        <th style="width: 28%;">اسم الطالب</th>
+                        <th style="width: 20%;">التخصص الحالي</th>
+                        <th style="width: 11%;">المستوى</th>
+                        <th style="width: 10%;">المواد المعفاة</th>
+                        <th style="width: 12%;">تاريخ المعادلة</th>
+                    </tr>
+                </thead>
+                <tbody id="rptPrintTableBody">
+                    <tr>
+                        <td colspan="7" class="rpt-empty-cell">لا توجد سجلات مطابقة لمعايير البحث.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ صندوق التوقيع جهة اليسار -->
+        <div class="rpt-signature-box" data-official="exams_coordinator">
+            <span class="off-name"></span>
+            <span class="off-pos">منسق الدراسة والامتحانات</span>
+            <span class="off-sig-line">التوقيع والختم: ............................................</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- نافذة Modal تفاصيل مواد الطالب المعادَل -->
+<div id="detailsModal" class="modal-overlay no-print"
+    style="display: none; position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 9999; align-items: center; justify-content: center;">
+    <div class="modal-content"
+        style="background: #fff; width: 90%; max-width: 650px; border-radius: 12px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2); position: relative; max-height: 85vh; overflow-y: auto;">
+
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem; margin-bottom: 1rem;">
+            <h3 style="margin: 0; font-size: 1.15rem; color: #1e293b; font-weight: 800;" id="modalStudentName">تفاصيل
+                معادلة الطالب</h3>
+            <button type="button" id="closeModalBtn"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #64748b;">&times;</button>
+        </div>
+
+        <div id="modalBodyContent">
+            <!-- سيتم تعبئتها من ملف الجافاسكربت الخارجي -->
+        </div>
+
+        <div style="margin-top: 1.25rem; text-align: left; border-top: 1px solid #e2e8f0; padding-top: 0.75rem;">
+            <button type="button" id="closeModalFooterBtn" class="btn-action btn-new"
+                style="padding: 0.5rem 1.5rem; background: #64748b; color: #fff; border-radius: 6px; font-weight: 700;">
+                إغلاق النافذة
+            </button>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    window.OFFICIAL_ADMISSION_HEAD = "{{ admission_head_name|escapejs }}";
+    window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
+    window.OFFICIAL_EXAMS_HEAD = "{{ exams_head_name|escapejs }}";
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+</script>
+<script id="studentsJsonData" type="application/json">
+{{ students_json|default:"[]"|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'grades/js/equivalent_students.js' %}?v=1.0.1"></script>
+{% endblock %}

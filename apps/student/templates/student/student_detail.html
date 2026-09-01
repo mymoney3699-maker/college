@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تفاصيل الطالب | {{ student.name }} {% endblock %}
+
+{% block content %}
+<main class="custom-main student-data-page" dir="rtl">
+    <div class="student-data-container">
+
+        <div class="page-header-row border-accent-gold">
+            <div>
+                <h1 class="page-header-title">تفاصيل الطالب: {{ student.name }}</h1>
+                <p class="page-header-subtitle">الملف الأكاديمي والشخصي الكامل للطالب داخل المنظومة</p>
+            </div>
+        </div>
+
+        <div class="student-data-layout">
+
+            <!-- العمود الأيمن: الصورة والـ QR -->
+            <div class="student-avatar-column">
+                <div class="group-box text-center">
+                    <span class="group-title">صورة الطالب</span>
+                    <div class="student-avatar-placeholder" style="overflow: hidden; position: relative;">
+                        {% if student.photo %}
+                            <img src="{{ student.photo.url }}" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <span class="material-symbols-outlined" style="font-size: 48px; color: var(--text-muted);">person</span>
+                        {% endif %}
+                    </div>
+
+                    {% if student.qr_code %}
+                    <div class="qr-container" style="margin-top: 20px;">
+                        <div class="qr-title" style="font-weight: bold; margin-bottom: 10px; color: var(--accent-gold);">
+                            <span class="material-symbols-outlined" style="vertical-align: middle;">qr_code</span>
+                            كود QR للتحقق الرقمي
+                        </div>
+                        <div style="background: white; padding: 10px; border-radius: 8px; display: inline-block;">
+                            <img src="{{ student.qr_code.url }}" alt="QR Code" style="width: 120px; height: 120px;">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="buttons-vertical">
+                    <button type="button" class="btn-action btn-exit" onclick="window.history.back()">
+                        <span class="material-symbols-outlined">arrow_back</span> رجوع
+                    </button>
+                </div>
+            </div>
+
+            <!-- العمود الأيسر: عرض البيانات -->
+            <div class="student-form-column">
+                <div class="group-box student-data-group">
+                    <span class="group-title">البيانات الأكاديمية والشخصية</span>
+
+                    <div class="filters-grid-4col">
+                        <div>
+                            <label class="field-label">رقم القيد</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.student_id }}">
+                        </div>
+                        <div>
+                            <label class="field-label">اسم الطالب</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">اسم الأب</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.father_name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">اسم الجد</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.grandfather_name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">اللقب</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.last_name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">تاريخ الميلاد</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.birth_date|date:'Y-m-d' }}">
+                        </div>
+                        <div>
+                            <label class="field-label">مكان الميلاد</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.birth_place.city }} - {{ student.birth_place.country }}">
+                        </div>
+                        <div>
+                            <label class="field-label">الجنسية</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.nationality.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">فصيلة الدم</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.blood_type|default:'-' }}">
+                        </div>
+                        <div>
+                            <label class="field-label">الجنس</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.gender.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">الحالة الاجتماعية</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.marital_status.name|default:'-' }}">
+                        </div>
+                        <div>
+                            <label class="field-label">الرقم الوطني</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.national_id }}">
+                        </div>
+                        <div>
+                            <label class="field-label">رقم الهاتف</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.phone }}">
+                        </div>
+                        <div>
+                            <label class="field-label">البريد الإلكتروني</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.email|default:'-' }}">
+                        </div>
+                        <div>
+                            <label class="field-label">عنوان السكن</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.current_address.street }}">
+                        </div>
+                        <div>
+                            <label class="field-label">القسم (التخصص)</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.department.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">الخطة الدراسية</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.study_plan.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">المجموعة</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.group.name|default:'لا يوجد' }}">
+                        </div>
+                        <div>
+                            <label class="field-label">المستوى الدراسي</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.level.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">حالة الطالب</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.student_status.name }}">
+                        </div>
+                        <div>
+                            <label class="field-label">فصل التسجيل</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.enrollment_semester }}">
+                        </div>
+                        <div>
+                            <label class="field-label">تاريخ الإلحاق</label>
+                            <input type="text" class="readonly-field" readonly value="{{ student.enrollment_date|date:'Y-m-d' }}">
+                        </div>
+                        <div class="col-span-4">
+                            <label class="field-label">ملاحظات</label>
+                            <textarea class="readonly-field" readonly rows="2">{{ student.notes|default:'-' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="student-subtables-grid">
+                    <!-- ولي الأمر -->
+                    <div class="group-box">
+                        <span class="group-title">بيانات ولي الأمر</span>
+                        <div class="form-vertical-layout">
+                            <div>
+                                <label class="field-label">اسم ولي الأمر</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.guardian.name|default:'-' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">رقم هاتف ولي الأمر</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.guardian.phone|default:'-' }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- المؤهل العلمي -->
+                    <div class="group-box">
+                        <span class="group-title">بيانات المؤهل العلمي</span>
+                        <div class="filters-grid-2col">
+                            <div class="col-span-2">
+                                <label class="field-label">نوع المؤهل</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification.name|default:'-' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">مكان الحصول عليها</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification_place|default:'-' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">تاريخ الحصول عليها</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification_date|date:'Y-m-d'|default:'-' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">التقدير</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification_grade|default:'-' }}">
+                            </div>
+                            <div>
+                                <label class="field-label">التخصص</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification_major|default:'-' }}">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="field-label">النسبة المئوية %</label>
+                                <input type="text" class="readonly-field" readonly value="{{ student.qualification_percentage|default:'-' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+</main>
+{% endblock %}

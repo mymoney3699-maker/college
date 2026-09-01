@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة مشاريع التخرج | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main project-page" dir="rtl">
+    <div class="project-container">
+        
+        <!-- الهيدر الخاص بالصفحة -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة مشاريع التخرج</h1>
+                <p class="page-header-subtitle">تسجيل وتوثيق مشاريع تخرج الطلاب وتعيين المشرفين الأكاديميين ومتابعة الحالات</p>
+            </div>
+        </div>
+
+        <!-- الجزء العلوي: نموذج إدخال البيانات -->
+        <div class="group-box">
+            <span class="group-title">بيانات مشروع التخرج</span>
+            
+            <form id="projectForm" onsubmit="event.preventDefault();">
+                {% csrf_token %}
+                
+                <!-- معرف مخفي للمشروع عند التعديل -->
+                <input type="hidden" id="projectId">
+
+                <div class="filters-grid-4col">
+                    <div style="grid-column: span 2;">
+                        <label class="field-label">عنوان المشروع *</label>
+                        <input type="text" id="projectTitle" placeholder="أدخل عنوان مشروع التخرج بالتفصيل" required>
+                    </div>
+                    <div class="relative" style="position: relative;">
+                        <label class="field-label">المشرف الأكاديمي *</label>
+                        <input type="text" id="projectSupervisor" placeholder="أدخل اسم المشرف الأكاديمي" required oninput="window.handleSupervisorSearch()" autocomplete="off">
+                        <div id="supervisorSearchResults" class="search-results-list hidden" style="position: absolute; width: 100%; z-index: 100; right: 0; left: 0;"></div>
+                    </div>
+                    <div>
+                        <label class="field-label">الفصل الدراسي *</label>
+                        <input type="text" id="projectSemester" placeholder="مثال: ربيع 2026" required>
+                    </div>
+                    
+                    <div style="grid-column: span 2;">
+                        <label class="field-label">أسماء الطالبات *</label>
+                        <textarea id="projectStudent" placeholder="اكتب اسم الطالبة" rows="3" required style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.5rem; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+                    <div>
+                        <label class="field-label">حالة المشروع *</label>
+                        <select id="projectStatus" required>
+                            <option value="مقترح">مقترح</option>
+                            <option value="قيد التنفيذ">قيد التنفيذ</option>
+                            <option value="مكتمل">مكتمل</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">بحث</label>
+                        <input type="text" id="searchProjectQuery" class="search-field" placeholder="ابحث بالعنوان، الطالب، أو المشرف..." oninput="window.searchProjects()">
+                    </div>
+                </div>
+
+                <!-- أزرار الإجراءات للنموذج -->
+                <div class="buttons-row mt-6">
+                    <button type="button" class="btn-action btn-new" onclick="window.newProject()">
+                        <span class="material-symbols-outlined">add</span> جديد
+                    </button>
+                    <button type="button" class="btn-action btn-save" onclick="window.saveProject()">
+                        <span class="material-symbols-outlined">save</span> حفظ
+                    </button>
+                    <button type="button" class="btn-action btn-edit" onclick="window.editProject()">
+                        <span class="material-symbols-outlined">edit</span> تعديل
+                    </button>
+                    <button type="button" class="btn-action btn-exit" onclick="window.goBack()">
+                        <span class="material-symbols-outlined">logout</span> خروج
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- الجزء السفلي: عرض البيانات في بطاقات (مخفي افتراضياً ويظهر عند الطلب) -->
+        <div class="mt-6 hidden" id="graduationProjectsLog">
+            <!-- شبكة بطاقات المشاريع -->
+            <div class="plans-grid-3col" id="projectCardsContainer">
+                <!-- سيتم تعبئتها ديناميكياً بواسطة graduation_project.js -->
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/graduation_project.js' %}?v=1.0.5"></script>
+{% endblock %}

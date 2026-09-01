@@ -1,0 +1,621 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}بيانات الطالب | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .btn-action.btn-edit {
+        background-color: #d97706 !important;
+        color: #ffffff !important;
+        transition: all 0.2s ease !important;
+    }
+    .btn-action.btn-edit:hover:not(:disabled) {
+        background-color: #b45309 !important;
+    }
+    .btn-action:disabled {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+    }
+
+    /* Light Mode Form Input Styles (Scoped to html:not(.dark) to prevent dark mode collision) */
+    html:not(.dark) #studentForm input.is-locked,
+    html:not(.dark) #studentForm select.is-locked,
+    html:not(.dark) #studentForm textarea.is-locked,
+    html:not(.dark) #studentForm input:disabled,
+    html:not(.dark) #studentForm select:disabled,
+    html:not(.dark) #studentForm textarea:disabled,
+    html:not(.dark) #studentForm input[readonly],
+    html:not(.dark) #studentForm textarea[readonly] {
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        border-color: #cbd5e1 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
+        opacity: 0.7 !important;
+        user-select: none !important;
+    }
+
+    html:not(.dark) #studentForm select.is-locked,
+    html:not(.dark) #studentForm select:disabled {
+        opacity: 0.7 !important;
+        background-color: #f1f5f9 !important;
+        color: #475569 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+
+    html:not(.dark) #studentForm input:not(.is-locked):not(:disabled):not([readonly]),
+    html:not(.dark) #studentForm select:not(.is-locked):not(:disabled),
+    html:not(.dark) #studentForm textarea:not(.is-locked):not(:disabled):not([readonly]),
+    html:not(.dark) .student-search-box input {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+        opacity: 1 !important;
+    }
+
+    html:not(.dark) #studentForm input:not(.is-locked):not(:disabled):not([readonly]):focus,
+    html:not(.dark) #studentForm select:not(.is-locked):not(:disabled):focus,
+    html:not(.dark) #studentForm textarea:not(.is-locked):not(:disabled):not([readonly]):focus,
+    html:not(.dark) .student-search-box input:focus {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border-color: #307e92 !important;
+        opacity: 1 !important;
+    }
+
+    html:not(.dark) #studentForm option,
+    html:not(.dark) .student-data-page option,
+    html:not(.dark) select option {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+    }
+
+    html:not(.dark) #studentForm input::placeholder,
+    html:not(.dark) #studentForm textarea::placeholder,
+    html:not(.dark) .student-search-box input::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    /* Dark Mode Form Input Styles (Strictly scoped to html.dark) */
+    html.dark #studentForm input.is-locked,
+    html.dark #studentForm select.is-locked,
+    html.dark #studentForm textarea.is-locked,
+    html.dark #studentForm input:disabled,
+    html.dark #studentForm select:disabled,
+    html.dark #studentForm textarea:disabled,
+    html.dark #studentForm input[readonly],
+    html.dark #studentForm textarea[readonly] {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #94a3b8 !important;
+        border-color: #334155 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        box-shadow: none !important;
+        opacity: 0.65 !important;
+        user-select: none !important;
+    }
+
+    html.dark #studentForm select.is-locked,
+    html.dark #studentForm select:disabled {
+        opacity: 0.65 !important;
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #94a3b8 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+    }
+
+    html.dark #studentForm input:not(.is-locked):not(:disabled):not([readonly]),
+    html.dark #studentForm select:not(.is-locked):not(:disabled),
+    html.dark #studentForm textarea:not(.is-locked):not(:disabled):not([readonly]),
+    html.dark .student-search-box input {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+        opacity: 1 !important;
+    }
+
+    html.dark #studentForm input:not(.is-locked):not(:disabled):not([readonly]):focus,
+    html.dark #studentForm select:not(.is-locked):not(:disabled):focus,
+    html.dark #studentForm textarea:not(.is-locked):not(:disabled):not([readonly]):focus,
+    html.dark .student-search-box input:focus {
+        background-color: #0f172a !important;
+        background: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #475569 !important;
+        opacity: 1 !important;
+    }
+
+    html.dark #studentForm option,
+    html.dark .student-data-page option,
+    html.dark select option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark #studentForm input::placeholder,
+    html.dark #studentForm textarea::placeholder,
+    html.dark .student-search-box input::placeholder {
+        color: #94a3b8 !important;
+    }
+
+    html.dark .student-data-page .group-title,
+    html.dark .student-data-page .page-header-title {
+        color: #ffffff !important;
+    }
+
+    html.dark .student-data-page .field-label,
+    html.dark .student-data-page label {
+        color: #e2e8f0 !important;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main student-data-page" dir="rtl">
+    <div class="student-data-container">
+
+        <div class="page-header-row border-accent-gold">
+            <div>
+                <h1 class="page-header-title">بيانات الطالب</h1>
+                <p class="page-header-subtitle">إدارة وتحديث ملفات الطلاب الأكاديمية والشخصية داخل المنظومة</p>
+            </div>
+            {% if not request.user|has_exec_perm:'student.change_student' and not request.user|has_exec_perm:'student.add_student' and not request.user|has_exec_perm:'change_student' and not request.user|has_exec_perm:'add_student' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_add_job_open or not is_edit_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="jobInactiveBannerText">
+                    {% if not is_add_job_open %}{{ add_job_message }}{% endif %}
+                    {% if not is_edit_job_open %}{% if not is_add_job_open %} | {% endif %}{{ edit_job_message }}{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <div class="student-data-layout">
+
+            <div class="student-avatar-column">
+                <div class="group-box text-center">
+                    <span class="group-title">صورة الطالب</span>
+                    <label for="photo_input" class="student-avatar-placeholder" id="avatar_placeholder" style="cursor: pointer; overflow: hidden; position: relative;" title="انقر لاختيار صورة الطالب">
+                        {% if student and student.photo %}
+                            <span class="material-symbols-outlined" id="avatar_icon" style="display: none;">add_a_photo</span>
+                            <img id="avatar_img" src="{{ student.photo.url }}" alt="صورة الطالب" style="width: 100%; height: 100%; object-fit: cover;">
+                        {% else %}
+                            <span class="material-symbols-outlined" id="avatar_icon">add_a_photo</span>
+                            <img id="avatar_img" src="" alt="صورة الطالب" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                        {% endif %}
+                        <input type="file" name="photo" id="photo_input" form="studentForm" style="display: none;" accept="image/*" onchange="window.previewAvatar(event)">
+                    </label>
+ 
+                    <div class="qr-container">
+                        <div class="qr-title">
+                            <span class="material-symbols-outlined">qr_code</span>
+                            كود QR لبيانات الطالب
+                        </div>
+                        <div id="qrcode" style="min-height: 130px; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 10px; padding: 8px; margin: 8px auto; width: 130px; height: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                            {% if student and student.qr_code %}
+                                <img id="qr_image" src="{{ student.qr_code.url }}" alt="كود QR" style="width: 100%; height: 100%; object-fit: contain;" />
+                                <span id="qr_placeholder" class="text-xs font-bold" style="display: none; text-align: center; color: #64748b;">اختر طالباً لعرض الـ QR</span>
+                            {% else %}
+                                <img id="qr_image" src="" alt="كود QR" style="width: 100%; height: 100%; object-fit: contain; display: none;" />
+                                <span id="qr_placeholder" class="text-xs font-bold" style="text-align: center; color: #64748b;">اختر طالباً لعرض الـ QR</span>
+                            {% endif %}
+                        </div>
+                        <button type="button" class="qr-btn" id="btnCopyQR" onclick="window.copyQRCodeLink()">
+                            <span class="material-symbols-outlined">content_copy</span> <span id="btnCopyQRText">نسخ الرابط</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <div class="buttons-vertical">
+                    {% if request.user|has_exec_perm:'student.change_student' or request.user|has_exec_perm:'change_student' %}
+                    <button type="button" class="btn-action btn-edit opacity-50 pointer-events-none" id="btnEdit" onclick="window.enableFormEditing()" disabled>
+                        <span class="material-symbols-outlined">edit</span> تعديل
+                    </button>
+                    <button type="submit" form="studentForm" class="btn-action btn-save" id="btnSave" disabled>
+                        <span class="material-symbols-outlined">save</span> <span id="btnSaveText">حفظ</span>
+                    </button>
+                    {% endif %}
+                    <button type="button" class="btn-action btn-exit" onclick="window.goBack()">
+                        <span class="material-symbols-outlined">arrow_back</span> خروج
+                    </button>
+                </div>
+            </div>
+
+            <div class="student-form-column">
+                <form method="POST"
+                    action="{% if is_edit %}{% url 'renewal:edit_student' student.id %}{% else %}{% url 'renewal:student_data' %}{% endif %}"
+                    id="studentForm" enctype="multipart/form-data">
+                    {% csrf_token %}
+
+                    <div class="group-box student-data-group">
+                        <span class="group-title" id="formTitle">{% if is_edit %}تعديل بيانات الطالب{% else %}تسجيل طالب جديد{% endif %}</span>
+
+                        <div class="student-search-box">
+                            <div class="filters-grid-2col">
+                                <div>
+                                    <label class="field-label">رقم القيد للبحث</label>
+                                    <input type="text" id="searchRegNum" placeholder="أدخل رقم القيد للبحث">
+                                </div>
+                                <div>
+                                    <label class="field-label">اسم الطالب للبحث</label>
+                                    <input type="text" id="searchName" placeholder="أدخل اسم الطالب للبحث">
+                                </div>
+                            </div>
+                            <div class="buttons-row-left mt-2">
+                                <button type="button" class="btn-action btn-search" onclick="window.searchStudent()">
+                                    <span class="material-symbols-outlined">search</span> بحث
+                                </button>
+                                <button type="button" class="btn-action btn-reset" onclick="window.clearSearchResults()">
+                                    <span class="material-symbols-outlined">cleaning_services</span> تفريغ
+                                </button>
+                            </div>
+                            <div id="searchResults" class="search-results-list hidden"></div>
+                        </div>
+
+                        <div class="filters-grid-4col">
+                            <div>
+                                <label class="field-label">رقم القيد</label>
+                                <input type="text" name="student_id" id="student_id" placeholder="يتولد تلقائياً"
+                                    class="readonly-field is-locked" readonly disabled
+                                    value="{% if student %}{{ student.student_id }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">اسم الطالب</label>
+                                <input type="text" name="name" id="name" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.name }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">اسم الأب</label>
+                                <input type="text" name="father_name" id="father_name" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.father_name }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">اسم الجد</label>
+                                <input type="text" name="grandfather_name" id="grandfather_name" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.grandfather_name }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">اللقب</label>
+                                <input type="text" name="last_name" id="last_name" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.last_name }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">تاريخ الميلاد</label>
+                                <input type="date" name="birth_date" id="birth_date" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.birth_date|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">مكان الميلاد</label>
+                                <select name="birth_place" id="birth_place" required disabled class="is-locked">
+                                    <option value="">-- اختر مكان الميلاد --</option>
+                                    {% for place in birth_places %}
+                                    <option value="{{ place.id }}" {% if student and student.birth_place_id == place.id %}selected{% endif %}>{{ place.city }} - {{ place.country }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">الجنسية</label>
+                                <select name="nationality" id="nationality" required disabled class="is-locked">
+                                    <option value="">-- اختر الجنسية --</option>
+                                    {% for n in nationalities %}
+                                    <option value="{{ n.id }}" {% if student and student.nationality_id == n.id %}selected{% endif %}>{{ n.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">فصيلة الدم</label>
+                                <select name="blood_type" id="blood_type" disabled class="is-locked">
+                                    <option value="">-- اختر فصيلة الدم --</option>
+                                    <option value="A+" {% if student and student.blood_type == "A+" %}selected{% endif %}>A+</option>
+                                    <option value="A-" {% if student and student.blood_type == "A-" %}selected{% endif %}>A-</option>
+                                    <option value="B+" {% if student and student.blood_type == "B+" %}selected{% endif %}>B+</option>
+                                    <option value="B-" {% if student and student.blood_type == "B-" %}selected{% endif %}>B-</option>
+                                    <option value="AB+" {% if student and student.blood_type == "AB+" %}selected{% endif %}>AB+</option>
+                                    <option value="AB-" {% if student and student.blood_type == "AB-" %}selected{% endif %}>AB-</option>
+                                    <option value="O+" {% if student and student.blood_type == "O+" %}selected{% endif %}>O+</option>
+                                    <option value="O-" {% if student and student.blood_type == "O-" %}selected{% endif %}>O-</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">الجنس</label>
+                                <select name="gender" id="gender" required disabled class="is-locked">
+                                    <option value="">-- اختر الجنس --</option>
+                                    {% for g in genders %}
+                                    <option value="{{ g.id }}" {% if student and student.gender_id == g.id %}selected{% endif %}>{{ g.name }}</option>
+                                    {% empty %}
+                                    <option value="2" {% if student and student.gender_id == 2 %}selected{% endif %}>ذكر</option>
+                                    <option value="1" {% if student and student.gender_id == 1 %}selected{% endif %}>أنثى</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">الحالة الاجتماعية</label>
+                                <select name="marital_status" id="marital_status" disabled class="is-locked">
+                                    <option value="">-- اختر الحالة --</option>
+                                    {% for ms in marital_statuses %}
+                                    <option value="{{ ms.id }}" {% if student and student.marital_status_id == ms.id %}selected{% endif %}>{{ ms.name }}</option>
+                                    {% empty %}
+                                    <option value="1" {% if student and student.marital_status_id == 1 %}selected{% endif %}>أعزب/ـة</option>
+                                    <option value="2" {% if student and student.marital_status_id == 2 %}selected{% endif %}>متزوج/ـة</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <!-- 🔥 حقل هوية موحد يتغير عنوانه ديناميكياً حسب الجنسية 🔥 -->
+                            <div id="identityFieldGroup">
+                                <label class="field-label" id="identityFieldLabel">الرقم الوطني / رقم الجواز <span class="text-red-500">*</span></label>
+                                <!-- حقل الرقم الوطني (للطلاب الليبيين) -->
+                                <input type="text" name="national_id" id="national_id" readonly disabled class="is-locked"
+                                    placeholder="أدخل الرقم الوطني (12 رقم)"
+                                    value="{% if student %}{{ student.national_id }}{% endif %}"
+                                    style="display: none;">
+                                <!-- حقل رقم الجواز (للطلاب غير الليبيين) -->
+                                <input type="text" name="passport_number" id="passport_number" readonly disabled class="is-locked"
+                                    placeholder="أدخل رقم جواز السفر (6-12 حرف/رقم)"
+                                    value="{% if student %}{{ student.passport_number }}{% endif %}"
+                                    style="display: none;">
+                                <!-- حقل الإدخال المرئي الوحيد -->
+                                <input type="text" id="identity_input" readonly disabled class="is-locked"
+                                    placeholder="اختر الجنسية أولاً"
+                                    value="{% if student %}{% if student.national_id %}{{ student.national_id }}{% elif student.passport_number %}{{ student.passport_number }}{% endif %}{% endif %}"
+                                    autocomplete="off">
+                                <small class="text-xs text-gray-500" id="identityFieldHint">اختر الجنسية لتحديد نوع وثيقة الهوية</small>
+                            </div>
+
+                            <div>
+                                <label class="field-label">رقم الهاتف</label>
+                                <input type="text" name="phone" id="phone" readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.phone }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">البريد الإلكتروني</label>
+                                <input type="email" name="email" id="email" autocomplete="off" readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.email }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">عنوان السكن</label>
+                                <input type="text" name="current_address" id="current_address" autocomplete="off" readonly disabled class="is-locked"
+                                    placeholder="الشارع، المدينة"
+                                    value="{% if student and student.current_address %}{{ student.current_address.street }}{% endif %}">
+                            </div>
+                            <div>
+                                <label class="field-label">القسم (التخصص)</label>
+                                <select name="department" id="department" required disabled class="is-locked">
+                                    <option value="">-- اختر التخصص --</option>
+                                    {% for d in departments %}
+                                    <option value="{{ d.id }}" {% if student and student.department_id == d.id %}selected{% endif %}>{{ d.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">الخطة الدراسية</label>
+                                <select name="study_plan" id="study_plan" required disabled class="is-locked">
+                                    <option value="">-- اختر الخطة --</option>
+                                    {% for sp in study_plans %}
+                                    <option value="{{ sp.id }}" {% if student and student.study_plan_id == sp.id %}selected{% endif %}>{{ sp.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">حالة الطالب (للعرض فقط)</label>
+                                <input type="text" id="student_status" name="status_display" class="readonly-field is-locked" readonly disabled value="{% if student and student.student_status and student.student_status.name != 'جديد' %}{{ student.student_status.name }}{% else %}منتظم{% endif %}" style="font-weight: 600; cursor: not-allowed;">
+                            </div>
+                            <div>
+                                <label class="field-label">نوع الفصل الدراسي</label>
+                                <select name="semester_type" id="semester_type" required disabled class="is-locked">
+                                    <option value="">-- اختر النوع --</option>
+                                    <option value="ربيع" {% if semester_type_val == 'ربيع' %}selected{% endif %}>ربيع</option>
+                                    <option value="خريف" {% if semester_type_val == 'خريف' %}selected{% endif %}>خريف</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="field-label">سنة التسجيل</label>
+                                <input type="text" name="semester_year" id="semester_year" required readonly disabled class="is-locked"
+                                    placeholder="مثال: 2026" value="{{ semester_year_val }}">
+                            </div>
+                            <div>
+                                <label class="field-label">تاريخ الالتحاق</label>
+                                <input type="date" name="enrollment_date" id="enrollment_date" required readonly disabled class="is-locked"
+                                    value="{% if student %}{{ student.enrollment_date|date:'Y-m-d' }}{% endif %}">
+                            </div>
+                            <div style="grid-column: 1 / -1;">
+                                <label class="field-label">ملاحظات</label>
+                                <textarea name="notes" id="notes" rows="2" readonly disabled class="is-locked">{% if student %}{{ student.notes }}{% endif %}</textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="student-subtables-grid">
+
+                        <div class="group-box student-data-subgroup">
+                            <span class="group-title">بيانات ولي الأمر</span>
+                            <div class="form-vertical-layout">
+                                <div>
+                                    <label class="field-label">اسم ولي الأمر</label>
+                                    <input type="text" name="guardian_name" id="guardian_name" readonly disabled class="is-locked"
+                                        value="{% if student and student.guardian %}{{ student.guardian.name }}{% endif %}">
+                                </div>
+                                <div>
+                                    <label class="field-label">رقم هاتف ولي الأمر</label>
+                                    <input type="text" name="guardian_phone" id="guardian_phone" readonly disabled class="is-locked"
+                                        value="{% if student and student.guardian %}{{ student.guardian.phone }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="group-box student-data-subgroup">
+                            <span class="group-title">بيانات المؤهل العلمي</span>
+                            <div class="filters-grid-2col">
+                                <div class="col-span-2">
+                                    <label class="field-label">نوع المؤهل</label>
+                                    <select name="qualification" id="qualification" required disabled class="is-locked">
+                                        <option value="">-- اختر نوع المؤهل --</option>
+                                        {% for q in qualifications %}
+                                        <option value="{{ q.id }}" {% if student and student.qualification_id == q.id %}selected{% endif %}>{{ q.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="field-label">مكان الحصول عليها</label>
+                                    <input type="text" name="qualification_place" id="qualification_place" readonly disabled class="is-locked"
+                                        placeholder="مكان الحصول"
+                                        value="{% if student %}{{ student.qualification_place }}{% endif %}">
+                                </div>
+                                <div>
+                                    <label class="field-label">تاريخ الحصول عليها</label>
+                                    <input type="date" name="qualification_date" id="qualification_date" readonly disabled class="is-locked"
+                                        value="{% if student %}{{ student.qualification_date|date:'Y-m-d' }}{% endif %}">
+                                </div>
+                                <div>
+                                    <label class="field-label">التقدير</label>
+                                    <input type="text" name="qualification_grade" id="qualification_grade" readonly disabled class="is-locked"
+                                        placeholder="التقدير"
+                                        value="{% if student %}{{ student.qualification_grade }}{% endif %}">
+                                </div>
+                                <div>
+                                    <label class="field-label">التخصص</label>
+                                    <input type="text" name="qualification_major" id="qualification_major" readonly disabled class="is-locked"
+                                        placeholder="التخصص"
+                                        value="{% if student %}{{ student.qualification_major }}{% endif %}">
+                                </div>
+                                <div class="col-span-2">
+                                    <label class="field-label">النسبة المئوية %</label>
+                                    <input type="text" name="qualification_percentage" id="qualification_percentage" readonly disabled class="is-locked"
+                                        placeholder="النسبة المئوية"
+                                        value="{% if student and student.qualification_percentage %}{{ student.qualification_percentage }}{% endif %}">
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+    <div id="toastNotification">
+        <div id="toastIconCircle" class="toast-icon-circle">
+            <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const isAddOpen = "{{ is_add_job_open|yesno:'true,false' }}" === "true";
+    window.is_add_job_open = isAddOpen;
+    window.IS_ADD_JOB_OPEN = isAddOpen;
+    window.ADD_JOB_MESSAGE = "{{ add_job_message|escapejs }}";
+
+    const isEditOpen = "{{ is_edit_job_open|yesno:'true,false' }}" === "true";
+    window.is_edit_job_open = isEditOpen;
+    window.IS_EDIT_JOB_OPEN = isEditOpen;
+    window.EDIT_JOB_MESSAGE = "{{ edit_job_message|escapejs }}";
+</script>
+<script src="{% static 'renewal/js/renewal.js' %}"></script>
+<script src="{% static 'renewal/js/student_data.js' %}?v=2.0.0"></script>
+
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

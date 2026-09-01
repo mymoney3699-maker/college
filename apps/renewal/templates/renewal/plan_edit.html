@@ -1,0 +1,551 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}تعديل الخطة الدراسية: {{ plan.name }} | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+.plan-edit-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem 1.25rem 3rem 1.25rem;
+    direction: rtl;
+    text-align: right;
+    box-sizing: border-box;
+}
+
+/* 1. بانر الهيدر الموحد بلون السايدبار */
+.plan-edit-header-banner {
+    background: linear-gradient(135deg, #307e92 0%, #256677 100%);
+    background-color: #307e92;
+    border-radius: 18px;
+    padding: 1.5rem 1.75rem;
+    margin-bottom: 1.75rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px -5px rgba(48, 126, 146, 0.25);
+    flex-wrap: wrap;
+    gap: 1.25rem;
+}
+
+.plan-edit-header-info {
+    display: flex;
+    align-items: center;
+    gap: 1.15rem;
+}
+
+.plan-edit-header-icon {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 14px;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    flex-shrink: 0;
+}
+
+.plan-edit-header-icon .material-symbols-outlined {
+    font-size: 32px;
+    color: #fef08a;
+}
+
+.plan-edit-header-title {
+    font-size: 1.35rem;
+    font-weight: 900;
+    margin: 0;
+    color: #ffffff;
+    line-height: 1.2;
+}
+
+.plan-edit-header-subtitle {
+    font-size: 0.88rem;
+    color: #e0f2fe;
+    margin: 0.35rem 0 0 0;
+    opacity: 0.95;
+}
+
+/* 2. بطاقة النموذج */
+.card-box {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.75rem;
+    margin-bottom: 1.75rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.card-box-title {
+    font-size: 1.05rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin: 0 0 1.25rem 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.85rem;
+}
+
+.form-group {
+    margin-bottom: 1.25rem;
+}
+
+.form-label {
+    display: block;
+    font-size: 0.86rem;
+    font-weight: 800;
+    color: #334155;
+    margin-bottom: 0.45rem;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 0.65rem 0.95rem;
+    border-radius: 10px;
+    border: 1px solid #cbd5e1;
+    background: #f8fafc;
+    font-size: 0.92rem;
+    color: #0f172a;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.form-input:focus, .form-textarea:focus {
+    outline: none;
+    border-color: #307e92;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
+}
+
+/* جدول المقررات */
+.custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: right;
+}
+
+.custom-table th {
+    background: #f1f5f9;
+    padding: 0.85rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #334155;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+
+.custom-table td {
+    padding: 0.85rem 1rem;
+    font-size: 0.86rem;
+    color: #1e293b;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.custom-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+/* الأزرار السفلية */
+.bottom-actions-card {
+    padding: 1.25rem 1.5rem;
+    background: #ffffff;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.btn-save {
+    background: #307e92;
+    color: #ffffff;
+    border: none;
+    padding: 0.7rem 1.75rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-save:hover {
+    background: #256677;
+    transform: translateY(-1px);
+}
+
+.btn-cancel {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+    padding: 0.7rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 800;
+    font-size: 0.92rem;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.btn-cancel:hover {
+    background: #e2e8f0;
+    color: #0f172a;
+}
+
+/* ============================================================
+   🌙 Dark Mode Overrides
+   ============================================================ */
+html.dark .plan-edit-header-banner {
+    background: linear-gradient(135deg, #296c7d 0%, #1e525f 100%) !important;
+    background-color: #296c7d !important;
+}
+
+html.dark .card-box,
+html.dark .bottom-actions-card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+html.dark .card-box-title {
+    color: #f8fafc !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .form-label {
+    color: #cbd5e1 !important;
+}
+
+html.dark .form-input, html.dark .form-textarea {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .custom-table th {
+    background-color: #0f172a !important;
+    color: #cbd5e1 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .custom-table td {
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .custom-table tbody tr:hover {
+    background-color: #1a2332 !important;
+}
+
+html.dark .btn-cancel {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+/* 🔔 Floating Toast Notification */
+#toastNotification {
+    position: fixed;
+    bottom: 30px;
+    left: 30px;
+    z-index: 99999;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    max-width: 420px;
+    width: auto;
+    min-width: 280px;
+    background: #ffffff;
+    border-right: 4.5px solid #10b981;
+    border-radius: 14px;
+    box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    direction: rtl;
+    pointer-events: auto;
+}
+.toast-icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(16, 185, 129, 0.12);
+    transition: all 0.25s ease;
+}
+html.dark #toastNotification {
+    background: #1e293b !important;
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+}
+html.dark #toastNotification p {
+    color: #f8fafc !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="plan-edit-container">
+
+    <!-- 1. بانر الهيدر الموحد بلون السايدبار -->
+    <div class="plan-edit-header-banner">
+        <div class="plan-edit-header-info">
+            <div class="plan-edit-header-icon">
+                <span class="material-symbols-outlined">edit_square</span>
+            </div>
+            <div>
+                <h1 class="plan-edit-header-title">تعديل الخطة الدراسية</h1>
+                <p class="plan-edit-header-subtitle">
+                    تعديل الاسم والوصف وتحديث تفاصيل المنهج الأكاديمي للخطة
+                </p>
+            </div>
+        </div>
+
+        <div>
+            <a href="{% url 'renewal:plans_manage' %}" class="btn-cancel" style="background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.3);">
+                <span class="material-symbols-outlined" style="font-size: 18px;">arrow_forward</span>
+                <span>عودة لإدارة الخطط</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. نموذج التعديل -->
+    <form method="POST" action="{% url 'renewal:plan_edit' plan_id=plan.id %}">
+        {% csrf_token %}
+
+        <div class="card-box">
+            <h2 class="card-box-title">
+                <span class="material-symbols-outlined" style="color: #307e92; font-size: 20px;">info</span>
+                <span>البيانات الأساسية للخطة</span>
+            </h2>
+
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem;">
+                <div class="form-group">
+                    <label for="planCode" class="form-label">رمز الخطة (Plan Code):</label>
+                    <input type="text" id="planCode" name="code" value="{{ plan.code|default:'' }}" class="form-input" placeholder="مثال: PLAN-2026 أو IT-PL1">
+                </div>
+
+                <div class="form-group">
+                    <label for="planName" class="form-label">اسم الخطة الدراسية <span style="color: #ef4444;">*</span></label>
+                    <input type="text" id="planName" name="name" value="{{ plan.name }}" required class="form-input" placeholder="اكتب اسم الخطة الدراسية...">
+                </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 0.5rem;">
+                <label for="planDescription" class="form-label">وصف الخطة وملاحظاتها:</label>
+                <textarea id="planDescription" name="description" rows="3" class="form-textarea" placeholder="أدخل تفاصيل أو أهداف الخطة الدراسية...">{{ plan.description|default:"" }}</textarea>
+            </div>
+        </div>
+
+        <!-- 3. المواد التابعة للخطة -->
+        <div class="card-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem;">
+                <h2 class="card-box-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+                    <span class="material-symbols-outlined" style="color: #307e92; font-size: 20px;">auto_stories</span>
+                    <span>المقررات الدراسية المدرجة بالخطة ({{ total_courses }} مقرر - {{ total_credits }} وحدة)</span>
+                </h2>
+                <a href="{% url 'renewal:plan_add_course' plan_id=plan.id %}" class="btn-save" style="padding: 0.45rem 1rem; font-size: 0.82rem;">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">add</span>
+                    <span>إضافة مقرر جديد</span>
+                </a>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="custom-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>رمز المقرر</th>
+                            <th>اسم المقرر</th>
+                            <th>المستوى</th>
+                            <th>الوحدات</th>
+                            <th>ساعات نظري / عملي</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for crs in courses %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td style="font-family: monospace; font-weight: 800; color: #307e92;">{{ crs.code }}</td>
+                            <td style="font-weight: 800;">{{ crs.name }}</td>
+                            <td>المستوى {{ crs.level.number|default:"--" }}</td>
+                            <td style="font-weight: 800; color: #b59b66;">{{ crs.credits }} وحدة</td>
+                            <td>{{ crs.theoretical_hours }} نظري / {{ crs.practical_hours }} عملي</td>
+                            <td>
+                                {% if crs.is_active %}
+                                <span style="color: #16a34a; font-weight: 800; font-size: 0.8rem;">فعال</span>
+                                {% else %}
+                                <span style="color: #94a3b8; font-weight: 800; font-size: 0.8rem;">معطل</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b;">
+                                <span class="material-symbols-outlined" style="font-size: 40px; color: #cbd5e1; display: block; margin-bottom: 0.5rem;">menu_book</span>
+                                <div>لا توجد مقررات مدرجة في هذه الخطة حالياً</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 4. الحاوية السفلية للأزرار والإجراءات -->
+        <div class="bottom-actions-card">
+            <a href="{% url 'renewal:plans_manage' %}" class="btn-cancel">
+                <span class="material-symbols-outlined" style="font-size: 18px;">close</span>
+                <span>إلغاء والتراجع</span>
+            </a>
+
+            <button type="submit" class="btn-save">
+                <span class="material-symbols-outlined" style="font-size: 18px;">save</span>
+                <span>حفظ التعديلات</span>
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showNotification(type, message) {
+        const toast = document.getElementById('toastNotification');
+        const iconCircle = document.getElementById('toastIconCircle');
+        const icon = document.getElementById('toastIcon');
+        const msg = document.getElementById('toastMessage');
+        
+        if (!toast || !icon || !msg) {
+            console.warn('⚠️ Toast Notification elements not found:', type, message);
+            return;
+        }
+        
+        msg.innerText = message;
+        const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+        
+        if (isDark) {
+            toast.style.background = '#1e293b';
+            toast.style.backgroundColor = '#1e293b';
+            toast.style.boxShadow = '0 14px 45px rgba(0, 0, 0, 0.7)';
+            msg.style.color = '#f8fafc';
+        } else {
+            toast.style.background = '#ffffff';
+            toast.style.backgroundColor = '#ffffff';
+            toast.style.boxShadow = '0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08)';
+            msg.style.color = '#1e293b';
+        }
+        
+        if (type === 'success') {
+            toast.style.borderRight = '4.5px solid #10b981';
+            toast.style.borderRightColor = '#10b981';
+            icon.innerText = "check_circle";
+            icon.style.color = '#10b981';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)';
+            }
+        } else if (type === 'warning') {
+            toast.style.borderRight = '4.5px solid #f59e0b';
+            toast.style.borderRightColor = '#f59e0b';
+            icon.innerText = "warning";
+            icon.style.color = '#f59e0b';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.12)';
+            }
+        } else if (type === 'info') {
+            toast.style.borderRight = '4.5px solid #3b82f6';
+            toast.style.borderRightColor = '#3b82f6';
+            icon.innerText = "info";
+            icon.style.color = '#3b82f6';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.12)';
+            }
+        } else {
+            toast.style.borderRight = '4.5px solid #e11d48';
+            toast.style.borderRightColor = '#e11d48';
+            icon.innerText = "error";
+            icon.style.color = '#e11d48';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(225, 29, 72, 0.2)' : 'rgba(225, 29, 72, 0.12)';
+            }
+        }
+        
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+        
+        clearTimeout(window.notificationTimeout);
+        window.notificationTimeout = setTimeout(() => {
+            toast.style.transform = 'translateY(80px)';
+            toast.style.opacity = '0';
+        }, 4000);
+    }
+    window.showNotification = showNotification;
+</script>
+
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,286 @@
+/* ============================================================
+   file_withdrawal_archive.css
+   تنسيق صفحة أرشيف سحب الملفات والفلترة المتقدمة
+   مطابق تماماً لنظام كروت ومعايير منظومة الأرشيف Central Archive System
+   ============================================================ */
+
+:root {
+    --primary-teal: #307e92;
+    --primary-dark: #1a5f64;
+    --deep-teal-gradient: linear-gradient(135deg, #307e92 0%, #1a5f64 100%);
+    --archive-border: #cbd5e1;
+    --archive-card-bg: #ffffff;
+    --archive-radius: 14px;
+}
+
+.file-withdrawal-archive-page {
+    direction: rtl;
+    text-align: right;
+}
+
+/* Page Header Row */
+.page-header-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 1.25rem !important;
+    text-align: right !important;
+}
+.page-header-title {
+    font-size: 1.3rem !important;
+    font-weight: 900 !important;
+    color: var(--primary-teal, #307e92) !important;
+    line-height: 1.25 !important;
+    text-align: right !important;
+}
+html.dark .page-header-title { color: #38bdf8 !important; }
+.page-header-subtitle {
+    font-size: 0.875rem !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    margin-top: 0.25rem !important;
+    text-align: right !important;
+}
+html.dark .page-header-subtitle { color: #cbd5e1 !important; }
+
+/* Main Container Card Box */
+.plan-container-box, .group-box.system-card, .system-card {
+    position: relative !important;
+    background-color: #ffffff !important;
+    border: 1px solid #d2e1ed !important;
+    border-top: 4px solid var(--primary-teal) !important;
+    border-radius: 14px !important;
+    padding: 2.2rem 1.5rem 1.5rem 1.5rem !important;
+    margin-top: 1.75rem !important;
+    margin-bottom: 1.75rem !important;
+    box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05) !important;
+    transition: all 0.25s ease-in-out !important;
+    display: block !important;
+    box-sizing: border-box !important;
+}
+html.dark .plan-container-box, html.dark .group-box.system-card, html.dark .system-card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    border-top-color: #38bdf8 !important;
+    box-shadow: none !important;
+    color: #f8fafc !important;
+}
+
+/* Compact Statistical Summary Cards Sizing & Full Content Containment */
+.stat-card-compact {
+    position: relative !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-top: 4px solid var(--primary-teal, #307e92) !important;
+    border-radius: 14px !important;
+    padding: 1.1rem 1.25rem !important;
+    margin: 0 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03) !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+html.dark .stat-card-compact {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    border-top-color: #38bdf8 !important;
+    box-shadow: none !important;
+    color: #f8fafc !important;
+}
+
+/* Floating Title Badge */
+.plan-container-box > .plan-title-badge,
+.plan-container-box > .group-title,
+.plan-container-box > .card-badge,
+.plan-title-badge,
+.group-title.card-badge,
+.card-badge {
+    position: absolute !important;
+    top: -16px !important;
+    right: 30px !important;
+    left: auto !important;
+    transform: none !important;
+    -webkit-transform: none !important;
+    background: var(--primary-teal) !important;
+    color: #ffffff !important;
+    padding: 5px 22px !important;
+    border-radius: 50px !important;
+    font-weight: 800 !important;
+    font-size: 0.85rem !important;
+    white-space: nowrap !important;
+    border: 2px solid #ffffff !important;
+    box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+    z-index: 10 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+    margin-right: 0 !important;
+    margin-left: auto !important;
+}
+html.dark .plan-title-badge, html.dark .group-title.card-badge, html.dark .card-badge {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Form Controls & Action Buttons */
+.form-control-system {
+    width: 100% !important;
+    background-color: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 8px !important;
+    padding: 0.6rem 0.9rem !important;
+    font-size: 0.875rem !important;
+    color: #1e293b !important;
+    font-weight: 600 !important;
+    outline: none !important;
+    transition: all 0.2s ease-in-out !important;
+}
+.form-control-system:focus {
+    border-color: var(--primary-teal) !important;
+    box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18) !important;
+}
+html.dark .form-control-system {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+.btn-teal-action {
+    background: var(--deep-teal-gradient) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    padding: 0.55rem 1.2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+    box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+    font-size: 0.85rem !important;
+}
+.btn-teal-action:hover {
+    opacity: 0.93 !important;
+    transform: translateY(-1px) !important;
+}
+
+.btn-grey-action {
+    background-color: #64748b !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-weight: 700 !important;
+    padding: 0.55rem 1.2rem !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.4rem !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease-in-out !important;
+    font-size: 0.85rem !important;
+}
+.btn-grey-action:hover {
+    background-color: #475569 !important;
+}
+
+/* Archive Table System */
+.table-responsive-wrapper {
+    overflow-x: auto !important;
+    border-radius: 10px !important;
+    border: 1px solid #e2e8f0 !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+}
+html.dark .table-responsive-wrapper { border-color: #334155 !important; }
+
+.archive-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 0.875rem !important;
+    text-align: right !important;
+}
+
+.archive-table thead tr {
+    background: var(--deep-teal-gradient) !important;
+    color: #ffffff !important;
+}
+html.dark .archive-table thead tr {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+    color: #38bdf8 !important;
+}
+
+.archive-table th {
+    padding: 0.85rem 1rem !important;
+    font-weight: 800 !important;
+    font-size: 0.825rem !important;
+    border-bottom: 2px solid #286b7c !important;
+    white-space: nowrap !important;
+    color: #ffffff !important;
+}
+html.dark .archive-table th {
+    border-bottom-color: #334155 !important;
+    color: #38bdf8 !important;
+}
+
+.archive-table td {
+    padding: 0.85rem 1rem !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    color: #1e293b !important;
+    vertical-align: middle !important;
+}
+html.dark .archive-table td {
+    border-bottom-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+.archive-table tbody tr:hover {
+    background-color: #f0f7f9 !important;
+}
+html.dark .archive-table tbody tr:hover {
+    background-color: #1e293b !important;
+}
+
+.badge-withdrawal {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    background-color: #fee2e2;
+    color: #991b1b;
+}
+
+/* Toast Notifications */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    background: #1e293b;
+    color: #ffffff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+    z-index: 99999;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(20px);
+    transition: all 0.3s ease;
+}
+
+.toast.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}

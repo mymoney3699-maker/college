@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}بيانات التخصصات - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main">
+    <div class="places-container">
+        <!-- هيدر الصفحة -->
+        <div class="page-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h1 class="page-header-title">بيانات التخصصات</h1>
+                <p class="page-header-subtitle">إدارة وتصنيف التخصصات الأكاديمية لطلاب الكلية بالمنظومة</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_specialization' and not request.user|has_exec_perm:'renewal.change_specialization' and not request.user|has_exec_perm:'add_specialization' and not request.user|has_exec_perm:'change_specialization' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="viewList">
+            <!-- البوكس الأول: فلاتر وإجراءات البحث -->
+            <div class="group-box">
+                <span class="group-title">بيانات التخصصات</span>
+                
+                <div class="table-actions-header-row">
+                    <div class="table-actions-title-search">
+                        <div class="section-title-row">
+                            <span class="section-title">التخصصات</span>
+                            <span class="material-symbols-outlined" style="color: var(--primary);">menu_book</span>
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">بحث:</label>
+                            <input type="text" id="searchSpecialtyInput" placeholder="بحث عن تخصص..." class="search-field" oninput="window.filterSpecialties()">
+                        </div>
+                    </div>
+
+                    <div class="actions-buttons-group">
+                        {% if request.user|has_exec_perm:'renewal.add_specialization' or request.user|has_exec_perm:'renewal.change_specialization' or request.user|has_exec_perm:'add_specialization' or request.user|has_exec_perm:'change_specialization' %}
+                        <button class="btn-action btn-new" onclick="window.showAddPage()">
+                            <span class="material-symbols-outlined">add</span> إضافة تخصص
+                        </button>
+                        {% endif %}
+                        <button class="btn-action btn-exit" onclick="window.goBack()">
+                            <span class="material-symbols-outlined">arrow_back</span> رجوع
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الجزء الثاني: سجل بيانات التخصصات (مخفي افتراضياً ويظهر عند البحث) -->
+            <div class="group-box mt-6 hidden" id="specialtyTableCard">
+                <span class="group-title">التخصصات المسجلة</span>
+                <div class="table-card" style="border: none;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center w-16">#</th>
+                                <th class="text-center">اسم التخصص</th>
+                                <th class="text-center w-36">رمز التخصص</th>
+                                <th class="text-center w-32">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="specialtyTableBody">
+                            <!-- سيتم تعبئتها ديناميكياً -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewAdd" class="hidden">
+            <div class="group-box">
+                <span class="group-title">إضافة تخصص جديد</span>
+                
+                <form id="specialtyForm" onsubmit="event.preventDefault();">
+                    <div class="form-container">
+                        <div class="filters-grid-2col" style="max-width: 600px; margin-bottom: 1rem;">
+                            <div>
+                                <label class="field-label">اسم التخصص الجديد *</label>
+                                <input type="text" id="specialtyNameInput" placeholder="مثال: هندسة البرمجيات" class="form-control" required>
+                            </div>
+                            <div>
+                                <label class="field-label">رمز التخصص *</label>
+                                <input type="text" id="specialtyCodeInput" placeholder="مثال: SWE" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="buttons-row">
+                            <button type="button" class="btn-action btn-save" onclick="window.addSpecialty()">
+                                <span class="material-symbols-outlined">save</span> تخزين
+                            </button>
+                            <button type="button" class="btn-action btn-exit" onclick="window.showListPage()">
+                                <span class="material-symbols-outlined">close</span> إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/specialization_data.js' %}?v=1.0.8"></script>
+{% endblock %}

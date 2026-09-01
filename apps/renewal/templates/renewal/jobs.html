@@ -1,0 +1,399 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}إدارة الوظائف والخدمات | الكلية الأكاديمية{% endblock %}
+
+{% block extra_css %}
+<!-- Tailwind CSS & Google Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<style>
+    body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #f0f8fa;
+        color: #1e293b;
+    }
+
+    :root {
+        --primary-teal: #307e92;
+        --primary-dark: #1a5f64;
+        --deep-teal-gradient: linear-gradient(135deg, #307e92 0%, #1a5f64 100%);
+        --btn-gold-start: #b59b66;
+        --btn-gold-end: #967d4b;
+    }
+
+    /* Main Container Box */
+    .plan-container-box, .group-box.system-card, .system-card, .theme-card {
+        position: relative !important;
+        background-color: #ffffff !important;
+        border: 1px solid #d2e1ed !important;
+        border-top: 4px solid var(--primary-teal) !important;
+        border-radius: 14px !important;
+        padding: 2.2rem 1.5rem 1.5rem 1.5rem !important;
+        margin-top: 1.75rem !important;
+        margin-bottom: 1.75rem !important;
+        box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.25s ease-in-out !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+    html.dark .plan-container-box, html.dark .group-box.system-card, html.dark .system-card, html.dark .theme-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        border-top-color: #38bdf8 !important;
+        box-shadow: none !important;
+        color: #f8fafc !important;
+    }
+
+    /* Floating Title Badge */
+    .plan-container-box > .plan-title-badge,
+    .plan-container-box > .group-title,
+    .plan-container-box > .card-badge,
+    .theme-card > .plan-title-badge,
+    .plan-title-badge,
+    .group-title.card-badge,
+    .card-badge {
+        position: absolute !important;
+        top: -16px !important;
+        right: 30px !important;
+        left: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        background: var(--primary-teal) !important;
+        color: #ffffff !important;
+        padding: 5px 22px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+        z-index: 10 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+    }
+    html.dark .plan-title-badge, html.dark .group-title.card-badge, html.dark .card-badge {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-color: #38bdf8 !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Table Styling System */
+    .table-responsive-wrapper {
+        overflow-x: auto !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02) !important;
+    }
+    html.dark .table-responsive-wrapper { border-color: #334155 !important; }
+
+    .academic-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        text-align: right !important;
+        font-size: 0.875rem !important;
+    }
+
+    .academic-table thead tr {
+        background: var(--deep-teal-gradient) !important;
+        color: #ffffff !important;
+    }
+    html.dark .academic-table thead tr {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #38bdf8 !important;
+    }
+
+    .academic-table th {
+        padding: 0.85rem 1rem !important;
+        font-weight: 800 !important;
+        font-size: 0.825rem !important;
+        border-bottom: 2px solid #286b7c !important;
+        white-space: nowrap !important;
+    }
+    html.dark .academic-table th { border-bottom-color: #334155 !important; }
+
+    .academic-table tbody tr.plan-row {
+        border-bottom: 2px solid #cbd5e1 !important;
+        transition: background-color 0.15s ease-in-out !important;
+        background-color: #ffffff !important;
+    }
+    .academic-table tbody tr.plan-row:hover {
+        background-color: #f0f7f9 !important;
+    }
+    html.dark .academic-table tbody tr.plan-row {
+        background-color: #0f172a !important;
+        border-bottom: 2px solid #334155 !important;
+    }
+    html.dark .academic-table tbody tr.plan-row:hover {
+        background-color: #1e293b !important;
+    }
+
+    .academic-table td {
+        padding: 1rem 1.25rem !important;
+        vertical-align: middle !important;
+    }
+
+    /* Form Controls & Buttons */
+    .form-control-system {
+        width: 100% !important; background-color: #ffffff !important; border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important; padding: 0.6rem 0.9rem !important; font-size: 0.875rem !important;
+        color: #1e293b !important; font-weight: 600 !important; outline: none !important; transition: all 0.2s ease-in-out !important;
+    }
+    .form-control-system:focus { border-color: var(--primary-teal) !important; box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18) !important; }
+    html.dark .form-control-system { background-color: #0f172a !important; border-color: #334155 !important; color: #f8fafc !important; }
+
+    .btn-teal-action {
+        background: var(--deep-teal-gradient) !important;
+        color: #ffffff !important; border: none !important; border-radius: 8px !important; font-weight: 700 !important;
+        padding: 0.55rem 1.2rem !important; display: inline-flex !important; align-items: center !important; gap: 0.4rem !important;
+        cursor: pointer !important; transition: all 0.2s ease-in-out !important; box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important; font-size: 0.85rem !important;
+    }
+    .btn-teal-action:hover { opacity: 0.93 !important; transform: translateY(-1px) !important; }
+    .btn-grey-action {
+        background-color: #64748b !important; color: #ffffff !important; border: none !important; border-radius: 8px !important;
+        font-weight: 700 !important; padding: 0.55rem 1.2rem !important; display: inline-flex !important; align-items: center !important;
+        gap: 0.4rem !important; cursor: pointer !important; transition: all 0.2s ease-in-out !important; font-size: 0.85rem !important;
+    }
+    .btn-grey-action:hover { background-color: #475569 !important; }
+
+    /* Action Buttons Container & Structured Cards */
+    .action-box-container {
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        gap: 0.5rem !important;
+        padding: 0.35rem 0.6rem !important;
+        background-color: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 0.75rem !important;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02) !important;
+    }
+    html.dark .action-box-container {
+        background-color: rgba(30, 41, 59, 0.7) !important;
+        border-color: #334155 !important;
+    }
+
+    .action-icon-card {
+        width: 2.25rem !important;
+        height: 2.25rem !important;
+        border-radius: 0.5rem !important;
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        color: #307e92 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.2s ease-in-out !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+        text-decoration: none !important;
+        cursor: pointer !important;
+    }
+    .action-icon-card:hover {
+        background-color: #307e92 !important;
+        color: #ffffff !important;
+        border-color: #307e92 !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(48, 126, 146, 0.25) !important;
+    }
+    .action-icon-card-danger {
+        color: #e11d48 !important;
+    }
+    .action-icon-card-danger:hover {
+        background-color: #e11d48 !important;
+        color: #ffffff !important;
+        border-color: #e11d48 !important;
+        box-shadow: 0 4px 8px rgba(225, 29, 72, 0.25) !important;
+    }
+    html.dark .action-icon-card {
+        background-color: #1e293b !important;
+        border-color: #475569 !important;
+        color: #38bdf8 !important;
+    }
+    html.dark .action-icon-card:hover {
+        background-color: #38bdf8 !important;
+        color: #0f172a !important;
+        border-color: #38bdf8 !important;
+        box-shadow: 0 4px 10px rgba(56, 189, 248, 0.3) !important;
+    }
+    html.dark .action-icon-card-danger {
+        color: #fb7185 !important;
+    }
+    html.dark .action-icon-card-danger:hover {
+        background-color: #e11d48 !important;
+        color: #ffffff !important;
+        border-color: #e11d48 !important;
+    }
+
+    .page-header-row { display: flex !important; justify-content: space-between !important; align-items: center !important; margin-bottom: 1.25rem !important; text-align: right !important; }
+    .page-header-title { font-size: 1.3rem !important; font-weight: 900 !important; color: var(--primary-teal, #307e92) !important; line-height: 1.25 !important; text-align: right !important; }
+    html.dark .page-header-title { color: #38bdf8 !important; }
+    .page-header-subtitle { font-size: 0.875rem !important; font-weight: 700 !important; color: #64748b !important; margin-top: 0.25rem !important; text-align: right !important; }
+    html.dark .page-header-subtitle { color: #cbd5e1 !important; }
+
+    /* Hide Add and Delete buttons completely as requested */
+    #addJobBtn, .btn-add-job-trigger, .action-icon-card-danger, [data-action="delete"], button[onclick*="deleteJob"] {
+        display: none !important;
+        visibility: hidden !important;
+        pointer-events: none !important;
+    }
+
+    main[data-user-can-edit="false"] #editArea {
+        display: none !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl"
+      data-user-can-add="false"
+      data-user-can-delete="false"
+      data-user-can-edit="{% if request.user.is_superuser or request.user.role == 'admin' or request.user|has_exec_perm:'renewal.change_systemjob' or request.user|has_exec_perm:'change_systemjob' %}true{% else %}false{% endif %}">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- Page Header & Control Action -->
+        <div class="page-header-row">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#eef6f8] dark:bg-slate-800 border border-[#307e92]/30 text-[#307e92] dark:text-[#38bdf8] text-xs font-extrabold mb-2">
+                    <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+                    لوحة الإدارة والتحكم في خدمات النظام
+                </div>
+                <h1 class="page-header-title text-3xl sm:text-4xl">إدارة الوظائف والخدمات النظامية</h1>
+                <p class="page-header-subtitle">
+                    التحكم المركز في تفعيل وإيقاف الخدمات الطلابية (مثل إضافة طالب جديد، تجديد القيد، التسجيل) وتحديد مدة صلاحيتها.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {% if not request.user.is_superuser and not request.user.role == 'admin' and not request.user|has_exec_perm:'renewal.change_systemjob' and not request.user|has_exec_perm:'change_systemjob' %}
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                    <span class="material-symbols-outlined text-sm">visibility</span>
+                    <span>نمط العرض فقط (Read-Only)</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Edit/Create Form Drawer Container -->
+        <div id="editArea" class="plan-container-box group-box system-card hidden space-y-4" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side -->
+            <span class="plan-title-badge group-title card-badge" id="editLabel" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">edit_note</span>
+                <span>تعديل بيانات الوظيفة</span>
+            </span>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pt-3">
+                <!-- Job Name -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">اسم الوظيفة / الخدمة <span class="text-red-500">*</span></label>
+                    <input type="text" id="inputName" placeholder="مثال: تجديد القيد الفصل الدراسي" class="form-control-system">
+                </div>
+
+                <!-- Start Date -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">تاريخ الفتح <span class="text-red-500">*</span></label>
+                    <input type="date" id="inputDate" class="form-control-system">
+                </div>
+
+                <!-- Duration Days -->
+                <div class="space-y-1.5">
+                    <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">المدة الصالحة (بالأيام) <span class="text-red-500">*</span></label>
+                    <input type="number" id="inputDuration" min="1" max="365" placeholder="7" class="form-control-system">
+                </div>
+
+                <!-- Status Checkbox -->
+                <div class="space-y-1.5 flex flex-col justify-end">
+                    <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] mb-2">حالة تفعيل الخدمة:</label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer p-2 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <input type="checkbox" id="inputStatus" class="w-4 h-4 text-[#307e92] rounded border-slate-300 focus:ring-[#307e92]" checked>
+                        <span class="text-xs font-bold text-slate-700 dark:text-slate-200">تفعيل هذه الوظيفة بالنظام</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="resetEditForm()" class="btn-grey-action">
+                    إلغاء
+                </button>
+                <button type="button" onclick="saveJob()" class="btn-teal-action">
+                    <span class="material-symbols-outlined text-lg">save</span>
+                    حفظ البيانات
+                </button>
+            </div>
+        </div>
+
+        <!-- Master Jobs Table Container Box -->
+        <div class="plan-container-box group-box system-card space-y-4" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side -->
+            <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">work_history</span>
+                <span>قائمة الوظائف والخدمات المسجلة</span>
+            </span>
+
+            <div class="table-responsive-wrapper pt-2">
+                <table class="academic-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="px-6 py-4">اسم الوظيفة / الخدمة</th>
+                            <th scope="col" class="px-6 py-4 text-center">تاريخ الفتح والإنتهاء</th>
+                            <th scope="col" class="px-6 py-4 text-center">المدة وصلاحية التقديم</th>
+                            <th scope="col" class="px-6 py-4 text-center">حالة الخدمة</th>
+                            <th scope="col" class="px-6 py-4 text-center">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="jobsTableBody">
+                        <!-- Loaded dynamically via jobs.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Back Button -->
+        <div class="flex justify-start">
+            <button type="button" onclick="window.history.back()" class="btn-grey-action">
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                الرجوع للوحة الرئيسية
+            </button>
+        </div>
+
+        <!-- Custom Confirmation Modal Component -->
+        <div id="modalConfirmCustom" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4">
+            <div class="theme-modal rounded-2xl max-w-md w-full p-6 space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl transition-all text-right">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-[#307e92]/10 dark:bg-[#38bdf8]/10 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-2xl" id="confirmModalIcon">help</span>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100" id="confirmModalTitle">تأكيد الإجراء</h3>
+                        <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5" id="confirmModalMessage">هل أنت متأكد من إتمام هذا الإجراء؟</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                    <button type="button" id="confirmModalBtnCancel" class="btn-grey-action text-xs">
+                        إلغاء
+                    </button>
+                    <button type="button" id="confirmModalBtnOk" class="btn-teal-action text-xs">
+                        تأكيد
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.USER_CAN_ADD = false;
+    window.USER_CAN_EDIT = (document.querySelector('main[data-user-can-edit]')?.dataset.userCanEdit === 'true');
+    window.USER_CAN_DELETE = false;
+</script>
+<script src="{% static 'renewal/js/jobs.js' %}?v={% now 'U' %}"></script>
+{% endblock %}

@@ -1,0 +1,1875 @@
+<!-- apps/users/templates/users/admin_dashboard.html -->
+
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم مدير النظام - كلية طرابلس للعلوم والتقنية{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ============================================================
+   🎨 ADMIN DASHBOARD STYLES (Screen & Dark Mode)
+   ============================================================ */
+:root {
+    --admin-teal: #307e92;
+    --admin-teal-dark: #1e5563;
+    --admin-teal-light: #48a2b8;
+    --admin-gold: #b59b66;
+    --admin-amber: #f59e0b;
+    --admin-emerald: #10b981;
+    --admin-sky: #0284c7;
+    --admin-indigo: #6366f1;
+    --admin-slate-800: #1e293b;
+    --admin-slate-600: #475569;
+    --admin-slate-100: #f1f5f9;
+}
+
+.admin-dashboard-container {
+    direction: rtl;
+    font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Banner Header */
+.admin-header-banner {
+    background: linear-gradient(135deg, #1e5563 0%, #307e92 60%, #256677 100%);
+    background-color: #307e92;
+    border-radius: 18px;
+    padding: 1.75rem 2rem;
+    margin-bottom: 1.75rem;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 10px 25px -5px rgba(30, 85, 99, 0.3);
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-header-banner::before {
+    content: '';
+    position: absolute;
+    top: -50px;
+    left: -50px;
+    width: 180px;
+    height: 180px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.admin-header-banner::after {
+    content: '';
+    position: absolute;
+    bottom: -50px;
+    right: 25%;
+    width: 200px;
+    height: 200px;
+    background: radial-gradient(circle, rgba(234, 179, 8, 0.18) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.admin-header-content {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    position: relative;
+    z-index: 2;
+}
+
+.admin-banner-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
+}
+
+/* Print Buttons */
+.admin-btn-print {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.68rem 1.25rem;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1.5px solid transparent;
+    white-space: nowrap;
+    outline: none;
+}
+
+.admin-btn-print-stat {
+    background: #ffffff;
+    color: #1e5563;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.admin-btn-print-stat:hover {
+    background: #f0fdfa;
+    color: #0f766e;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+}
+
+.admin-btn-print-std {
+    background: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+}
+
+.admin-btn-print-std:hover {
+    background: rgba(255, 255, 255, 0.3);
+    border-color: #ffffff;
+    transform: translateY(-2px);
+    color: #ffffff;
+}
+
+/* Stat Cards */
+.admin-stat-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.4rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.admin-stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+}
+
+.admin-stat-card::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.admin-stat-card.stat-teal::after { background: linear-gradient(90deg, #1A5D63, #0284c7); }
+.admin-stat-card.stat-indigo::after { background: linear-gradient(90deg, #6366f1, #8b5cf6); }
+.admin-stat-card.stat-emerald::after { background: linear-gradient(90deg, #10b981, #059669); }
+.admin-stat-card.stat-amber::after { background: linear-gradient(90deg, #eab308, #f59e0b); }
+
+.admin-stat-icon-wrapper {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Charts & Section Cards */
+.admin-chart-card, .admin-section-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+}
+
+.admin-nav-card {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.4rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    transition: all 0.25s ease;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-nav-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.06);
+    border-color: #cbd5e1;
+}
+
+.activity-item-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 0.85rem 1.15rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    transition: all 0.2s ease;
+}
+
+.activity-item-card:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+}
+
+.chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.admin-chart-print-img {
+    display: none;
+    width: 100%;
+    max-height: 280px;
+    object-fit: contain;
+}
+
+/* Hidden Print Containers on Screen */
+.admin-print-official-header {
+    display: none;
+}
+
+.admin-print-meta-header {
+    display: none;
+}
+
+.admin-standard-report-section {
+    display: none;
+}
+
+/* Signatures Section */
+.admin-signatures-panel {
+    background: #ffffff;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 1.5rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    margin-top: 2rem;
+}
+
+.admin-signatures-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.25rem;
+}
+
+.admin-sig-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 1.25rem;
+    text-align: center;
+    position: relative;
+}
+
+.admin-sig-title {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: #1e5563;
+    margin-bottom: 0.35rem;
+}
+
+.admin-sig-name {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 0.25rem;
+}
+
+.admin-sig-role {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #64748b;
+    margin-bottom: 2rem;
+}
+
+.admin-sig-line {
+    width: 75%;
+    margin: 0 auto;
+    border-bottom: 1.5px dashed #94a3b8;
+}
+
+/* Standard Report Tables Styling */
+.admin-report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.88rem;
+}
+
+.admin-report-table th, .admin-report-table td {
+    border: 1px solid #cbd5e1;
+    padding: 0.65rem 0.85rem;
+    text-align: center;
+}
+
+.admin-report-table th {
+    background: #1e5563;
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.86rem;
+}
+
+.admin-report-table tbody tr:nth-child(even) {
+    background-color: #f8fafc;
+}
+
+.admin-report-table td.text-right {
+    text-align: right;
+    font-weight: 700;
+}
+
+/* ============================================================
+   🌙 Dark Mode Overrides (Screen Only)
+   ============================================================ */
+html.dark .admin-header-banner {
+    background: linear-gradient(135deg, #1e5563 0%, #256677 60%, #18444f 100%) !important;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35) !important;
+}
+
+html.dark .admin-stat-card,
+html.dark .admin-chart-card,
+html.dark .admin-nav-card,
+html.dark .admin-section-card,
+html.dark .admin-signatures-panel {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .admin-sig-card {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+html.dark .admin-sig-title {
+    color: #38bdf8 !important;
+}
+
+html.dark .admin-sig-name {
+    color: #f8fafc !important;
+}
+
+html.dark .admin-sig-role {
+    color: #94a3b8 !important;
+}
+
+html.dark .admin-stat-card h3,
+html.dark .admin-chart-card h2,
+html.dark .admin-nav-card h3,
+html.dark .admin-section-card h2,
+html.dark .admin-signatures-panel h2 {
+    color: #f8fafc !important;
+}
+
+html.dark .admin-stat-card p,
+html.dark .admin-chart-card p,
+html.dark .admin-nav-card p {
+    color: #94a3b8 !important;
+}
+
+html.dark .admin-nav-card:hover {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .activity-item-card {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+}
+
+html.dark .activity-item-card:hover {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+
+html.dark .activity-item-card strong {
+    color: #f1f5f9 !important;
+}
+
+html.dark .activity-item-card .act-text {
+    color: #cbd5e1 !important;
+}
+
+html.dark .activity-item-card .act-date {
+    color: #94a3b8 !important;
+}
+
+/* ============================================================
+   🖨️ COMPREHENSIVE @media print RULES (Light & Dark Isolation)
+   ============================================================ */
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm 12mm;
+    }
+
+    *, *::before, *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Force Light Theme Colors on Print Even If Dark Mode is Enabled */
+    html, html.dark, body, html.dark body, .main-body, .app-shell, .app-shell.has-sidebar, .app-content {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: 100% !important;
+        font-size: 10.5pt !important;
+    }
+
+    /* Force all text in Dark Mode to be visible dark in print */
+    html.dark .admin-dashboard-container,
+    html.dark .admin-dashboard-container *,
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4,
+    html.dark p, html.dark span, html.dark div, html.dark strong,
+    html.dark td, html.dark th {
+        color: #0f172a !important;
+    }
+
+    /* Hide Navigation, Sidebar, Footers, Actions */
+    .app-sidebar,
+    aside,
+    .app-header,
+    header,
+    .app-footer,
+    footer,
+    .admin-banner-actions,
+    .admin-nav-cards-section,
+    #django-messages,
+    .swal2-container,
+    .mobile-menu-toggle-btn {
+        display: none !important;
+    }
+
+    .admin-dashboard-container {
+        max-width: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        display: block !important;
+    }
+
+    /* 1. Official College Header in Print */
+    .admin-print-official-header {
+        display: grid !important;
+        grid-template-columns: 1.2fr 0.8fr 1.2fr !important;
+        align-items: center !important;
+        padding-bottom: 0.85rem !important;
+        border-bottom: 2.5px solid #1e5563 !important;
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-print-official-header .header-col-ar {
+        text-align: right !important;
+        line-height: 1.4 !important;
+    }
+
+    .admin-print-official-header .header-col-ar h3 {
+        font-size: 1rem !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        margin: 0 0 2px 0 !important;
+    }
+
+    .admin-print-official-header .header-col-ar p {
+        font-size: 0.85rem !important;
+        font-weight: 700 !important;
+        color: #334155 !important;
+        margin: 0 !important;
+    }
+
+    .admin-print-official-header .header-col-center {
+        text-align: center !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .admin-print-official-header .print-college-logo {
+        width: 76px !important;
+        height: 76px !important;
+        object-fit: contain !important;
+        border-radius: 50% !important;
+        display: block !important;
+    }
+
+    .admin-print-official-header .header-col-en {
+        text-align: left !important;
+        direction: ltr !important;
+        line-height: 1.4 !important;
+    }
+
+    .admin-print-official-header .header-col-en h3 {
+        font-size: 0.9rem !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        margin: 0 0 2px 0 !important;
+    }
+
+    .admin-print-official-header .header-col-en p {
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        color: #334155 !important;
+        margin: 0 !important;
+    }
+
+    /* 2. Print Meta Header & Report Title */
+    .admin-print-meta-header {
+        display: block !important;
+        margin-bottom: 1.25rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-print-title-badge {
+        text-align: center !important;
+        background: rgba(30, 85, 99, 0.08) !important;
+        border: 1.5px solid #1e5563 !important;
+        color: #1e5563 !important;
+        padding: 0.4rem 1.8rem !important;
+        border-radius: 25px !important;
+        font-size: 1.15rem !important;
+        font-weight: 900 !important;
+        margin: 0 auto 0.75rem auto !important;
+        display: table !important;
+    }
+
+    .admin-print-meta-bar {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        background: #f8fafc !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 0.45rem 1rem !important;
+        font-size: 0.82rem !important;
+        font-weight: 700 !important;
+        color: #334155 !important;
+    }
+
+    /* Hide Screen Banner in Print (Replaced by official header & title) */
+    .admin-header-banner {
+        display: none !important;
+    }
+
+    /* 3. Metric KPI Cards in Print */
+    .admin-stats-grid {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important;
+        gap: 0.85rem !important;
+        margin-bottom: 1.25rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-stat-card {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        padding: 0.85rem 1rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+    }
+
+    .admin-stat-card h3 {
+        font-size: 1.6rem !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        margin: 0.2rem 0 !important;
+    }
+
+    .admin-stat-card span {
+        color: #475569 !important;
+        font-weight: 700 !important;
+    }
+
+    .admin-stat-icon-wrapper {
+        display: none !important;
+    }
+
+    /* 4. MODE SPECIFIC: Statistical vs Standard Report */
+    
+    /* Default & Statistical Mode: Show Charts */
+    .admin-charts-section {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 1.25rem !important;
+        margin-bottom: 1.5rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-chart-card {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        padding: 1rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-chart-card h2 {
+        font-size: 1rem !important;
+        font-weight: 900 !important;
+        color: #1e5563 !important;
+    }
+
+    .chart-wrapper {
+        height: 250px !important;
+        min-height: 250px !important;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .chart-wrapper canvas {
+        display: block !important;
+        max-height: 240px !important;
+        max-width: 100% !important;
+    }
+
+    .admin-chart-print-img {
+        display: none !important;
+    }
+
+    /* Hide standard tables in Statistical Mode */
+    body.print-mode-statistical .admin-standard-report-section {
+        display: none !important;
+    }
+
+    /* Standard Mode: Hide Charts, Show Tables */
+    body.print-mode-standard .admin-charts-section {
+        display: none !important;
+    }
+
+    body.print-mode-standard .admin-standard-report-section {
+        display: block !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    body.print-mode-standard .admin-section-card {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        padding: 1rem !important;
+        margin-bottom: 1rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    body.print-mode-standard .admin-section-card h2 {
+        font-size: 1rem !important;
+        font-weight: 900 !important;
+        color: #1e5563 !important;
+    }
+
+    /* Tables in Print */
+    .admin-report-table {
+        width: 100% !important;
+        margin-top: 0.5rem !important;
+        margin-bottom: 0.85rem !important;
+        font-size: 9pt !important;
+        page-break-inside: auto;
+    }
+
+    .admin-report-table th {
+        background-color: #1e5563 !important;
+        color: #ffffff !important;
+        padding: 6px 8px !important;
+        font-weight: 900 !important;
+        border: 1px solid #1e5563 !important;
+    }
+
+    .admin-report-table td {
+        padding: 6px 8px !important;
+        color: #0f172a !important;
+        border: 1px solid #cbd5e1 !important;
+        background: #ffffff !important;
+    }
+
+    .admin-report-table tbody tr:nth-child(even) td {
+        background-color: #f8fafc !important;
+    }
+
+    .admin-report-table tr {
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    /* Recent Activities in Print */
+    .admin-recent-activities-section {
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        padding: 1rem !important;
+        margin-bottom: 1.25rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-recent-activities-section h2 {
+        font-size: 1rem !important;
+        font-weight: 900 !important;
+        color: #1e5563 !important;
+    }
+
+    .activity-item-card {
+        background: #ffffff !important;
+        border: 1px solid #e2e8f0 !important;
+        padding: 0.5rem 0.75rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .activity-item-card strong, .activity-item-card .act-text {
+        color: #0f172a !important;
+    }
+
+    /* 5. Signatures in Print */
+    .admin-signatures-panel {
+        display: block !important;
+        background: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        box-shadow: none !important;
+        padding: 1rem !important;
+        margin-top: 1.5rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+    }
+
+    .admin-signatures-panel h2 {
+        font-size: 1rem !important;
+        font-weight: 900 !important;
+        color: #1e5563 !important;
+    }
+
+    .admin-signatures-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 1.25rem !important;
+        margin-top: 0.75rem !important;
+    }
+
+    .admin-sig-card {
+        background: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 0.85rem !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        text-align: center !important;
+    }
+
+    .admin-sig-title {
+        font-size: 0.9rem !important;
+        font-weight: 900 !important;
+        color: #1e5563 !important;
+        margin-bottom: 0.35rem !important;
+    }
+
+    .admin-sig-name {
+        font-size: 0.95rem !important;
+        font-weight: 900 !important;
+        color: #0f172a !important;
+        margin-bottom: 0.25rem !important;
+    }
+
+    .admin-sig-role {
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        color: #475569 !important;
+        margin-bottom: 2.2rem !important;
+    }
+
+    .admin-sig-line {
+        border-bottom: 1.5px solid #64748b !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-dashboard-container mx-auto p-4 sm:p-6 max-w-7xl">
+
+    <!-- ===== 1. ترويسة الطباعة الرسمية الموحدة (تظهر فقط عند أمر الطباعة) ===== -->
+    <div class="admin-print-official-header">
+        <div class="header-col-ar">
+            <h3>دولة ليبيا</h3>
+            <p>وزارة التعليم العالي والبحث العلمي</p>
+            <p><strong>كلية طرابلس للعلوم والتقنية</strong></p>
+            <p>مكتب التوثيق والمعلومات والتحكم</p>
+        </div>
+        <div class="header-col-center">
+            <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo">
+        </div>
+        <div class="header-col-en">
+            <h3>State of Libya</h3>
+            <p>Min. of Higher Education & Scientific Research</p>
+            <p><strong>Tripoli College of Science & Tech.</strong></p>
+            <p>Documentation & Information Office</p>
+        </div>
+    </div>
+
+    <!-- ===== 2. شريط عنوان التقرير والبيانات الوصفية للطباعة ===== -->
+    <div class="admin-print-meta-header">
+        <div id="printReportTitle" class="admin-print-title-badge">
+            التقرير الإحصائي الشامل للوحة تحكم مدير النظام
+        </div>
+        <div class="admin-print-meta-bar">
+            <span><strong>تاريخ ووقت الاستخراج:</strong> {% now "Y-m-d H:i" %}</span>
+            <span><strong>المُستخرج:</strong> {{ request.user.get_full_name|default:request.user.username }} (مدير النظام)</span>
+            <span><strong>حالة المنظومة:</strong> تشغيلية معتمدة</span>
+        </div>
+    </div>
+
+    <!-- ===== 3. هيدر البانر الرئيسي للشاشة مع أزرار الطباعة المباشرة السريعة ===== -->
+    <div class="admin-header-banner">
+        <div class="admin-header-content">
+            <div style="background: rgba(255, 255, 255, 0.15); border-radius: 14px; width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.25); flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 32px; color: #fef08a;">admin_panel_settings</span>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h1 style="font-size: 1.55rem; font-weight: 900; margin: 0; color: white; line-height: 1.2;">لوحة تحكم مدير النظام</h1>
+                    <span style="font-size: 0.75rem; background: rgba(234, 179, 8, 0.25); border: 1px solid #eab308; color: #fef08a; padding: 0.2rem 0.65rem; border-radius: 20px; font-weight: 900;">
+                        Super User
+                    </span>
+                </div>
+                <p style="font-size: 0.9rem; color: #e0f2fe; margin: 0.35rem 0 0 0; opacity: 0.95;">متابعة المؤشرات الحيوية وإدارة المستخدمين والصلاحيات والتدقيق الأكاديمي</p>
+            </div>
+        </div>
+
+        <!-- أزرار الطباعة المباشرة الفورية -->
+        <div class="admin-banner-actions">
+            <!-- 1. زر طباعة التقرير الإحصائي والرسومات البيانية -->
+            <button type="button" onclick="printStatisticalReport()" class="admin-btn-print admin-btn-print-stat" title="طباعة اللوحة متضمنة جميع الرسوم البيانية والإحصائيات بدقة عالية">
+                <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+                <span>طباعة التقرير الإحصائي والرسومات البيانية</span>
+            </button>
+
+            <!-- 2. زر طباعة التقرير العادي القياسي -->
+            <button type="button" onclick="printStandardReport()" class="admin-btn-print admin-btn-print-std" title="طباعة ملخص البيانات النصية والجداول القياسية بشكل منظم">
+                <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+                <span>طباعة التقرير العادي</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ===== 4. قسم بطاقات الإحصائيات والأرقام القياسية الديناميكية ===== -->
+    <div class="admin-stats-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem; margin-bottom: 2rem;">
+        
+        <!-- 1. إجمالي الطلاب -->
+        <div class="admin-stat-card stat-teal">
+            <div>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 800; display: block;">إجمالي عدد الطلاب</span>
+                <h3 style="font-size: 1.85rem; font-weight: 900; color: #0284c7; margin: 0.25rem 0 0.1rem 0; font-family: monospace;">{{ total_students|default:0 }}</h3>
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">طالب مسجل بالمنظومة</span>
+            </div>
+            <div class="admin-stat-icon-wrapper" style="background: #e0f2fe; color: #0284c7;">
+                <span class="material-symbols-outlined" style="font-size: 28px;">school</span>
+            </div>
+        </div>
+
+        <!-- 2. أعضاء هيئة التدريس والموظفين -->
+        <div class="admin-stat-card stat-indigo">
+            <div>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 800; display: block;">الكادر الأكاديمي والموظفون</span>
+                <h3 style="font-size: 1.85rem; font-weight: 900; color: #6366f1; margin: 0.25rem 0 0.1rem 0; font-family: monospace;">{{ total_staff|default:0 }}</h3>
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">أستاذ ومسؤول وموظف</span>
+            </div>
+            <div class="admin-stat-icon-wrapper" style="background: #e0e7ff; color: #6366f1;">
+                <span class="material-symbols-outlined" style="font-size: 28px;">badge</span>
+            </div>
+        </div>
+
+        <!-- 3. الأقسام العلمية الفعالة -->
+        <div class="admin-stat-card stat-emerald">
+            <div>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 800; display: block;">الأقسام العلمية المعتمدة</span>
+                <h3 style="font-size: 1.85rem; font-weight: 900; color: #10b981; margin: 0.25rem 0 0.1rem 0; font-family: monospace;">{{ total_departments|default:0 }}</h3>
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">قسم وتخصص أكاديمي نشط</span>
+            </div>
+            <div class="admin-stat-icon-wrapper" style="background: #d1fae5; color: #10b981;">
+                <span class="material-symbols-outlined" style="font-size: 28px;">domain</span>
+            </div>
+        </div>
+
+        <!-- 4. الحالات والطلبات المعلقة -->
+        <div class="admin-stat-card stat-amber">
+            <div>
+                <span style="font-size: 0.85rem; color: #64748b; font-weight: 800; display: block;">الحالات والطلبات المعلقة</span>
+                <h3 style="font-size: 1.85rem; font-weight: 900; color: #eab308; margin: 0.25rem 0 0.1rem 0; font-family: monospace;">{{ total_pending_actions|default:0 }}</h3>
+                <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600;">تتطلب مراجعة واعتماد</span>
+            </div>
+            <div class="admin-stat-icon-wrapper" style="background: #fef9c3; color: #ca8a04;">
+                <span class="material-symbols-outlined" style="font-size: 28px;">pending_actions</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 5. قسم الرسوم البيانية التحليلية التفاعلية ===== -->
+    <div class="admin-charts-section" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
+        
+        <!-- الرسم البياني 1: توزيع الطلاب على الأقسام العلمية -->
+        <div class="admin-chart-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #307e92; font-size: 22px;">pie_chart</span>
+                    <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">توزيع الطلاب حسب الأقسام</h2>
+                </div>
+                <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+                    نسبة التوزيع
+                </span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="deptDistributionChart"></canvas>
+            </div>
+        </div>
+
+        <!-- الرسم البياني 2: إحصائيات نشاط المنظومة والعمليات -->
+        <div class="admin-chart-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <span class="material-symbols-outlined" style="color: #0284c7; font-size: 22px;">bar_chart</span>
+                    <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">معدل النشاط والعمليات الإدارية</h2>
+                </div>
+                <span style="font-size: 0.8rem; background: #fef3c7; color: #92400e; padding: 2px 8px; border-radius: 12px; font-weight: 700;">
+                    أحدث العمليات
+                </span>
+            </div>
+            <div class="chart-wrapper">
+                <canvas id="activityTrendsChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 6. قسم التقرير العادي القياسي (جداول منسقة تظهر في نمط الطباعة العادية) ===== -->
+    <div class="admin-standard-report-section">
+        
+        <!-- جدول 1: تفصيل توزيع الطلاب حسب الأقسام والتخصصات -->
+        <div class="admin-section-card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+                <span class="material-symbols-outlined" style="color: #1e5563; font-size: 22px;">domain</span>
+                <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">جدول تفصيل توزيع الطلاب حسب الأقسام العلمية</h2>
+            </div>
+            <table class="admin-report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 42%;">القسم العلمي / التخصص</th>
+                        <th style="width: 15%;">رمز القسم</th>
+                        <th style="width: 20%;">عدد الطلاب المسجلين</th>
+                        <th style="width: 15%;">نسبة التمثيل</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for dept in dept_table_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="text-right">{{ dept.name }}</td>
+                        <td><span style="font-family: monospace; font-weight: 700;">{{ dept.code }}</span></td>
+                        <td style="font-weight: 800; color: #0284c7;">{{ dept.count }} طالب</td>
+                        <td style="font-weight: 700;">{{ dept.percentage }}%</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #64748b;">لا توجد بيانات تفصيلية للأقسام</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- جدول 2: ملخص العمليات الإدارية الأكثر تكراراً بالمنظومة -->
+        <div class="admin-section-card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+                <span class="material-symbols-outlined" style="color: #0284c7; font-size: 22px;">tune</span>
+                <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">ملخص العمليات الإدارية والأنشطة الأكثر تنفيذاً</h2>
+            </div>
+            <table class="admin-report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 45%;">نوع العملية / الإجراء الإداري</th>
+                        <th style="width: 25%;">رمز النشاط بالنظام</th>
+                        <th style="width: 22%;">إجمالي العمليات المسجلة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for act in action_table_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="text-right">{{ act.action_name }}</td>
+                        <td><span style="font-family: monospace; color: #64748b;">{{ act.raw_action }}</span></td>
+                        <td style="font-weight: 800; color: #10b981;">{{ act.count }} عملية</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #64748b;">لا توجد سجلات عمليات مسجلة</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- جدول 3: كادر ومستخدمو المنظومة حسب الأدوار والمهام -->
+        <div class="admin-section-card" style="margin-bottom: 1.5rem;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 0.75rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.5rem;">
+                <span class="material-symbols-outlined" style="color: #6366f1; font-size: 22px;">group</span>
+                <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">توزيع مستخدمي وكادر المنظومة حسب الأدوار والصلاحيات</h2>
+            </div>
+            <table class="admin-report-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">#</th>
+                        <th style="width: 50%;">الفئة / الدور الوظيفي المعتمد</th>
+                        <th style="width: 22%;">رمز الدور (Role Key)</th>
+                        <th style="width: 20%;">عدد الحسابات الفعالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in roles_table_data %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td class="text-right">{{ r.role_name }}</td>
+                        <td><span style="font-family: monospace; color: #64748b;">{{ r.role_key }}</span></td>
+                        <td style="font-weight: 800; color: #6366f1;">{{ r.count }} مستخدم</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+
+    <!-- ===== 7. بوابات الإدارة والتحكم (تظهر على الشاشة فقط) ===== -->
+    <div class="admin-nav-cards-section" style="margin-bottom: 2rem;">
+        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 1.25rem;">
+            <span class="material-symbols-outlined" style="color: #307e92; font-size: 22px;">apps</span>
+            <h2 style="font-size: 1.15rem; font-weight: 900; color: #0f172a; margin: 0;">بوابات الإدارة والتحكم</h2>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.25rem;">
+            <!-- 1. إدارة المستخدمين -->
+            <a href="{% url 'users:manage_users' %}" class="admin-nav-card group">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: #e0e7ff; color: #4338ca; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">manage_accounts</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">إدارة المستخدمين</h3>
+                    <p style="font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0 0; line-height: 1.4;">إضافة وتعديل بيانات المستخدمين، وضبط الأدوار والحسابات</p>
+                </div>
+                <span class="material-symbols-outlined" style="color: #94a3b8; font-size: 20px;">arrow_back_ios</span>
+            </a>
+
+            <!-- 2. إدارة الصلاحيات -->
+            <a href="{% url 'users:group_permissions' %}" class="admin-nav-card group">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">admin_panel_settings</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">صلاحيات المجموعات</h3>
+                    <p style="font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0 0; line-height: 1.4;">تخصيص صلاحيات ومجموعات الوصول وأذونات الجداول</p>
+                </div>
+                <span class="material-symbols-outlined" style="color: #94a3b8; font-size: 20px;">arrow_back_ios</span>
+            </a>
+
+            <!-- 3. سجل النشاطات والأحداث -->
+            <a href="{% url 'users:activity_log' %}" class="admin-nav-card group">
+                <div style="width: 52px; height: 52px; border-radius: 14px; background: #ffedd5; color: #ea580c; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">history</span>
+                </div>
+                <div style="flex: 1;">
+                    <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">سجل النشاطات والأحداث</h3>
+                    <p style="font-size: 0.85rem; color: #64748b; margin: 0.25rem 0 0 0; line-height: 1.4;">مراقبة تحركات المستخدمين وسجلات تسجيل الدخول</p>
+                </div>
+                <span class="material-symbols-outlined" style="color: #94a3b8; font-size: 20px;">arrow_back_ios</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ===== 8. موجز أحدث النشاطات والعمليات المسجلة بالمنظومة ===== -->
+    <div class="admin-section-card admin-recent-activities-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #307e92; font-size: 22px;">receipt_long</span>
+                <h2 style="font-size: 1.1rem; font-weight: 800; color: #0f172a; margin: 0;">أحدث الأنشطة والعمليات المسجلة</h2>
+            </div>
+            <a href="{% url 'users:activity_log' %}" class="admin-banner-actions" style="font-size: 0.85rem; color: #307e92; font-weight: 800; text-decoration: none;">عرض السجل الكامل ←</a>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+            {% for act in recent_activities %}
+            <div class="activity-item-card">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="font-size: 20px; color: #0284c7;">check_circle</span>
+                    <div>
+                        <strong style="color: #1e293b; font-size: 0.92rem;">{% if act.user %}{{ act.user.get_full_name|default:act.user.username }}{% else %}النظام{% endif %}</strong>
+                        <span class="act-text" style="color: #64748b; font-size: 0.85rem; margin-right: 6px;">{{ act.get_action_display|default:act.action }}</span>
+                    </div>
+                </div>
+                <div class="act-date" style="font-size: 0.78rem; color: #94a3b8; font-weight: 600; font-family: monospace;">
+                    {{ act.created_at|date:"Y-m-d H:i" }}
+                </div>
+            </div>
+            {% empty %}
+            <div style="text-align: center; padding: 2rem; color: #64748b;">
+                <p style="margin: 0; font-weight: 700;">لا توجد نشاطات مسجلة حديثاً</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+<!-- تضمين بيانات الرسوم البيانية بأمان -->
+{{ analytics_chart_data|json_script:"admin-analytics-data" }}
+
+{% endblock %}
+
+{% block extra_js %}
+<!-- مكتبة Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+// ============================================================
+// 📊 JavaScript Dashboard & Print Engine
+// ============================================================
+
+let deptDoughnutChart = null;
+let activityBarChart  = null;
+
+function applyChartThemeForPrint() {
+    if (deptDoughnutChart) {
+        deptDoughnutChart.options.plugins.legend.labels.color = '#0f172a';
+        deptDoughnutChart.update('none');
+    }
+    if (activityBarChart) {
+        activityBarChart.options.scales.x.ticks.color = '#0f172a';
+        activityBarChart.options.scales.y.ticks.color = '#0f172a';
+        activityBarChart.options.scales.y.grid.color = 'rgba(0, 0, 0, 0.12)';
+        activityBarChart.update('none');
+    }
+}
+
+function restoreChartThemeAfterPrint() {
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#cbd5e1' : '#475569';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+    if (deptDoughnutChart) {
+        deptDoughnutChart.options.plugins.legend.labels.color = textColor;
+        deptDoughnutChart.update('none');
+    }
+    if (activityBarChart) {
+        activityBarChart.options.scales.x.ticks.color = textColor;
+        activityBarChart.options.scales.y.ticks.color = textColor;
+        activityBarChart.options.scales.y.grid.color = gridColor;
+        activityBarChart.update('none');
+    }
+    document.body.classList.remove('print-mode-statistical', 'print-mode-standard');
+}
+
+window.addEventListener('beforeprint', function() {
+    if (!document.body.classList.contains('print-mode-standard') && !document.body.classList.contains('print-mode-statistical')) {
+        document.body.classList.add('print-mode-statistical');
+    }
+    applyChartThemeForPrint();
+});
+
+window.addEventListener('afterprint', function() {
+    restoreChartThemeAfterPrint();
+});
+
+// 🖨️ دالة الطباعة في الخلفية عبر Hidden Iframe بدون فتح نوافذ جديدة
+function printViaHiddenIframe(htmlContent) {
+    const oldIframe = document.getElementById('reportPrintHiddenIframe');
+    if (oldIframe) oldIframe.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'reportPrintHiddenIframe';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '-9999px';
+    iframe.style.bottom = '-9999px';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    document.body.appendChild(iframe);
+
+    const doc = iframe.contentWindow.document;
+    doc.open();
+    doc.write(htmlContent);
+    doc.close();
+
+    const triggerPrint = () => {
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (err) {
+                console.error("Print Error:", err);
+            }
+            setTimeout(() => {
+                if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+            }, 3000);
+        }, 350);
+    };
+
+    const images = doc.images;
+    let loaded = 0;
+    const total = images.length;
+
+    if (total === 0) {
+        triggerPrint();
+    } else {
+        for (let i = 0; i < total; i++) {
+            if (images[i].complete) {
+                loaded++;
+                if (loaded === total) triggerPrint();
+            } else {
+                images[i].onload = images[i].onerror = () => {
+                    loaded++;
+                    if (loaded === total) triggerPrint();
+                };
+            }
+        }
+        setTimeout(triggerPrint, 1500);
+    }
+}
+
+// دالة جلب توقيع المسؤولين من API
+async function fetchAdminOfficials() {
+    let registrarName = "أ. المسجل العام";
+    let registrarPos = "المسجل العام بالكلية";
+    try {
+        const res = await fetch('/users/api/officials/');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.officials)) {
+            const reg = data.officials.find(o => 
+                (o.position_key && o.position_key.includes('registrar')) ||
+                (o.position && (o.position.includes('مسجل عام') || o.position.includes('المسجل العام')))
+            );
+            if (reg && reg.name) {
+                registrarName = reg.name;
+                if (reg.position) registrarPos = reg.position;
+            }
+        }
+    } catch (e) {
+        console.warn("Could not fetch officials:", e);
+    }
+    return { registrarName, registrarPos };
+}
+
+// 🖨️ 1. زر طباعة التقرير الإحصائي والرسومات البيانية
+window.printStatisticalReport = async function() {
+    const { registrarName, registrarPos } = await fetchAdminOfficials();
+    const dataElement = document.getElementById('admin-analytics-data');
+    let analyticsData = {};
+    if (dataElement) {
+        try { analyticsData = JSON.parse(dataElement.textContent); } catch (e) {}
+    }
+
+    // التقاط الرسوم البيانية كصور عالية الدقة
+    let deptChartImg = '';
+    let actChartImg = '';
+    const deptCanvas = document.getElementById('deptDistributionChart');
+    const actCanvas = document.getElementById('activityTrendsChart');
+    if (deptCanvas) {
+        try { deptChartImg = deptCanvas.toDataURL('image/png'); } catch (e) {}
+    }
+    if (actCanvas) {
+        try { actChartImg = actCanvas.toDataURL('image/png'); } catch (e) {}
+    }
+
+    // بناء جدول الأقسام
+    const deptLabels = analyticsData.deptLabels || [];
+    const deptCounts = analyticsData.deptCounts || [];
+    const totalDeptStudents = deptCounts.reduce((a, b) => a + b, 0);
+    let deptRowsHtml = '';
+    deptLabels.forEach((label, idx) => {
+        const count = deptCounts[idx] || 0;
+        const pct = totalDeptStudents > 0 ? Math.round((count / totalDeptStudents) * 100) : 0;
+        deptRowsHtml += `
+            <tr style="border-bottom: 1px solid #ddd; text-align: center;">
+                <td style="padding: 6px 10px; text-align: right; font-weight: bold;">${label}</td>
+                <td style="padding: 6px 10px;">${count}</td>
+                <td style="padding: 6px 10px;">${pct}%</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير الإحصائي والرسوم البيانية - لوحة تحكم مدير النظام</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+        @media print {
+            body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; }
+        }
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            background: #fff;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+        .print-sheet {
+            border: 2px solid #000;
+            padding: 22px 28px;
+            box-sizing: border-box;
+            background: #fff;
+            width: 100%;
+        }
+        .header-box {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .college-logo {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 6px auto;
+        }
+        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
+        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .divider-line {
+            border-bottom: 2px solid #000;
+            margin: 10px 0 12px 0;
+            width: 100%;
+        }
+        .report-main-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin: 8px 0 14px 0;
+        }
+        .kpi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        .kpi-table th, .kpi-table td {
+            border: 1px solid #000;
+            padding: 7px 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .kpi-table th {
+            background: #f0f0f0;
+            font-weight: 900;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+            font-size: 12px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+        }
+        .data-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        .charts-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 16px;
+            page-break-inside: avoid;
+        }
+        .chart-box {
+            flex: 1;
+            border: 1px solid #000;
+            padding: 10px;
+            text-align: center;
+        }
+        .chart-img {
+            max-width: 100%;
+            max-height: 220px;
+            object-fit: contain;
+        }
+        .signatures-area {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 32px;
+            page-break-inside: avoid;
+        }
+        .sig-card {
+            text-align: center;
+            min-width: 190px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-sheet">
+        <div class="header-box">
+            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
+            <div class="header-title-1">دولة ليبيا</div>
+            <div class="header-title-2">وزارة التعليم التقني والفني</div>
+            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
+            <div class="divider-line"></div>
+            <div class="report-main-title">التقرير الإحصائي والرسوم البيانية للوحة تحكم مدير النظام</div>
+        </div>
+
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الطلاب</th>
+                    <th>الكادر الأكاديمي والموظفون</th>
+                    <th>المستخدمون النشطون</th>
+                    <th>الجلسات النشطة</th>
+                    <th>تاريخ الاستخراج</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_students|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_staff|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ active_users|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ active_sessions|default:0 }}</td>
+                    <td>${new Date().toLocaleDateString('ar-LY')}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="charts-container">
+            ${deptChartImg ? `
+            <div class="chart-box">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">توزيع الطلاب حسب الأقسام العلمية</div>
+                <img src="${deptChartImg}" class="chart-img">
+            </div>` : ''}
+            ${actChartImg ? `
+            <div class="chart-box">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">إحصائيات العمليات والإجراءات</div>
+                <img src="${actChartImg}" class="chart-img">
+            </div>` : ''}
+        </div>
+
+        ${deptRowsHtml ? `
+        <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px;">جدول تفصيل توزيع الطلاب على الأقسام:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="text-align: right;">القسم الأكاديمي</th>
+                    <th style="text-align: center; width: 120px;">عدد الطلاب</th>
+                    <th style="text-align: center; width: 100px;">النسبة</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRowsHtml}
+            </tbody>
+        </table>` : ''}
+
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
+                <div style="font-weight: 600; font-size: 12px; margin-bottom: 30px;">${registrarPos}</div>
+                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+
+    printViaHiddenIframe(html);
+};
+
+// 🖨️ 2. زر طباعة التقرير العادي القياسي
+window.printStandardReport = async function() {
+    const { registrarName, registrarPos } = await fetchAdminOfficials();
+    const dataElement = document.getElementById('admin-analytics-data');
+    let analyticsData = {};
+    if (dataElement) {
+        try { analyticsData = JSON.parse(dataElement.textContent); } catch (e) {}
+    }
+
+    const deptLabels = analyticsData.deptLabels || [];
+    const deptCounts = analyticsData.deptCounts || [];
+    const totalDeptStudents = deptCounts.reduce((a, b) => a + b, 0);
+    let deptRowsHtml = '';
+    deptLabels.forEach((label, idx) => {
+        const count = deptCounts[idx] || 0;
+        const pct = totalDeptStudents > 0 ? Math.round((count / totalDeptStudents) * 100) : 0;
+        deptRowsHtml += `
+            <tr style="border-bottom: 1px solid #000; text-align: center;">
+                <td style="padding: 7px 10px; text-align: center;">${idx + 1}</td>
+                <td style="padding: 7px 10px; text-align: right; font-weight: bold;">${label}</td>
+                <td style="padding: 7px 10px;">${count}</td>
+                <td style="padding: 7px 10px;">${pct}%</td>
+                <td style="padding: 7px 10px;">معتمد ونشط</td>
+            </tr>
+        `;
+    });
+
+    const actLabels = analyticsData.actionLabels || [];
+    const actCounts = analyticsData.actionCounts || [];
+    let actRowsHtml = '';
+    actLabels.forEach((act, idx) => {
+        const c = actCounts[idx] || 0;
+        actRowsHtml += `
+            <tr style="border-bottom: 1px solid #000; text-align: center;">
+                <td style="padding: 6px 10px; text-align: right; font-weight: bold;">${act}</td>
+                <td style="padding: 6px 10px;">${c} عملية</td>
+            </tr>
+        `;
+    });
+
+    const html = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير العادي للوحة تحكم مدير النظام</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm;
+        }
+        @media print {
+            body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; }
+        }
+        body {
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+            background: #fff;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+        }
+        .print-sheet {
+            border: 2px solid #000;
+            padding: 22px 28px;
+            box-sizing: border-box;
+            background: #fff;
+            width: 100%;
+        }
+        .header-box {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        .college-logo {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+            display: block;
+            margin: 0 auto 6px auto;
+        }
+        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
+        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .divider-line {
+            border-bottom: 2px solid #000;
+            margin: 10px 0 12px 0;
+            width: 100%;
+        }
+        .report-main-title {
+            font-size: 20px;
+            font-weight: 900;
+            text-align: center;
+            margin: 8px 0 14px 0;
+        }
+        .kpi-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        .kpi-table th, .kpi-table td {
+            border: 1px solid #000;
+            padding: 8px 10px;
+            text-align: center;
+            font-size: 12px;
+        }
+        .kpi-table th {
+            background: #f0f0f0;
+            font-weight: 900;
+        }
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 18px;
+            font-size: 12px;
+        }
+        .data-table th, .data-table td {
+            border: 1px solid #000;
+            padding: 7px 10px;
+        }
+        .data-table th {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        .signatures-area {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 36px;
+            page-break-inside: avoid;
+        }
+        .sig-card {
+            text-align: center;
+            min-width: 190px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-sheet">
+        <div class="header-box">
+            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
+            <div class="header-title-1">دولة ليبيا</div>
+            <div class="header-title-2">وزارة التعليم التقني والفني</div>
+            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
+            <div class="divider-line"></div>
+            <div class="report-main-title">تقرير ملخص المؤشرات والبيانات للوحة تحكم مدير النظام</div>
+        </div>
+
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>إجمالي الطلاب المقيدين</th>
+                    <th>أعضاء هيئة التدريس والموظفون</th>
+                    <th>المستخدمون النشطون</th>
+                    <th>الجلسات المفتوحة</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_students|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ total_staff|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ active_users|default:0 }}</td>
+                    <td style="font-weight: bold; font-size: 14px;">{{ active_sessions|default:0 }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px;">أولاً: بيان تفصيلي بتوزيع الطلاب حسب الأقسام العلمية:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
+                    <th style="text-align: right;">القسم العلمي</th>
+                    <th style="width: 120px; text-align: center;">إجمالي الطلاب</th>
+                    <th style="width: 100px; text-align: center;">النسبة المئوية</th>
+                    <th style="width: 120px; text-align: center;">حالة القسم</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRowsHtml || '<tr><td colspan="5" style="text-align:center;">لا توجد بيانات</td></tr>'}
+            </tbody>
+        </table>
+
+        ${actRowsHtml ? `
+        <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px;">ثانياً: ملخص حركة العمليات والأنشطة بالمنظومة:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="text-align: right;">نوع العملية / النشاط</th>
+                    <th style="width: 180px; text-align: center;">العدد الإجمالي المنفذ</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${actRowsHtml}
+            </tbody>
+        </table>` : ''}
+
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
+                <div style="font-weight: 600; font-size: 12px; margin-bottom: 30px;">${registrarPos}</div>
+                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+    `;
+
+    printViaHiddenIframe(html);
+};
+
+document.addEventListener('DOMContentLoaded', function() {
+    const dataElement = document.getElementById('admin-analytics-data');
+    if (!dataElement) return;
+
+    let analyticsData = {};
+    try {
+        analyticsData = JSON.parse(dataElement.textContent);
+    } catch (e) {
+        console.error("Failed to parse analytics data:", e);
+        return;
+    }
+
+    const isDark = document.documentElement.classList.contains('dark');
+    const textColor = isDark ? '#cbd5e1' : '#475569';
+    const gridColor = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(0, 0, 0, 0.06)';
+
+    // لوحة ألوان الهوية المعتمدة
+    const brandColors = [
+        '#307e92', // Sidebar Teal
+        '#0284c7', // Sky Blue
+        '#eab308', // Gold
+        '#10b981', // Emerald
+        '#8b5cf6', // Purple
+        '#f97316', // Orange
+        '#06b6d4', // Cyan
+        '#ec4899', // Pink
+    ];
+
+    // 1. رسم بياني لتوزيع الطلاب حسب الأقسام (Doughnut Chart)
+    const deptCtx = document.getElementById('deptDistributionChart');
+    if (deptCtx) {
+        const labels = analyticsData.deptLabels && analyticsData.deptLabels.length > 0 ? analyticsData.deptLabels : ['لا توجد بيانات'];
+        const counts = analyticsData.deptCounts && analyticsData.deptCounts.length > 0 ? analyticsData.deptCounts : [1];
+
+        deptDoughnutChart = new Chart(deptCtx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: brandColors.slice(0, labels.length),
+                    borderWidth: 2,
+                    borderColor: isDark ? '#1e293b' : '#ffffff',
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        rtl: true,
+                        labels: {
+                            color: textColor,
+                            font: { family: 'Cairo', size: 12, weight: 'bold' },
+                            padding: 14,
+                            usePointStyle: true,
+                            pointStyle: 'circle'
+                        }
+                    },
+                    tooltip: {
+                        rtl: true,
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.raw || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                return ` ${label}: ${value} طالب (${percentage}%)`;
+                            }
+                        }
+                    }
+                },
+                cutout: '62%'
+            }
+        });
+    }
+
+    // 2. رسم بياني لنشاطات وإجراءات المنظومة (Bar Chart)
+    const actCtx = document.getElementById('activityTrendsChart');
+    if (actCtx) {
+        const actLabels = analyticsData.actionLabels && analyticsData.actionLabels.length > 0 
+            ? analyticsData.actionLabels 
+            : ['تسجيل دخول', 'تعديل', 'تنزيل مواد', 'رصد درجة'];
+        const actCounts = analyticsData.actionCounts && analyticsData.actionCounts.length > 0 
+            ? analyticsData.actionCounts 
+            : [12, 8, 15, 6];
+
+        activityBarChart = new Chart(actCtx, {
+            type: 'bar',
+            data: {
+                labels: actLabels,
+                datasets: [{
+                    label: 'عدد العمليات',
+                    data: actCounts,
+                    backgroundColor: [
+                        'rgba(48, 126, 146, 0.85)',
+                        'rgba(2, 132, 199, 0.85)',
+                        'rgba(234, 179, 8, 0.85)',
+                        'rgba(16, 185, 129, 0.85)',
+                        'rgba(139, 92, 246, 0.85)',
+                        'rgba(249, 115, 22, 0.85)'
+                    ],
+                    borderRadius: 8,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        rtl: true,
+                        callbacks: {
+                            label: function(context) {
+                                return ` العمليات: ${context.raw}`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            color: textColor,
+                            font: { family: 'Cairo', size: 11, weight: 'bold' }
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: gridColor },
+                        ticks: {
+                            color: textColor,
+                            font: { family: 'Cairo', size: 11 },
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

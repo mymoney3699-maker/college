@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}متابعة الطلاب · كلية طرابلس{% endblock %}
+
+
+{% block content %}
+<div class="tracking-page-container">
+
+    <!-- HEADER -->
+    <div class="tracking-header">
+        <h1><span class="material-symbols-outlined">analytics</span> متابعة الطلاب</h1>
+        <p>متابعة المسيرة الأكاديمية للطالب ومعرفة مستوى الإنجاز والمواد المجتازة والمتبقية</p>
+    </div>
+
+    <!-- SEARCH CARD -->
+    <div class="group-box tracking-card">
+        <span class="group-title">🔍 البحث عن طالب ومتابعة ملفه الأكاديمي</span>
+        <div class="filters-grid-4col">
+            <div class="filter-group search-wrapper" style="position: relative;">
+                <label for="studentIdInput" class="field-label">رقم القيد</label>
+                <input type="text" id="studentIdInput" placeholder="مثال: 191010" value="" autocomplete="off" />
+                <div class="search-results" id="idSearchResults"></div>
+            </div>
+            <div class="filter-group search-wrapper" style="position: relative;">
+                <label for="studentNameInput" class="field-label">اسم الطالب</label>
+                <input type="text" id="studentNameInput" placeholder="أدخل الاسم..." value="" autocomplete="off" />
+                <div class="search-results" id="nameSearchResults"></div>
+            </div>
+            <div class="filter-group">
+                <label for="filterDept" class="field-label">القسم العلمي</label>
+                <select id="filterDept" class="filter-select">
+                    <option value="all">كافة الأقسام</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.name }}" data-id="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterYear" class="field-label">السنة الدراسية</label>
+                <input type="text" id="filterYear" placeholder="مثال: 2026" />
+            </div>
+        </div>
+        <div class="buttons-row mt-4">
+            <button class="btn-action btn-save" id="searchBtn" style="padding: 0.5rem 2.5rem; font-size: 0.9rem;">
+                <span class="material-symbols-outlined">search</span> بحث
+            </button>
+        </div>
+    </div>
+
+    <!-- STUDENT DATA CONTAINER -->
+    <div id="studentData" style="display: none;">
+        <!-- STUDENT INFO HERO CARD -->
+        <div class="group-box tracking-card student-profile-card">
+            <span class="group-title">بيانات الطالب الشخصية والأكاديمية</span>
+            
+            <div class="student-profile-header">
+                <div class="student-avatar-box">
+                    <div class="avatar-circle">
+                        <span class="material-symbols-outlined">account_circle</span>
+                    </div>
+                </div>
+                <div class="student-profile-main">
+                    <h2 class="student-name-title" id="sName">—</h2>
+                    <div class="student-tags-row">
+                        <span class="student-badge badge-id">
+                            <span class="material-symbols-outlined">badge</span>
+                            رقم القيد: <strong id="sId">—</strong>
+                        </span>
+                        <span class="student-badge badge-dept">
+                            <span class="material-symbols-outlined">school</span>
+                            <span id="sDept">—</span>
+                        </span>
+                        <span class="student-badge badge-status-pill" id="sStatusBadge">
+                            <span class="status-dot"></span>
+                            <span id="sStatus">—</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="student-details-grid">
+                <div class="detail-chip">
+                    <div class="chip-icon"><span class="material-symbols-outlined">fingerprint</span></div>
+                    <div class="chip-content">
+                        <span class="chip-label">الرقم الوطني</span>
+                        <span class="chip-value" id="sNational">—</span>
+                    </div>
+                </div>
+                <div class="detail-chip">
+                    <div class="chip-icon"><span class="material-symbols-outlined">history_edu</span></div>
+                    <div class="chip-content">
+                        <span class="chip-label">التخصص</span>
+                        <span class="chip-value" id="sMajor">—</span>
+                    </div>
+                </div>
+                <div class="detail-chip">
+                    <div class="chip-icon"><span class="material-symbols-outlined">stairs</span></div>
+                    <div class="chip-content">
+                        <span class="chip-label">المستوى الحالي</span>
+                        <span class="chip-value" id="sLevel">—</span>
+                    </div>
+                </div>
+                <div class="detail-chip">
+                    <div class="chip-icon"><span class="material-symbols-outlined">supervisor_account</span></div>
+                    <div class="chip-content">
+                        <span class="chip-label">المرشد الأكاديمي</span>
+                        <span class="chip-value" id="sAdvisor">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="group-box tracking-card alerts-card">
+            <span class="group-title">التنبيهات الأكاديمية</span>
+            <div class="alerts-grid" id="alertsGrid"></div>
+        </div>
+
+        <!-- STATS -->
+        <div class="group-box tracking-card">
+            <span class="group-title">الإحصائيات الأكاديمية</span>
+            <div class="stats-grid" id="statsGrid">
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-total"><span class="material-symbols-outlined">menu_book</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="totalCourses">0</div>
+                        <div class="stat-label">إجمالي المواد</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-passed"><span class="material-symbols-outlined">task_alt</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="passedCourses">0</div>
+                        <div class="stat-label">المواد المجتازة</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-enrolled"><span class="material-symbols-outlined">pending_actions</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="enrolledCourses">0</div>
+                        <div class="stat-label">المسجلة حالياً</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-remaining"><span class="material-symbols-outlined">running_with_errors</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="remainingCourses">0</div>
+                        <div class="stat-label">المواد المتبقية</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-gpa"><span class="material-symbols-outlined">auto_graph</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="gpaDisplay">0</div>
+                        <div class="stat-label">المعدل التراكمي</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-icon-wrapper icon-progress"><span class="material-symbols-outlined">workspace_premium</span></div>
+                    <div class="stat-content">
+                        <div class="stat-number" id="progressPercent">0%</div>
+                        <div class="stat-label">نسبة الإنجاز</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PROGRESS -->
+        <div class="group-box tracking-card">
+            <span class="group-title">نسبة الإنجاز</span>
+            <div class="progress-container-box">
+                <div class="progress-header-info">
+                    <div class="progress-title-meta">
+                        <span class="progress-main-percent" id="progressText">0%</span>
+                        <span class="progress-sub-label">نسبة استكمال الخطة الدراسية للطالب</span>
+                    </div>
+                </div>
+                <div class="progress-bar-track">
+                    <div class="progress-bar-fill" id="progressFill" style="width:0%;">
+                        <div class="progress-glow"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TIMELINE -->
+        <div class="group-box tracking-card">
+            <span class="group-title">تقدم المستويات</span>
+            <div class="timeline-grid" id="timelineContainer"></div>
+        </div>
+
+        <!-- COURSES TABLE -->
+        <div class="group-box tracking-card">
+            <span class="group-title">جدول المواد</span>
+            <div class="overflow-x-auto">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>اسم المادة</th>
+                            <th>رمز المادة</th>
+                            <th>عدد الوحدات</th>
+                            <th>الدرجة</th>
+                            <th>التقدير</th>
+                            <th>الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coursesTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- NOTES -->
+        <div class="group-box tracking-card">
+            <span class="group-title">ملاحظات أكاديمية</span>
+            <ul class="notes-list" id="notesList"></ul>
+        </div>
+    </div>
+
+    <!-- ACTIONS (Standalone - Removed from Group-Box) -->
+    <div class="actions-standalone" style="display: none;">
+        <div class="buttons-row">
+            <button class="btn-action btn-print" id="printBtn"><span class="material-symbols-outlined">print</span> طباعة</button>
+            <button class="btn-action btn-reset" id="resetBtn"><span class="material-symbols-outlined">restart_alt</span> إعادة تعيين</button>
+            <button class="btn-action btn-exit" onclick="window.history.back()"><span class="material-symbols-outlined">arrow_back</span> رجوع</button>
+        </div>
+    </div>
+
+    <!-- PRINT CONTAINER (Active during window.print) -->
+    <div class="print-preview" id="printPreview">
+        <div class="print-cert" id="printCertInner"></div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+</script>
+<script id="tracking-data" type="application/json">
+    {
+        "students": {{ students_json|safe }},
+        "departments": {{ departments_json|safe }},
+        "levels": {{ levels_json|safe }}
+    }
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/student_tracking.js' %}?v=1.2.0"></script>
+{% endblock %}

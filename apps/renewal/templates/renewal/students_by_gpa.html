@@ -1,0 +1,527 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}كشف الطلاب حسب المعدل · كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/students_by_gpa.css' %}?v=1.7.0" />
+<style>
+    /* ===================================================
+       إخفاء حاوية التقرير المطبوع في الشاشة العادية
+       =================================================== */
+    #reportPrintContainer {
+        display: none !important;
+    }
+
+    /* ===================================================
+       أنماط الطباعة الرسمية الموحدة - A4 Portrait
+       =================================================== */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        body>*:not(#reportPrintContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #reportPrintContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #reportPrintContainer * {
+            visibility: visible !important;
+        }
+
+        .rpt-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .rpt-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .rpt-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .rpt-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        .rpt-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .rpt-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        .rpt-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.9 !important;
+            color: #000 !important;
+        }
+
+        .rpt-info-right {
+            text-align: right !important;
+        }
+
+        .rpt-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .rpt-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-table-container {
+            margin-top: 8px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .rpt-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .rpt-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .rpt-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .rpt-empty-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        .rpt-signature-box {
+            margin-top: 35px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .rpt-signature-box .off-name {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1em !important;
+        }
+
+        .rpt-signature-box .off-pos {
+            display: block !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #000000 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .rpt-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="custom-main" id="gpaReportContainer" style="direction: rtl;">
+    <div class="max-w-7xl mx-auto">
+
+        <!-- HEADER ROW -->
+        <div class="page-header-row border-accent-gold no-print">
+            <div>
+                <h1 class="page-header-title">📊 كشف الطلاب حسب المعدل التراكمي</h1>
+                <p class="page-header-subtitle">استعراض وترتيب معدلات الطلاب مع خيارات البحث والفرز والطباعة الرسمية
+                    والتصدير</p>
+            </div>
+        </div>
+
+        <!-- STATS CARDS -->
+        <div class="stats-summary-grid no-print">
+            <div class="stat-box">
+                <div class="stat-icon-wrapper blue-icon">
+                    <span class="material-symbols-outlined">school</span>
+                </div>
+                <div class="stat-data">
+                    <div class="stat-number" id="totalStudents">0</div>
+                    <div class="stat-label">إجمالي الطلاب</div>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-icon-wrapper gold-icon">
+                    <span class="material-symbols-outlined">vertical_align_top</span>
+                </div>
+                <div class="stat-data">
+                    <div class="stat-number" id="maxGpa">0.00</div>
+                    <div class="stat-label">أعلى معدل</div>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-icon-wrapper purple-icon">
+                    <span class="material-symbols-outlined">vertical_align_bottom</span>
+                </div>
+                <div class="stat-data">
+                    <div class="stat-number" id="minGpa">0.00</div>
+                    <div class="stat-label">أقل معدل</div>
+                </div>
+            </div>
+
+            <div class="stat-box">
+                <div class="stat-icon-wrapper green-icon">
+                    <span class="material-symbols-outlined">functions</span>
+                </div>
+                <div class="stat-data">
+                    <div class="stat-number" id="avgGpa">0.00</div>
+                    <div class="stat-label">متوسط المعدلات</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FILTER FORM SECTION -->
+        <div class="group-box no-print">
+            <div class="system-filters-grid">
+                <div class="filter-field">
+                    <label class="field-label">السنة الدراسية</label>
+                    <select id="filterYear" class="system-select">
+                        <option value="">جميع السنوات</option>
+                        {% for yr in unique_years %}
+                        <option value="{{ yr }}" {% if selected_year == yr|stringformat:'s' %}selected{% endif %}>{{ yr }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="field-label">الفصل الدراسي</label>
+                    <select id="filterSemester" class="system-select">
+                        <option value="all" {% if not selected_semester %}selected{% endif %}>جميع الفصول</option>
+                        <option value="خريف" {% if selected_semester == 'خريف' %}selected{% endif %}>خريف</option>
+                        <option value="ربيع" {% if selected_semester == 'ربيع' %}selected{% endif %}>ربيع</option>
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="field-label">القسم العلمي</label>
+                    <select id="filterDepartment" class="system-select">
+                        <option value="all">جميع الأقسام</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.name }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="field-label">المستوى</label>
+                    <select id="filterLevel" class="system-select">
+                        <option value="all">جميع المستويات</option>
+                        {% for lvl in levels %}
+                        <option value="{{ lvl.name }}">{{ lvl.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="filter-field">
+                    <label class="field-label">نوع الكشف</label>
+                    <select id="filterType" class="system-select">
+                        <option value="all">جميع الطلاب</option>
+                        <option value="passed">الناجحين / المترفعين</option>
+                        <option value="failed">الراسبين / الإنذارات</option>
+                        <option value="top">الأوائل / المتفوقين</option>
+                        <option value="range">ضمن نطاق معدل</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- GPA Range Selector -->
+            <div class="gpa-range-wrapper" id="gpaRange">
+                <div class="filter-field">
+                    <label class="field-label">من معدل</label>
+                    <input type="number" id="gpaFrom" class="system-input" value="2.0" min="0" max="4.0" step="0.01" />
+                </div>
+                <div class="filter-field">
+                    <label class="field-label">إلى معدل</label>
+                    <input type="number" id="gpaTo" class="system-input" value="4.0" min="0" max="4.0" step="0.01" />
+                </div>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div class="actions-buttons-row">
+                <button class="btn-action btn-search" onclick="applyFilters()">
+                    <span class="material-symbols-outlined">search</span> تطبيق الفلتر
+                </button>
+                <button class="btn-action btn-reset" onclick="resetFilters()">
+                    <span class="material-symbols-outlined">restart_alt</span> إعادة تعيين
+                </button>
+                <button class="btn-action btn-print" onclick="printReportDirect()">
+                    <span class="material-symbols-outlined">print</span> طباعة التقرير
+                </button>
+                <button class="btn-action btn-pdf" onclick="exportPDFDirect()">
+                    <span class="material-symbols-outlined">picture_as_pdf</span> تصدير PDF
+                </button>
+                <button class="btn-action btn-excel" onclick="exportExcel()">
+                    <span class="material-symbols-outlined">grid_on</span> تصدير Excel
+                </button>
+            </div>
+        </div>
+
+        <!-- TABLE DATA SECTION -->
+        <div class="group-box print-card" style="padding: 0; overflow: hidden; margin-top: 1.5rem;">
+
+            <div class="table-header-toolbar no-print">
+                <div class="table-search-box">
+                    <span class="material-symbols-outlined search-icon">search</span>
+                    <input type="text" id="tableSearch" placeholder="ابحث بالاسم أو رقم القيد..."
+                        oninput="searchTable()" />
+                </div>
+                <div class="results-count-badge" id="resultsInfo">
+                    عرض <strong id="displayCount">0</strong> من إجمالي <strong id="totalCount">0</strong> طالب
+                </div>
+            </div>
+
+            <div class="table-scroll">
+                <table class="data-table" id="gpaStudentsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px;">#</th>
+                            <th style="width: 80px;">الترتيب</th>
+                            <th style="width: 140px;">
+                                الرقم الدراسي
+                                <span class="material-symbols-outlined sort-icon no-print"
+                                    onclick="sortTable('id')">unfold_more</span>
+                            </th>
+                            <th>
+                                اسم الطالب الكامل
+                                <span class="material-symbols-outlined sort-icon no-print"
+                                    onclick="sortTable('name')">unfold_more</span>
+                            </th>
+                            <th>القسم العلمي</th>
+                            <th style="width: 110px;">المستوى</th>
+                            <th style="width: 110px;">الساعات المنجزة</th>
+                            <th style="width: 110px;">
+                                المعدل
+                                <span class="material-symbols-outlined sort-icon no-print"
+                                    onclick="sortTable('gpa')">unfold_more</span>
+                            </th>
+                            <th style="width: 110px;">التقدير</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Dynamic Rows -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Official System Pagination -->
+            <div class="system-pagination-bar no-print">
+                <div class="page-indicator-text" id="pageInfo">الصفحة 1 من 1</div>
+                <div class="pagination-buttons-group" id="pageButtons">
+                    <button class="page-nav-btn" onclick="changePage('prev')" id="prevBtn" disabled>
+                        <span class="material-symbols-outlined">chevron_right</span>
+                    </button>
+                    <button class="page-nav-btn active" data-page="1">1</button>
+                    <button class="page-nav-btn" onclick="changePage('next')" id="nextBtn" disabled>
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ============================================================
+     حاوية التقرير الرسمي العمودية المخصصة للطباعة (A4 Portrait)
+     ============================================================ -->
+<div id="reportPrintContainer">
+    <div class="rpt-page-frame">
+
+        <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line"
+            style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="rpt-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">
+            كشف الطلاب حسب المعدل التراكمي</div>
+
+        <!-- ② معلومات التقرير الفلاتر -->
+        <div class="rpt-info-grid">
+            <div class="rpt-info-right">
+                <div><span class="rpt-lbl">القسم العلمي:</span> <span id="pDept" class="rpt-val">جميع الأقسام</span>
+                </div>
+                <div><span class="rpt-lbl">الفصل الدراسي:</span> <span id="pSemester" class="rpt-val">جميع الفصول</span>
+                </div>
+            </div>
+            <div class="rpt-info-left">
+                <div><span id="rptPrintDateVal" class="rpt-val"></span></div>
+                <div><span class="rpt-lbl">نوع الكشف:</span> <span id="pType" class="rpt-val">جميع الطلاب</span></div>
+            </div>
+        </div>
+
+        <!-- ③ جدول التقرير المطبوع (A4 Portrait - 5 أعمدة) -->
+        <div class="rpt-table-container">
+            <table class="rpt-table">
+                <thead>
+                    <tr>
+                        <th style="width: 8%;">م</th>
+                        <th style="width: 22%;">الرقم الدراسي</th>
+                        <th style="width: 40%;">اسم الطالب الكامل</th>
+                        <th style="width: 15%;">المعدل التراكمي</th>
+                        <th style="width: 15%;">التقدير</th>
+                    </tr>
+                </thead>
+                <tbody id="printGpaTableBody">
+                    <tr>
+                        <td colspan="5" class="rpt-empty-cell">لا توجد بيانات مطابقة للطباعة حالياً</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ صندوق التوقيع جهة اليسار أسفل التقرير -->
+        <div class="rpt-signature-box" data-official="exams_coordinator">
+            <span class="off-name"
+                style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:3px; min-height:1em;"></span>
+            <span class="off-pos" style="display:block; font-size:11.5px; font-weight:600; margin-bottom:8px;">منسق
+                الدراسة والامتحانات</span>
+            <span class="off-sig-line" style="display:block; font-size:11.5px; letter-spacing:1px;">التوقيع والختم:
+                ............................................</span>
+        </div>
+
+    </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toastContainer"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script id="gpa-students-data" type="application/json">
+    {{ students_json|safe }}
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/students_by_gpa.js' %}?v=1.7.0"></script>
+{% endblock %}

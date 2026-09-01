@@ -1,0 +1,458 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إفادة التخرج · كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/graduation_certificate.css' %}?v=3.0.0"/>
+<style>
+/* ============================================================
+   تنسيقات وثيقة الطباعة المخصصة للورق الرسمي الجاهز
+   ============================================================ */
+.official-print-document {
+    padding: 1.8cm 1.8cm 1cm 1.8cm;
+    font-family: 'Cairo', Arial, sans-serif;
+    color: #1e293b;
+    direction: rtl;
+    line-height: 1.8;
+    background: #ffffff;
+}
+
+/* ===== تاريخ الإفادة في أعلى الصفحة ===== */
+.print-date-top {
+    text-align: left;
+    font-size: 13pt;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 30px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #cbd5e1;
+}
+
+.print-date-top .date-label {
+    font-weight: 400;
+    color: #64748b;
+}
+
+/* ===== عنوان الإفادة ===== */
+.print-title-box {
+    text-align: center;
+    margin: 10px 0 30px 0;
+}
+
+.print-main-title {
+    font-size: 22pt;
+    font-weight: 800;
+    color: #0f172a;
+    letter-spacing: 1px;
+    margin: 0;
+    text-decoration: underline;
+    text-underline-offset: 8px;
+    text-decoration-color: #b59b66;
+}
+
+/* ===== نص الإفادة الرئيسي ===== */
+.print-body-statement {
+    font-size: 14pt;
+    text-align: justify;
+    line-height: 2.4;
+    margin-bottom: 25px;
+    padding: 0 5px;
+}
+
+.student-name-highlight {
+    font-size: 15pt;
+    color: #0f172a;
+    font-weight: 900;
+}
+
+/* ===== جدول التفاصيل الأكاديمية ===== */
+.print-details-table {
+    background: #f8fafc;
+    border-radius: 8px;
+    padding: 18px 22px;
+    margin-bottom: 25px;
+    border: 1px solid #e2e8f0;
+}
+
+.print-detail-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    font-size: 12.5pt;
+    padding: 8px 0;
+    border-bottom: 1px dashed #cbd5e1;
+}
+
+.print-detail-row:last-child {
+    border-bottom: none;
+}
+
+.print-detail-row.single {
+    grid-template-columns: 1fr;
+}
+
+.val-highlight {
+    color: #0284c7;
+    font-weight: 700;
+}
+
+.grade-highlight {
+    color: #15803d;
+    font-weight: 800;
+    font-size: 14pt;
+}
+
+/* ===== النص القانوني ===== */
+.print-legal-text {
+    font-size: 12pt;
+    color: #475569;
+    margin-bottom: 45px;
+    text-align: justify;
+    padding: 0 5px;
+}
+
+/* ===== التوقيعات ===== */
+.print-signatures-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 30px;
+    padding: 20px 10px 0 10px;
+    border-top: 1px solid #e2e8f0;
+}
+
+.sig-col {
+    text-align: center;
+    min-width: 180px;
+}
+
+.qr-col {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 25px;
+}
+
+.sig-person-name {
+    font-size: 13pt;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.sig-person-title {
+    font-size: 11.5pt;
+    color: #64748b;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* ============================================================
+   قواعد الطباعة @media print
+   ============================================================ */
+@media print {
+    /* 1. إخفاء كافة واجهة النظام */
+    body > *:not(.print-cert-wrapper),
+    .no-print,
+    .page-header,
+    .group-box,
+    .actions-row,
+    .toast,
+    .preview-header,
+    #closePreviewBtn,
+    header,
+    nav,
+    aside,
+    footer,
+    .sidebar,
+    .app-sidebar,
+    .navbar,
+    .app-header,
+    .app-footer,
+    button,
+    input,
+    select,
+    .print-preview .preview-header {
+        display: none !important;
+    }
+
+    /* 2. إظهار وثيقة الإفادة فقط */
+    .print-cert-wrapper,
+    .print-cert-wrapper * {
+        display: block !important;
+        visibility: visible !important;
+    }
+
+    .print-cert-wrapper {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        z-index: 999999 !important;
+    }
+
+    .official-print-document {
+        padding: 2.2cm 1.8cm 1cm 1.8cm !important;
+        background: #ffffff !important;
+        border: none !important;
+        box-shadow: none !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .print-details-table {
+        background: #f8fafc !important;
+        border: 1px solid #64748b !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        direction: rtl !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    @page {
+        size: A4 portrait;
+        margin: 0;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="app graduation-certificate-page">
+
+    <div class="page-header no-print">
+        <h1>إفادة التخرج</h1>
+        <p>إصدار وطباعة إفادة التخرج للطالب المستحق</p>
+    </div>
+
+    <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+    {% if not is_certificate_job_open %}
+    <div id="jobInactiveBanner" class="job-inactive-banner no-print" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% else %}
+    <div id="jobInactiveBanner" class="job-inactive-banner no-print" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% endif %}
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+        <div style="flex: 1;">
+            <span id="jobInactiveBannerText">{% if not is_certificate_job_open %}{{ certificate_job_message|default:"خدمة 'إفادة التخرج' غير مفعلة حالياً" }}{% endif %}</span>
+        </div>
+    </div>
+
+    <!-- SEARCH GROUP BOX -->
+    <div class="group-box no-print">
+        <span class="group-title"><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-left: 4px;">search</span> البحث عن طالب</span>
+        <div class="search-row">
+            <div class="field-group search-wrapper">
+                <label for="studentIdInput">رقم القيد</label>
+                <input type="text" id="studentIdInput" placeholder="مثال: 191010" value="" autocomplete="off" />
+                <div class="search-results" id="idSearchResults"></div>
+            </div>
+            <div class="field-group search-wrapper">
+                <label for="studentNameInput">اسم الطالب</label>
+                <input type="text" id="studentNameInput" placeholder="أدخل الاسم" value="" autocomplete="off" />
+                <div class="search-results" id="nameSearchResults"></div>
+            </div>
+            <div>
+                <button class="btn btn-primary" id="searchBtn"><span class="material-symbols-outlined">search</span> بحث</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- STUDENT CARD GROUP BOX -->
+    <div class="group-box no-print" id="studentCard">
+        <span class="group-title"><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-left: 4px;">person</span> مستحقات إفادة التخرج</span>
+        
+        <!-- EMPTY STATE -->
+        <div class="empty-student-state" id="emptyState">
+            <div class="empty-icon-circle">
+                <span class="material-symbols-outlined">person_search</span>
+            </div>
+            <h3>لا توجد بيانات معروضة حالياً</h3>
+            <p>الرجاء استخدام حقل البحث أعلاه بالاسم أو رقم القيد لإظهار مستحقات إفادة التخرج للطالب المستحق.</p>
+        </div>
+
+        <!-- PROFILE CONTENT -->
+        <div class="student-profile-wrapper" id="studentProfile" style="display: none;">
+            <div class="profile-header-banner">
+                <div class="profile-avatar">
+                    <span class="material-symbols-outlined">account_circle</span>
+                </div>
+                <div class="profile-info-main">
+                    <div id="statusBadge" class="badge-status" style="margin-bottom: 8px; display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; font-weight: bold; font-size: 0.9rem;"></div>
+                    <h2 id="sName">—</h2>
+                    <div class="profile-sub-badges">
+                        <span class="sub-badge" id="sDept">—</span>
+                        <span class="sub-badge" id="sMajor">—</span>
+                        <span class="sub-badge" id="sLevel">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- كروت المؤشرات الأساسية -->
+            <div class="kpi-cards-row" id="kpiCardsRow">
+                <div class="kpi-card kpi-gpa">
+                    <div class="kpi-icon"><span class="material-symbols-outlined">analytics</span></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">المعدل التراكمي</span>
+                        <span class="kpi-value" id="sGpa">—</span>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-grade">
+                    <div class="kpi-icon"><span class="material-symbols-outlined">military_tech</span></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">التقدير العام</span>
+                        <span class="kpi-value" id="sGrade">—</span>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-grade" style="border-right-color: #3b82f6;">
+                    <div class="kpi-icon"><span class="material-symbols-outlined">school</span></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">مشروع التخرج</span>
+                        <span class="kpi-value" id="sProjectGrade">—</span>
+                    </div>
+                </div>
+                <div class="kpi-card kpi-year">
+                    <div class="kpi-icon"><span class="material-symbols-outlined">event_available</span></div>
+                    <div class="kpi-details">
+                        <span class="kpi-label">سنة التخرج</span>
+                        <span class="kpi-value" id="sGradYear">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- شبكة البيانات الأكاديمية -->
+            <div class="academic-details-grid" id="academicDetailsGrid">
+                <div class="detail-box">
+                    <span class="detail-box-label"><span class="material-symbols-outlined">badge</span> رقم القيد</span>
+                    <span class="detail-box-value" id="sId">—</span>
+                </div>
+                <div class="detail-box">
+                    <span class="detail-box-label"><span class="material-symbols-outlined">fingerprint</span> الرقم الوطني</span>
+                    <span class="detail-box-value" id="sNational">—</span>
+                </div>
+                <div class="detail-box">
+                    <span class="detail-box-label"><span class="material-symbols-outlined">calendar_month</span> سنة الالتحاق</span>
+                    <span class="detail-box-value" id="sJoinYear">—</span>
+                </div>
+                <div class="detail-box">
+                    <span class="detail-box-label"><span class="material-symbols-outlined">verified</span> تاريخ إخلاء الطرف</span>
+                    <span class="detail-box-value" id="sClearanceDate">—</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- CERT DATA GROUP BOX -->
+    <div class="group-box no-print" id="certDataCard">
+        <span class="group-title"><span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle; margin-left: 4px;">description</span> بيانات الإفادة</span>
+        <div class="cert-row">
+            <div class="field-group">
+                <label for="certNumber">رقم الإفادة</label>
+                <input type="text" id="certNumber" readonly value="TCC-2026-001" />
+            </div>
+            <div class="field-group">
+                <label for="certDate">تاريخ الإصدار</label>
+                <input type="text" id="certDate" readonly />
+            </div>
+        </div>
+    </div>
+
+    <!-- ACTIONS -->
+    <div class="actions-row no-print">
+        <button class="btn btn-accent" id="issueBtn"><span class="material-symbols-outlined">verified</span> إصدار الإفادة</button>
+        <button class="btn btn-print" id="printBtn"><span class="material-symbols-outlined">print</span> طباعة</button>
+        <button class="btn btn-reset" id="resetBtn"><span class="material-symbols-outlined">restart_alt</span> إعادة تعيين</button>
+        <button class="btn btn-back" onclick="window.history.back()"><span class="material-symbols-outlined">arrow_back</span> رجوع</button>
+    </div>
+
+    <!-- ===== PRINT PREVIEW ===== -->
+    <div class="print-preview" id="printPreview">
+        <div class="preview-header no-print">
+            <h3><span class="material-symbols-outlined">visibility</span> معاينة إفادة التخرج</h3>
+            <button class="btn-close-preview" id="closePreviewBtn">
+                <span class="material-symbols-outlined">close</span> إخفاء المعاينة
+            </button>
+        </div>
+        <div class="print-cert-wrapper" id="printCertInner"></div>
+    </div>
+
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.IS_CERTIFICATE_JOB_OPEN = "{{ is_certificate_job_open|yesno:'true,false' }}" === "true";
+    window.CERTIFICATE_JOB_MESSAGE = "{{ certificate_job_message|escapejs }}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/graduation_certificate.js' %}?v=3.1.0"></script>
+{% endblock %}

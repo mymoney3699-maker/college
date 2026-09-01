@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة حسابات المستخدمين - كلية طرابلس{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-header-title">إدارة حسابات المستخدمين</h1>
+            <p class="page-header-subtitle">اختر المستخدم ثم عدّل بياناته</p>
+        </div>
+    </div>
+
+    <!-- اختيار المستخدم -->
+    <div class="group-box">
+        <span class="group-title">اختيار المستخدم</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label class="block font-bold text-primary mb-1">اختر رقم المستخدم (بالبحث)</label>
+                <div class="relative" id="customUserDropdown">
+                    <input type="text" id="userSearchInput" 
+                           class="w-full border border-gray-300 dark:border-slate-600 rounded-md p-2.5 pl-10 pr-3 focus:outline-none focus:border-primary dark:bg-slate-800 dark:text-white" 
+                           placeholder="اكتب اسم أو رقم المستخدم للبحث..." 
+                           autocomplete="off"
+                           onfocus="this.select(); liveSearch()"
+                           oninput="liveSearch()">
+                    <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 pointer-events-none">search</span>
+                    
+                    <!-- Hidden select element to preserve existing logic -->
+                    <select id="userSelect" class="hidden" onchange="loadUserData()">
+                        <option value="">-- اختر مستخدم --</option>
+                        {% for u in users %}
+                        <option value="{{ u.id }}" 
+                                data-username="{{ u.username }}" 
+                                data-first-name="{{ u.first_name }}" 
+                                data-last-name="{{ u.last_name }}" 
+                                data-email="{{ u.email }}" 
+                                data-phone="{{ u.phone }}" 
+                                data-role="{{ u.get_role_display }}">
+                            {{ u.id }} - {{ u.username }} - {{ u.get_role_display }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">الدور / الصلاحية</label>
+                <input type="text" id="roleDisplay" class="w-full border border-gray-300 rounded-md p-2.5 bg-gray-50 dark:bg-slate-700 dark:text-white" readonly>
+            </div>
+        </div>
+        <!-- Search results container (now inline full width dropdown) -->
+        <div id="searchResults" class="w-full mt-4 z-10 hidden bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm max-h-80 overflow-y-auto"></div>
+    </div>
+
+    <!-- معلومات الحساب -->
+    <div class="group-box">
+        <span class="group-title">معلومات الحساب</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <label class="block font-bold text-primary mb-1">رقم المستخدم</label>
+                <input type="text" id="userIdDisplay" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">اسم المستخدم</label>
+                <input type="text" id="username" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">الاسم الأول</label>
+                <input type="text" id="firstName" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">الاسم الأخير</label>
+                <input type="text" id="lastName" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">البريد الإلكتروني</label>
+                <input type="email" id="email" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+            <div>
+                <label class="block font-bold text-primary mb-1">رقم الهاتف</label>
+                <input type="text" id="phone" class="w-full border border-gray-300 rounded-md p-2 bg-gray-50" readonly>
+            </div>
+        </div>
+    </div>
+
+    <div class="buttons-row">
+        <button class="btn-action btn-edit" onclick="editUserData()">
+            <span class="material-symbols-outlined">edit_square</span> تعديل
+        </button>
+        <button class="btn-action btn-save" onclick="saveUserData()">
+            <span class="material-symbols-outlined">save</span> حفظ
+        </button>
+        <button class="btn-action btn-reset" onclick="cancelUserForm()">
+            <span class="material-symbols-outlined">backspace</span> إلغاء
+        </button>
+        <button class="btn-action btn-exit" onclick="goBack()">
+            <span class="material-symbols-outlined">arrow_back</span> رجوع
+        </button>
+    </div>
+
+    <div id="formMessage" class="mt-4 p-3 rounded-lg text-center font-bold hidden"></div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/user_accounts.js' %}"></script>
+{% endblock %}

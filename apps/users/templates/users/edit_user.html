@@ -1,0 +1,391 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}تعديل بيانات المستخدم {{ target_user.username }} - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .edit-user-container {
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+    }
+    
+    .users-page-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+        margin-bottom: 1.5rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+    }
+    .dark .users-page-header {
+        border-bottom-color: rgba(51, 65, 85, 0.8) !important;
+    }
+    
+    .users-page-title-box {
+        text-align: right !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+    
+    .users-page-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.6rem !important;
+        font-size: 1.4rem !important;
+        font-weight: 900 !important;
+        color: #307e92 !important;
+        text-align: right !important;
+        margin: 0 !important;
+    }
+    .dark .users-page-title {
+        color: #38bdf8 !important;
+    }
+    
+    .users-page-subtitle {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        text-align: right !important;
+        margin-top: 0.25rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+        display: block !important;
+    }
+    .dark .users-page-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    .users-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+    }
+
+    .system-card-box {
+        position: relative !important;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        text-align: right !important;
+        direction: rtl !important;
+        margin-bottom: 1.5rem;
+    }
+    .dark .system-card-box {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .system-card-badge {
+        position: absolute !important;
+        top: -14px !important;
+        right: 24px !important;
+        left: auto !important;
+        transform: none !important;
+        background: #307e92 !important;
+        color: #ffffff !important;
+        padding: 4px 16px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 10px rgba(48, 126, 146, 0.25) !important;
+        margin: 0 !important;
+    }
+    .dark .system-card-badge {
+        background: #0284c7 !important;
+        border-color: #1e293b !important;
+    }
+    .system-card-badge * {
+        color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="edit-user-container max-w-4xl mx-auto space-y-6">
+
+    <!-- 1. Header Section -->
+    <div class="users-page-header">
+        <div class="users-page-title-box">
+            <h1 class="users-page-title">
+                <span class="material-symbols-outlined text-3xl">person_edit</span>
+                <span>تعديل حساب المستخدم: <span class="text-[#307e92] dark:text-[#38bdf8] font-mono">{{ target_user.username }}</span></span>
+            </h1>
+            <p class="users-page-subtitle">تعديل البيانات الشخصية، الدور الوظيفي، وتعيين المجموعات لحساب فردي</p>
+        </div>
+        <div class="users-header-actions">
+            <a href="{% url 'users:manage_users' %}" class="btn-action bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                <span>رجوع لإدارة المستخدمين</span>
+            </a>
+            <a href="{% url 'users:group_permissions' %}" class="btn-action bg-teal-50 hover:bg-teal-100 text-[#307e92] dark:bg-teal-950/60 dark:text-[#38bdf8] flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all border border-teal-200 dark:border-teal-800/60">
+                <span class="material-symbols-outlined text-lg">admin_panel_settings</span>
+                <span>صلاحيات المجموعات</span>
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2 text-right" dir="rtl">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-sm font-bold flex items-center justify-start gap-2 {% if message.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300{% else %}bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300{% endif %}">
+            <span class="material-symbols-outlined text-xl">
+                {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}
+            </span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Edit User Form Card -->
+    <form method="POST" action="{% url 'users:edit_user' target_user.id %}" class="space-y-6 text-right" dir="rtl">
+        {% csrf_token %}
+
+        <!-- 1. البيانات الشخصية والحساب -->
+        <div class="system-card-box">
+            <span class="system-card-badge">
+                <span class="material-symbols-outlined">badge</span>
+                <span>البيانات الأساسية للحساب</span>
+            </span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-right">
+                <!-- Username -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        اسم المستخدم (Username) <span class="text-rose-500">*</span>
+                    </label>
+                    <input type="text" name="username" value="{{ target_user.username }}" required
+                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-sm text-right" dir="rtl">
+                </div>
+
+                <!-- Email -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        البريد الإلكتروني (Email)
+                    </label>
+                    <input type="email" name="email" value="{{ target_user.email|default:'' }}"
+                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-sm text-right" dir="rtl">
+                </div>
+
+                <!-- First Name -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        الاسم الأول
+                    </label>
+                    <input type="text" name="first_name" value="{{ target_user.first_name|default:'' }}"
+                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-sm text-right" dir="rtl">
+                </div>
+
+                <!-- Last Name -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        اسم العائلة / اللقب
+                    </label>
+                    <input type="text" name="last_name" value="{{ target_user.last_name|default:'' }}"
+                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-sm text-right" dir="rtl">
+                </div>
+
+                <!-- Phone -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        رقم الهاتف
+                    </label>
+                    <input type="text" name="phone" value="{{ target_user.phone|default:'' }}" dir="ltr"
+                           class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-sm text-right">
+                </div>
+
+                <!-- Account Status -->
+                <div class="flex items-center justify-start gap-3 pt-6">
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" class="sr-only peer" {% if target_user.is_active %}checked{% endif %}>
+                        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+                        <span class="mr-3 text-sm font-bold text-slate-700 dark:text-slate-200">حالة الحساب نشط (Active)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. الدور الوظيفي والقسم -->
+        <div class="system-card-box">
+            <span class="system-card-badge">
+                <span class="material-symbols-outlined">work</span>
+                <span>الدور الوظيفي والتخصص الأكاديمي</span>
+            </span>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-right">
+                <!-- Role -->
+                <div class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        الدور الوظيفي (Role) <span class="text-rose-500">*</span>
+                    </label>
+                    <select name="role" id="userRoleSelect" onchange="toggleDeptVisibility()"
+                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] text-sm cursor-pointer text-right" dir="rtl">
+                        {% for role_code, role_name in roles %}
+                        <option value="{{ role_code }}" {% if target_user.role == role_code %}selected{% endif %}>
+                            {{ role_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Academic Department (Optional / Conditional) -->
+                <div id="deptFieldContainer" class="text-right">
+                    <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                        القسم الأكاديمي التابع له
+                    </label>
+                    <select name="department"
+                            class="w-full px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] text-sm cursor-pointer text-right" dir="rtl">
+                        <option value="">-- بدون قسم محدد (عام / إدارة عليا) --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if target_user.department and target_user.department.id == dept.id %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. المجموعات التابع لها المستخدم -->
+        <div class="system-card-box">
+            <span class="system-card-badge">
+                <span class="material-symbols-outlined">group</span>
+                <span>المجموعات وصلاحيات الأدوار الممنوحة للمستخدم</span>
+            </span>
+
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 pt-2 text-right">
+                اختر المجموعات التي ينتمي إليها المستخدم لاكتساب صلاحياتها تلقائياً. يمكنك إدارة صلاحيات كل مجموعة بشكل مستقل من صفحة <a href="{% url 'users:group_permissions' %}" class="text-[#307e92] dark:text-[#38bdf8] underline font-bold">إدارة صلاحيات المجموعات</a>.
+            </p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 text-right">
+                {% for group in all_groups %}
+                <label class="flex items-center justify-start gap-3 p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40 hover:bg-teal-50/50 dark:hover:bg-slate-800 transition-all cursor-pointer text-right">
+                    <input type="checkbox" name="groups" value="{{ group.id }}" 
+                           {% if group.id in user_group_ids %}checked{% endif %}
+                           class="w-4 h-4 text-[#307e92] rounded border-slate-300 focus:ring-[#307e92]">
+                    <span class="text-xs font-bold text-slate-800 dark:text-slate-200 text-right">{{ group.name }}</span>
+                </label>
+                {% empty %}
+                <div class="col-span-full p-4 text-center text-xs text-slate-400 italic">
+                    لا توجد مجموعات معرفة في النظام حالياً.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- 4. الصلاحيات الفردية المسندة لحساب المستخدم مباشرة -->
+        <div class="system-card-box">
+            <span class="system-card-badge" style="background: #10b981 !important;">
+                <span class="material-symbols-outlined">security</span>
+                <span>صلاحيات التنفيذ الفردية المباشرة (إضافة / تعديل / حذف)</span>
+            </span>
+
+            <div class="flex justify-between items-center mb-4 pt-2 flex-wrap gap-2">
+                <p class="text-xs text-slate-500 dark:text-slate-400 text-right m-0">
+                    يمكنك منح هذا المستخدم صلاحيات تنفيذ دقيقة فردية دون الحاجة لإضافته لمجموعة كاملة.
+                </p>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="userPermSearch" placeholder="بحث في الصلاحيات..." onkeyup="filterUserPerms()"
+                           class="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#10b981]">
+                </div>
+            </div>
+
+            <div class="space-y-4 text-right" id="userPermsContainer">
+                {% for category_name, perms_list in grouped_permissions.items %}
+                <div class="perm-category-box border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 bg-slate-50/50 dark:bg-slate-800/30">
+                    <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700/60 pb-2 mb-2.5">
+                        <span class="text-xs font-bold text-[#1e5563] dark:text-[#38bdf8] flex items-center gap-1.5">
+                            <span class="material-symbols-outlined text-sm">folder_open</span>
+                            <span>{{ category_name }}</span>
+                        </span>
+                        <button type="button" onclick="toggleCategoryPerms(this)" class="text-[11px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200">
+                            تحديد / إلغاء الكل
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5">
+                        {% for perm in perms_list %}
+                        <label class="perm-item-label flex items-center justify-start gap-2.5 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700/50 bg-white dark:bg-slate-800 hover:border-emerald-300 transition-all cursor-pointer">
+                            <input type="checkbox" name="user_permissions" value="{{ perm.id }}"
+                                   {% if perm.id in user_permission_ids %}checked{% endif %}
+                                   class="perm-checkbox w-3.5 h-3.5 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500">
+                            <div class="flex flex-col min-w-0">
+                                <span class="text-[11.5px] font-bold text-slate-800 dark:text-slate-200 truncate">{{ perm.name }}</span>
+                                <span class="text-[9.5px] text-slate-400 font-mono">{{ perm.codename }}</span>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Actions Row -->
+        <div class="flex items-center justify-start gap-3 pt-2">
+            <button type="submit" class="btn-action bg-[#307e92] hover:bg-[#256677] px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-[#307e92]/20 transition-all">
+                <span class="material-symbols-outlined">save</span>
+                <span>حفظ التعديلات</span>
+            </button>
+            <a href="{% url 'users:manage_users' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                رجوع
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+    function toggleDeptVisibility() {
+        const role = document.getElementById('userRoleSelect').value;
+        const deptBox = document.getElementById('deptFieldContainer');
+        if (role === 'academic_dept' || role === 'teacher') {
+            deptBox.style.opacity = '1';
+        } else {
+            deptBox.style.opacity = '0.75';
+        }
+    }
+
+    function toggleCategoryPerms(btn) {
+        const categoryBox = btn.closest('.perm-category-box');
+        if (!categoryBox) return;
+        const checkboxes = categoryBox.querySelectorAll('.perm-checkbox');
+        const anyUnchecked = Array.from(checkboxes).some(cb => !cb.checked);
+        checkboxes.forEach(cb => cb.checked = anyUnchecked);
+    }
+
+    function filterUserPerms() {
+        const query = (document.getElementById('userPermSearch').value || '').trim().toLowerCase();
+        const categoryBoxes = document.querySelectorAll('.perm-category-box');
+        categoryBoxes.forEach(box => {
+            let hasVisible = false;
+            const items = box.querySelectorAll('.perm-item-label');
+            items.forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (!query || text.includes(query)) {
+                    item.style.display = 'flex';
+                    hasVisible = true;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            box.style.display = hasVisible ? 'block' : 'none';
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', toggleDeptVisibility);
+</script>
+{% endblock %}

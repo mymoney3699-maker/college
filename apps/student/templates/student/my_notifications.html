@@ -1,0 +1,291 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}صندوق الإشعارات والتنبيهات - بوابة الطالب{% endblock %}
+
+{% block page_title %}الإشعارات والتنبيهات الأكاديمية{% endblock %}
+{% block page_subtitle %}متابعة فورية ومباشرة لكافة الأحداث والقرارات الأكاديمية{% endblock %}
+
+{% block extra_css %}
+<style>
+/* تلوين حواف الإشعارات حسب نوع الحدث */
+.notif-type-graduation { border-right: 5px solid #eab308 !important; }
+.notif-type-final_grade { border-right: 5px solid #10b981 !important; }
+.notif-type-midterm_grade { border-right: 5px solid #06b6d4 !important; }
+.notif-type-renewal { border-right: 5px solid #16a34a !important; }
+.notif-type-registration { border-right: 5px solid #0284c7 !important; }
+.notif-type-department_change { border-right: 5px solid #8b5cf6 !important; }
+.notif-type-hold { border-right: 5px solid #f97316 !important; }
+.notif-type-clearance { border-right: 5px solid #6366f1 !important; }
+.notif-type-failed_three_times { border-right: 5px solid #ef4444 !important; }
+.notif-type-new_student { border-right: 5px solid #0284c7 !important; }
+.notif-type-grade_approval { border-right: 5px solid #10b981 !important; }
+.notif-type-general { border-right: 5px solid #1A5D63 !important; }
+
+/* أيقونات الأنواع */
+.notif-icon-box {
+    width: 46px;
+    height: 46px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.notif-icon-graduation { background: #fef9c3; color: #a16207; }
+.notif-icon-final_grade { background: #d1fae5; color: #047857; }
+.notif-icon-midterm_grade { background: #cffafe; color: #0e7490; }
+.notif-icon-renewal { background: #dcfce7; color: #15803d; }
+.notif-icon-registration { background: #e0f2fe; color: #0369a1; }
+.notif-icon-department_change { background: #f3e8ff; color: #7e22ce; }
+.notif-icon-hold { background: #ffedd5; color: #c2410c; }
+.notif-icon-clearance { background: #e0e7ff; color: #4338ca; }
+.notif-icon-failed_three_times { background: #fee2e2; color: #dc2626; }
+.notif-icon-new_student { background: #e0f2fe; color: #0284c7; }
+.notif-icon-grade_approval { background: #d1fae5; color: #059669; }
+.notif-icon-grade_appeal { background: #e0f2fe; color: #0284c7; }
+.notif-icon-general { background: #f1f5f9; color: #1A5D63; }
+
+/* زر تحديد الكل كمقروء */
+.btn-mark-all-read {
+    background: #eab308;
+    color: #0f172a;
+    border: none;
+    padding: 0.5rem 1.1rem;
+    border-radius: 8px;
+    font-weight: 800;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(234, 179, 8, 0.25);
+}
+.btn-mark-all-read:hover {
+    background: #facc15 !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(234, 179, 8, 0.35) !important;
+}
+
+/* زر عرض التفاصيل */
+.btn-view-details {
+    font-size: 0.82rem;
+    color: #1A5D63;
+    font-weight: 800;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0.4rem 0.85rem;
+    border-radius: 8px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s ease;
+}
+.btn-view-details:hover {
+    background: #e0f2fe !important;
+    border-color: #bae6fd !important;
+    color: #0369a1 !important;
+    transform: translateY(-1px);
+}
+
+/* دعم الوضع الداكن */
+html.dark .notif-icon-graduation { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+html.dark .notif-icon-final_grade { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+html.dark .notif-icon-midterm_grade { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+html.dark .notif-icon-renewal { background: rgba(22, 163, 74, 0.2); color: #4ade80; }
+html.dark .notif-icon-registration { background: rgba(2, 132, 199, 0.2); color: #38bdf8; }
+html.dark .notif-icon-department_change { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+html.dark .notif-icon-hold { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+html.dark .notif-icon-clearance { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+html.dark .notif-icon-failed_three_times { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+html.dark .notif-icon-new_student { background: rgba(2, 132, 199, 0.2); color: #38bdf8; }
+html.dark .notif-icon-grade_approval { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+html.dark .notif-icon-grade_appeal { background: rgba(2, 132, 199, 0.2); color: #38bdf8; }
+html.dark .notif-icon-general { background: rgba(26, 93, 99, 0.2); color: #2dd4bf; }
+
+html.dark .btn-view-details {
+    background: #0f172a !important;
+    border-color: #334155 !important;
+    color: #38bdf8 !important;
+}
+html.dark .btn-view-details:hover {
+    background: #1e293b !important;
+    border-color: #38bdf8 !important;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="notifications-container" style="max-width: 1050px; margin: 0 auto; padding: 0.5rem 1rem;">
+
+    <!-- 1. هيدر البانر العلوي (نظيف وبدون أزرار مشتتة) -->
+    <div style="background: linear-gradient(135deg, #1A5D63 0%, #0F4C50 100%); border-radius: 16px; padding: 1.5rem 2rem; margin-bottom: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(15, 76, 80, 0.25); flex-wrap: wrap; gap: 1rem;">
+        <div style="display: flex; align-items: center; gap: 1.25rem;">
+            <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; width: 54px; height: 54px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); border: 1px solid rgba(255, 255, 255, 0.25); flex-shrink: 0;">
+                <span class="material-symbols-outlined" style="font-size: 30px; color: #fef08a;">notifications_active</span>
+            </div>
+            <div>
+                <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                    <h1 style="font-size: 1.45rem; font-weight: 900; margin: 0; color: white; line-height: 1.2;">صندوق الإشعارات والتنبيهات</h1>
+                    {% if unread_count and unread_count > 0 %}
+                    <span id="headerNewBadge" style="font-size: 0.78rem; background: #eab308; color: #0f172a; padding: 0.2rem 0.65rem; border-radius: 20px; font-weight: 900;">
+                        {{ unread_count }} جديد
+                    </span>
+                    {% endif %}
+                </div>
+                <p style="font-size: 0.88rem; color: #e0f2fe; margin: 0.35rem 0 0 0; opacity: 0.95;">سجل متابعة المستجدات، نتائج الامتحانات، تجديد القيد، وتغييرات المسار الأكاديمي</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. كروت إحصائيات الإشعارات -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem;">
+        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+            <div>
+                <span style="font-size: 0.825rem; color: #64748b; font-weight: 700; display: block;">إجمالي الإشعارات</span>
+                <span id="totalNotifsCount" style="font-size: 1.5rem; font-weight: 900; color: #0F4C50; display: block; margin-top: 0.2rem;">{{ notifications|length }}</span>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #e0f2fe; color: #0284c7; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">mail</span>
+            </div>
+        </div>
+
+        <div style="background: white; border-radius: 12px; border: 1px solid #e2e8f0; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+            <div>
+                <span style="font-size: 0.825rem; color: #64748b; font-weight: 700; display: block;">الإشعارات غير المقروءة</span>
+                <span id="unreadNotifsCount" style="font-size: 1.5rem; font-weight: 900; color: #eab308; display: block; margin-top: 0.2rem;">{{ unread_count|default:0 }}</span>
+            </div>
+            <div style="width: 44px; height: 44px; border-radius: 10px; background: #fef9c3; color: #ca8a04; display: flex; align-items: center; justify-content: center;">
+                <span class="material-symbols-outlined" style="font-size: 24px;">mark_email_unread</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. شريط عنوان القائمة وزر تحديد الكل كمقروء -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 0.25rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="material-symbols-outlined" style="color: #1A5D63; font-size: 22px;">format_list_bulleted</span>
+            <h2 style="font-size: 1.1rem; font-weight: 800; color: #1e293b; margin: 0;">سجل الإشعارات</h2>
+        </div>
+
+        {% if unread_count and unread_count > 0 %}
+        <button id="markAllReadBtn" onclick="markAllNotificationsAsRead()" class="btn-mark-all-read" title="تحديد جميع الإشعارات كمقروءة">
+            <span class="material-symbols-outlined" style="font-size: 18px;">done_all</span>
+            <span>تحديد الكل كمقروء</span>
+        </button>
+        {% endif %}
+    </div>
+
+    <!-- 4. قائمة الإشعارات الشاملة -->
+    <div id="notificationsList" style="display: flex; flex-direction: column; gap: 1rem;">
+        {% for notif in notifications %}
+        <div class="notification-card-item notif-type-{{ notif.notification_type|default:'general' }} {% if not notif.is_read %}notification-unread{% endif %}" 
+             style="background: white; border-radius: 14px; border: 1px solid #e2e8f0; padding: 1.25rem 1.5rem; box-shadow: 0 4px 10px rgba(0,0,0,0.03); position: relative;">
+            
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; flex-wrap: wrap;">
+                
+                <div style="display: flex; align-items: flex-start; gap: 1rem; flex: 1; min-width: 260px;">
+                    <!-- أيقونة نوع الإشعار -->
+                    <div class="notif-icon-box notif-icon-{{ notif.notification_type|default:'general' }}">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">
+                            {{ notif.icon|default:"notifications" }}
+                        </span>
+                    </div>
+
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <h3 style="font-size: 1.05rem; font-weight: 800; color: #0f172a; margin: 0;">
+                                {{ notif.title }}
+                            </h3>
+                            {% if not notif.is_read %}
+                            <span class="new-pill" style="font-size: 0.72rem; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 0.15rem 0.6rem; border-radius: 20px; font-weight: 800;">
+                                جديد
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <p style="font-size: 0.92rem; color: #475569; margin: 0.4rem 0 0 0; line-height: 1.5;">
+                            {{ notif.message }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- التوقيت وزر عرض التفاصيل -->
+                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; flex-shrink: 0;">
+                    <span style="font-size: 0.78rem; color: #94a3b8; font-weight: 600; white-space: nowrap; display: flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 14px;">schedule</span>
+                        {{ notif.created_at|timesince }} مضت
+                    </span>
+
+                    <!-- زر عرض التفاصيل الفعّال لجميع الإشعارات وموجه حصراً لصفحات الطالب -->
+                    <a href="{{ notif.student_safe_link }}" class="btn-view-details" title="عرض تفاصيل النتيجة / الإشعار">
+                        <span>عرض التفاصيل</span>
+                        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+        {% empty %}
+        <!-- حالة عدم وجود إشعارات -->
+        <div style="text-align: center; padding: 4rem 1.5rem; background: white; border-radius: 16px; border: 1.5px dashed #cbd5e1; color: #64748b; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+            <div style="width: 72px; height: 72px; background: #f8fafc; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto; border: 1px solid #e2e8f0;">
+                <span class="material-symbols-outlined" style="font-size: 36px; color: #94a3b8;">mark_email_read</span>
+            </div>
+            <h3 style="font-weight: 800; font-size: 1.2rem; color: #334155; margin: 0 0 0.4rem 0;">صندوق الإشعارات فارغ</h3>
+            <p style="font-size: 0.9rem; color: #64748b; margin: 0; max-width: 450px; margin: 0 auto;">ستصلك هنا كافة التنبيهات الفورية بخصوص نتائج الامتحانات، تجديد القيد، وتنزيل المقررات الدراسية فور اعتمادها.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function markAllNotificationsAsRead() {
+    const btn = document.getElementById('markAllReadBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined" style="font-size: 18px;">hourglass_empty</span><span>جاري التحديث...</span>';
+    }
+
+    try {
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]') ? document.querySelector('[name=csrfmiddlewaretoken]').value : '{{ csrf_token }}';
+        
+        const response = await fetch("{% url 'student:mark_notifications_read' %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+        if (data.success) {
+            // تحديث الواجهة
+            document.querySelectorAll('.notification-unread').forEach(el => {
+                el.classList.remove('notification-unread');
+            });
+            document.querySelectorAll('.new-pill').forEach(el => el.remove());
+            
+            const unreadBadge = document.getElementById('unreadNotifsCount');
+            if (unreadBadge) unreadBadge.textContent = '0';
+            
+            const headerBadge = document.getElementById('headerNewBadge');
+            if (headerBadge) headerBadge.remove();
+
+            const topHeaderBadge = document.querySelector('.header-notification-badge');
+            if (topHeaderBadge) topHeaderBadge.remove();
+
+            if (btn) btn.remove();
+        }
+    } catch (err) {
+        console.error('Error marking notifications as read:', err);
+    }
+}
+</script>
+{% endblock %}

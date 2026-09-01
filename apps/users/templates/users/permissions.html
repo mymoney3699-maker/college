@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة الصلاحيات - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .permissions-page-container {
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+    }
+    
+    .users-page-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+        margin-bottom: 1.5rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+    }
+    .dark .users-page-header {
+        border-bottom-color: rgba(51, 65, 85, 0.8) !important;
+    }
+    
+    .users-page-title-box {
+        text-align: right !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+    
+    .users-page-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.6rem !important;
+        font-size: 1.4rem !important;
+        font-weight: 900 !important;
+        color: #307e92 !important;
+        text-align: right !important;
+        margin: 0 !important;
+    }
+    .dark .users-page-title {
+        color: #38bdf8 !important;
+    }
+    
+    .users-page-subtitle {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        text-align: right !important;
+        margin-top: 0.25rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+        display: block !important;
+    }
+    .dark .users-page-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    .system-card-box {
+        position: relative !important;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        text-align: right !important;
+        direction: rtl !important;
+        margin-bottom: 1.5rem;
+    }
+    .dark .system-card-box {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .system-card-badge {
+        position: absolute !important;
+        top: -14px !important;
+        right: 24px !important;
+        left: auto !important;
+        transform: none !important;
+        background: #307e92 !important;
+        color: #ffffff !important;
+        padding: 4px 16px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 10px rgba(48, 126, 146, 0.25) !important;
+        margin: 0 !important;
+    }
+    .dark .system-card-badge {
+        background: #0284c7 !important;
+        border-color: #1e293b !important;
+    }
+    .system-card-badge * {
+        color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="permissions-page-container max-w-5xl mx-auto space-y-6">
+
+    <!-- 1. Header Section -->
+    <div class="users-page-header">
+        <div class="users-page-title-box">
+            <h1 class="users-page-title">
+                <span class="material-symbols-outlined text-3xl">policy</span>
+                <span>إدارة الصلاحيات</span>
+            </h1>
+            <p class="users-page-subtitle">تحديد صلاحيات المستخدمين (للمدير فقط)</p>
+        </div>
+        <div class="users-header-actions">
+            <a href="{% url 'users:manage_users' %}" class="btn-action bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                <span>رجوع لإدارة المستخدمين</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- اختيار المستخدم -->
+    <div class="system-card-box">
+        <span class="system-card-badge">
+            <span class="material-symbols-outlined">person_search</span>
+            <span>اختيار المستخدم</span>
+        </span>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2 text-right" dir="rtl">
+            <div class="text-right">
+                <label class="block font-bold text-[#307e92] dark:text-[#38bdf8] mb-1 text-right">اختر المستخدم (بالبحث)</label>
+                <div class="relative" id="customUserDropdown">
+                    <input type="text" id="userSearchInput" 
+                           class="w-full border border-gray-300 dark:border-slate-600 rounded-md p-2.5 pl-10 pr-3 focus:outline-none focus:border-[#307e92] dark:bg-slate-800 dark:text-white text-right" 
+                           placeholder="اكتب اسم أو رقم المستخدم للبحث..." 
+                           autocomplete="off"
+                           dir="rtl"
+                           onfocus="this.select(); liveSearch()"
+                           oninput="liveSearch()">
+                    <span class="material-symbols-outlined absolute left-3 top-3 text-gray-400 pointer-events-none">search</span>
+                    
+                    <!-- Hidden select element to preserve existing logic -->
+                    <select id="userSelect" class="hidden" onchange="loadUserPermissions()">
+                        <option value="">-- اختر مستخدم --</option>
+                        {% for u in users %}
+                        <option value="{{ u.id }}" data-username="{{ u.username }}" data-role="{{ u.role }}">
+                            {{ u.id }} - {{ u.username }} ({{ u.get_role_display }})
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="text-right">
+                <label class="block font-bold text-[#307e92] dark:text-[#38bdf8] mb-1 text-right">اسم المستخدم</label>
+                <input type="text" id="selectedUsername" class="w-full border border-gray-300 dark:border-slate-700 rounded-md p-2 bg-gray-50 dark:bg-slate-800 text-right" readonly dir="rtl">
+            </div>
+            <div class="text-right">
+                <label class="block font-bold text-[#307e92] dark:text-[#38bdf8] mb-1 text-right">الدور الحالي (Role)</label>
+                <input type="text" id="currentRole" class="w-full border border-gray-300 dark:border-slate-700 rounded-md p-2 bg-gray-50 dark:bg-slate-800 text-right" readonly dir="rtl">
+            </div>
+        </div>
+        <!-- Search results container (now inline full width dropdown) -->
+        <div id="searchResults" class="w-full mt-4 z-10 hidden bg-white dark:bg-slate-800 p-4 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm max-h-80 overflow-y-auto text-right" dir="rtl"></div>
+    </div>
+
+    <!-- تغيير الدور (Role) -->
+    <div class="system-card-box">
+        <span class="system-card-badge">
+            <span class="material-symbols-outlined">badge</span>
+            <span>تغيير الدور (Role)</span>
+        </span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 text-right" dir="rtl">
+            <div class="text-right">
+                <label class="block font-bold text-[#307e92] dark:text-[#38bdf8] mb-1 text-right">تغيير الدور إلى</label>
+                <select id="roleSelect" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 rounded-md p-2 text-right" dir="rtl">
+                    <option value="">-- اختر الدور --</option>
+                    <option value="admin">مدير النظام</option>
+                    <option value="general_registrar">مسجل عام</option>
+                    <option value="registrar">موظف تسجيل وقبول</option>
+                    <option value="exam_officer">موظف دراسة وامتحانات</option>
+                    <option value="graduate_officer">قسم الخريجين</option>
+                    <option value="academic_dept">رئيس / قسم علمي</option>
+                    <option value="teacher">أستاذ</option>
+                    <option value="student">طالب</option>
+                </select>
+            </div>
+            <div class="flex items-end justify-start">
+                <button class="btn-action bg-[#307e92] hover:bg-[#256677] text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-1.5 shadow-md" onclick="updateRole()">
+                    <span class="material-symbols-outlined">save</span> تحديث الدور
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- المجموعات (Groups) -->
+    <div class="system-card-box">
+        <span class="system-card-badge">
+            <span class="material-symbols-outlined">group</span>
+            <span>المجموعات (Groups)</span>
+        </span>
+        <div class="mb-4 text-sm text-gray-500 pt-2 text-right">
+            <p>تعيين المستخدم لمجموعة يمنحه جميع صلاحياتها.</p>
+        </div>
+        <div id="groupsList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 text-right" dir="rtl">
+            <div class="text-right text-gray-500 col-span-full">اختر مستخدم أولاً</div>
+        </div>
+        <div class="buttons-row mt-4 flex items-center justify-start gap-2">
+            <button class="btn-action bg-[#307e92] hover:bg-[#256677] text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-1.5 shadow-md" onclick="saveUserGroups()">
+                <span class="material-symbols-outlined">save</span> حفظ المجموعات
+            </button>
+        </div>
+    </div>
+
+    <!-- الصلاحيات (Permissions) -->
+    <div class="system-card-box">
+        <span class="system-card-badge">
+            <span class="material-symbols-outlined">verified</span>
+            <span>الصلاحيات المباشرة (Direct Permissions)</span>
+        </span>
+        <div class="mb-4 text-sm text-gray-500 pt-2 text-right">
+            <p>هذه صلاحيات ممنوحة مباشرة للمستخدم (ليست من خلال مجموعة).</p>
+        </div>
+        <div class="flex items-center justify-start gap-2 mb-4">
+            <button class="btn-action border border-slate-300 dark:border-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300" onclick="selectAllPermissions(true)">تحديد الكل</button>
+            <button class="btn-action border border-slate-300 dark:border-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300" onclick="selectAllPermissions(false)">إلغاء الكل</button>
+        </div>
+        <div id="permissionsList" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 max-h-96 overflow-y-auto p-2 border border-gray-200 dark:border-slate-700 rounded-lg text-right" dir="rtl">
+            <div class="text-right text-gray-500 col-span-full">اختر مستخدم أولاً</div>
+        </div>
+        <div class="buttons-row mt-4 flex items-center justify-start gap-2">
+            <button class="btn-action bg-[#307e92] hover:bg-[#256677] text-white px-5 py-2.5 rounded-lg font-bold flex items-center gap-1.5 shadow-md" onclick="savePermissions()">
+                <span class="material-symbols-outlined">save</span> حفظ الصلاحيات المباشرة
+            </button>
+        </div>
+    </div>
+
+    <div id="formMessage" class="mt-4 p-3 rounded-lg text-right font-bold hidden" dir="rtl"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/permissions.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,294 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}إدارة وتوزيع المجموعات - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.0.9">
+{% endblock %}
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.0.9">
+{% endblock %}
+
+{% block content %}
+<main class="custom-main groups-page">
+    <div id="mainInterface" class="groups-container" data-can-modify="{% if request.user|has_exec_perm:'renewal.change_group' or request.user|has_exec_perm:'change_group' %}true{% else %}false{% endif %}">
+        <!-- Page Header -->
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة وتوزيع المجموعات الدراسية</h1>
+                <p class="page-header-subtitle">توزيع الطلاب على المجموعات الدراسية وتنسيق كشوفات الحضور والتعديل اللحظي</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_group' and not request.user|has_exec_perm:'add_group' and not request.user|has_exec_perm:'renewal.change_group' and not request.user|has_exec_perm:'change_group' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+    <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+    {% if not is_create_groups_job_open %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% else %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% endif %}
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+        <div style="flex: 1;">
+            <span id="jobInactiveBannerText">{% if not is_create_groups_job_open %}{{ create_groups_job_message|default:"خدمة 'إنشاء المجموعات' غير مفعلة حالياً" }}{% endif %}</span>
+        </div>
+    </div>
+
+    <!-- 1. قسم الفلترة الرئيسية (Master Filter System Card Box) -->
+    <section class="plan-container-box group-box system-card space-y-5" id="filterSection" style="position: relative !important;">
+        <!-- Floating Title Badge strictly anchored to top right side -->
+        <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+            <span class="material-symbols-outlined text-base">filter_alt</span>
+            <span>معايير الفلترة والتحكم في المجموعات</span>
+        </span>
+
+        <div class="groups-filter-row">
+            <div class="filter-col">
+                <label class="filter-label" for="semesterYearInput">السنة الدراسية:</label>
+                <input type="text" id="semesterYearInput" class="form-control-system" placeholder="مثال: {{ active_year|default:'2026' }}" value="{{ active_year|default:'2026' }}">
+            </div>
+            <div class="filter-col">
+                <label class="filter-label" for="semesterTypeSelect">الفصل الدراسي:</label>
+                <select id="semesterTypeSelect" class="form-control-system">
+                    <option value="">-- اختر الفصل --</option>
+                    <option value="spring">ربيع</option>
+                    <option value="fall">خريف</option>
+                </select>
+            </div>
+            <div class="filter-col">
+                <label class="filter-label" for="departmentSelect">التخصص (القسم):</label>
+                <select id="departmentSelect" class="form-control-system" onchange="handleCourseFilter()">
+                    <option value="">-- اختر التخصص --</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col">
+                <label class="filter-label" for="levelSelect">المستوى الدراسي:</label>
+                <select id="levelSelect" class="form-control-system" onchange="handleCourseFilter()">
+                    <option value="">-- اختر المستوى --</option>
+                    {% for level in levels %}
+                    <option value="{{ level.id }}">المستوى {{ level.number }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-col">
+                <label class="filter-label" for="courseSelect">المادة الدراسية:</label>
+                <select id="courseSelect" class="form-control-system" disabled>
+                    <option value="">-- اختر التخصص والمستوى أولاً --</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700 flex-wrap">
+            <button class="btn-grey-action" onclick="clearAll()">
+                <span class="material-symbols-outlined text-lg">cleaning_services</span> مسح الفلاتر
+            </button>
+            <button class="btn-teal-action" onclick="toggleExistingGroups()" id="toggleExistingGroupsBtn">
+                <span class="material-symbols-outlined text-lg">visibility</span> عرض المجموعات الموجودة
+            </button>
+            {% if request.user|has_exec_perm:'renewal.add_group' or request.user|has_exec_perm:'add_group' %}
+            <button class="btn-teal-action btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-show-create-section" onclick="showCreateSection()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ create_groups_job_message|default:'خدمة إنشاء المجموعات غير مفعلة حالياً' }}"{% endif %}>
+                <span class="material-symbols-outlined text-lg">add_box</span> إنشاء مجموعة جديدة
+            </button>
+            {% endif %}
+        </div>
+    </section>
+
+    <!-- 2. قسم إنشاء المجموعات والتوزيع الذكي (Create Section) -->
+    <section class="glass-card create-section hidden" id="createSection">
+        <div class="section-header-row">
+            <h2 class="section-title" style="margin-bottom:0; border:none; padding:0;">
+                <span class="material-symbols-outlined">smart_toy</span>
+                قسم التوزيع الذكي للمجموعات
+            </h2>
+            <button class="btn-close-icon" onclick="hideCreateSection()" title="إغلاق">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <div class="distribution-controls-grid">
+            <div class="form-group">
+                <label class="form-label" for="totalStudentsInput">العدد الكلي للطلاب</label>
+                <input type="number" id="totalStudentsInput" class="form-input" placeholder="أدخل العدد الكلي" value="0" oninput="calculateDistribution()">
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="groupCountInput">عدد المجموعات المطلوبة</label>
+                <input type="number" id="groupCountInput" class="form-input" placeholder="عدد المجموعات" min="1" max="20" value="3" oninput="calculateDistribution()">
+            </div>
+            <div class="form-group buttons-flex">
+                <button class="btn btn-primary btn-full btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-auto-distribute" onclick="autoDistribute()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                    <span class="material-symbols-outlined">auto_awesome</span> توزيع تلقائي
+                </button>
+                <button class="btn btn-secondary btn-full" onclick="calculateDistribution()">
+                    <span class="material-symbols-outlined">calculate</span> احسب الباقي
+                </button>
+            </div>
+        </div>
+
+        <!-- Dynamic Distribution Fields Container -->
+        <div class="distribution-dynamic-container" id="distributionFieldsContainer">
+            <!-- Fields generated dynamically by JS -->
+        </div>
+
+        <div class="dynamic-actions-row">
+            <button class="btn btn-outline btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-add-field" onclick="addDistributionField()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                <span class="material-symbols-outlined">add</span> إضافة مجموعة أخرى
+            </button>
+        </div>
+
+        <!-- Result Box (حالة التوزيع) -->
+        <div class="result-box" id="resultBox">
+            <div class="result-status-badge status-pending" id="resultStatusBadge">حالة التوزيع: بانتظار التوزيع</div>
+            <div class="result-metrics">
+                <div>المجموع الموزّع: <strong id="distributedSum">0</strong></div>
+                <div>العدد الكلي: <strong id="totalTargetCount">0</strong></div>
+                <div>الباقي: <strong id="remainingStudentsCount">0</strong></div>
+            </div>
+        </div>
+
+        <div class="section-footer-actions">
+            <button class="btn btn-primary btn-lg btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-preview-groups" onclick="previewCreatedGroups()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                <span class="material-symbols-outlined">preview</span> معاينة المجموعات والطلاب
+            </button>
+            <button class="btn btn-success btn-lg btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-save-groups" onclick="saveCreatedGroups()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                <span class="material-symbols-outlined">save</span> حفظ المجموعات المباشر
+            </button>
+            <button class="btn btn-ghost" onclick="hideCreateSection()">إلغاء</button>
+        </div>
+    </section>
+
+    <!-- 2.1 قسم معاينة المجموعات قبل التأكيد (Preview Section) -->
+    <section class="glass-card preview-section hidden" id="previewGroupsSection">
+        <div class="section-header-row">
+            <h2 class="section-title" style="margin-bottom:0; border:none; padding:0;">
+                <span class="material-symbols-outlined">fact_check</span>
+                معاينة توزيع الطلاب على المجموعات قبل التأكيد
+            </h2>
+            <button class="btn-close-icon" onclick="hidePreviewSection()" title="إغلاق المعاينة">
+                <span class="material-symbols-outlined">close</span>
+            </button>
+        </div>
+
+        <p class="section-description" style="color: var(--slate); font-weight: 600; margin-bottom: 16px;">
+            راجع كشوفات الطلاب المضافين لكل مجموعة وتأكد منهم، ثم اضغط "تأكيد وإنشاء المجموعات" للاعتماد النهائي.
+        </p>
+
+        <!-- ملخص المعاينة -->
+        <div class="preview-summary-bar">
+            <div class="summary-item">
+                <span class="material-symbols-outlined">domain</span> التخصص: <strong id="previewDeptName">-</strong>
+            </div>
+            <div class="summary-item">
+                <span class="material-symbols-outlined">format_list_numbered</span> المستوى: <strong id="previewLevelNum">-</strong>
+            </div>
+            <div class="summary-item">
+                <span class="material-symbols-outlined">menu_book</span> المادة: <strong id="previewCourseName">-</strong>
+            </div>
+            <div class="summary-item">
+                <span class="material-symbols-outlined">groups</span> إجمالي الطلاب: <strong id="previewTotalCount">0</strong>
+            </div>
+        </div>
+
+        <!-- حاوية كروت معاينة المجموعات -->
+        <div class="preview-groups-container" id="previewGroupsContainer">
+            <!-- سيتم توليد كروت المعاينة وجداول الطلاب ديناميكياً عبر JS -->
+        </div>
+
+        <!-- أزرار التحكم في المعاينة -->
+        <div class="section-footer-actions" style="margin-top: 24px; padding-top: 16px; border-top: 1px dashed #dce4ec;">
+            <button class="btn btn-success btn-lg btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-confirm-save-groups" onclick="confirmAndSaveGroups()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                <span class="material-symbols-outlined">check_circle</span> تأكيد وإنشاء المجموعات في النظام
+            </button>
+            <button class="btn btn-secondary" onclick="hidePreviewSection()">
+                <span class="material-symbols-outlined">edit</span> التعديل على التوزيع
+            </button>
+            <button class="btn btn-ghost" onclick="hidePreviewSection()">إلغاء المعاينة</button>
+        </div>
+    </section>
+
+    <!-- 3. قسم كروت المجموعات (Groups Section) -->
+    <section class="glass-card groups-section hidden" id="groupsSection">
+        <h2 class="section-title">
+            <span class="material-symbols-outlined">view_module</span>
+            المجموعات المتاحة والمُسجلة
+        </h2>
+        <div class="groups-grid" id="existingGroups">
+            <div class="empty-state">
+                <span class="material-symbols-outlined icon-large">info</span>
+                <p>قم باختيار الفلاتر والضغط على "عرض المجموعات" لاستعراض الكروت</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. شاشة الطلاب المنفصلة (Students Page View - Single Page View) -->
+    <section class="glass-card students-page-view hidden" id="studentsPageView">
+        <div class="students-page-header">
+            <div class="students-page-info">
+                <button class="btn btn-outline btn-sm" onclick="hideStudentsPage()">
+                    <span class="material-symbols-outlined">arrow_forward</span> العودة للمجموعات
+                </button>
+                <h2 class="students-page-title" id="studentsPageGroupTitle">كشف طلاب المجموعة</h2>
+                <div class="group-metadata-tags">
+                    <span class="meta-tag" id="metaDeptTag">التخصص: -</span>
+                    <span class="meta-tag" id="metaLevelTag">المستوى: -</span>
+                    <span class="meta-tag" id="metaCourseTag">المادة: -</span>
+                    <span class="meta-tag meta-badge-count" id="metaCountTag">العدد: 0</span>
+                </div>
+            </div>
+            <div class="students-page-actions">
+                <button class="btn btn-secondary" onclick="printCurrentGroupView()">
+                    <span class="material-symbols-outlined">print</span> طباعة الكشف
+                </button>
+                <button class="btn btn-primary btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="editStudentsBtn" onclick="toggleEditFromStudentsPage()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
+                    <span class="material-symbols-outlined">edit</span> تعديل المجموعة
+                </button>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="students-table">
+                <thead>
+                    <tr>
+                        <th class="text-center">#</th>
+                        <th class="text-center">رقم القيد</th>
+                        <th>اسم الطالب</th>
+                        <th>التخصص</th>
+                        <th class="text-center">المستوى</th>
+                        <th class="text-center">المجموعة</th>
+                        <th class="text-center">العمليات</th>
+                    </tr>
+                </thead>
+                <tbody id="studentsTableBody">
+                    <tr>
+                        <td colspan="7" class="text-center empty-cell">لا توجد بيانات للعرض</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+    </div>
+</main>
+
+<!-- منطقة الطباعة المخفية -->
+<div id="printArea" style="display:none; direction:rtl;"></div>
+
+<!-- حاوية الإشعارات (Toast Notifications) -->
+<div id="toastContainer" class="toast-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.IS_CREATE_GROUPS_JOB_OPEN = "{{ is_create_groups_job_open|yesno:'true,false' }}" === "true";
+    window.CREATE_GROUPS_JOB_MESSAGE = "{{ create_groups_job_message|escapejs }}";
+    window.ACTIVE_ACADEMIC_YEAR = "{{ active_year|default:'2026' }}";
+</script>
+<script src="{% static 'renewal/js/groups.js' %}?v=1.0.9"></script>
+{% endblock %}

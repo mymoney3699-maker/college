@@ -1,0 +1,281 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}بوابة الطالب - كلية طرابلس للعلوم والتقنية{% endblock %}</title>
+    <link rel="icon" href="{% static 'images/شعار الكلية.jpeg' %}" type="image/jpeg">
+
+    <!-- الخطوط -->
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined&family=Material+Symbols+Outlined"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS -->
+    <script>
+        // كتم تحذير Tailwind CDN في وحدة التحكم
+        (function () {
+            const originalWarn = console.warn;
+            console.warn = function (...args) {
+                if (args[0] && typeof args[0] === 'string' && args[0].includes('cdn.tailwindcss.com')) return;
+                originalWarn.apply(console, args);
+            };
+        })();
+    </script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#307e92',
+                            dark: '#256b7c',
+                            light: '#e7f1f9',
+                        },
+                        accent: {
+                            DEFAULT: '#b59b66',
+                            light: '#fbf5e6',
+                        },
+                        slate: {
+                            50: '#f8fafc',
+                            900: '#0f172a',
+                        }
+                    },
+                    fontFamily: {
+                        cairo: ['Cairo', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Fonts -->
+    <link rel="stylesheet" href="{% static 'css/fonts.css' %}?v=1.0.0" />
+
+    <!-- Dark Mode Script لمنع الوميض ومزامنة الوضع الليلي -->
+    <script src="{% static 'js/dark-mode.js' %}?v=1.0.4"></script>
+
+    <!-- styles -->
+    <link rel="stylesheet" href="{% static 'css/student_style.css' %}?v=1.8.1" />
+
+    {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+    <!-- ====== السيدبار خلفية التعتيم ====== -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- ====== السيدبار - ديسكتوب وموبايل دراور ====== -->
+    <aside class="desktop-sidebar">
+
+        <div class="sidebar-logo-container">
+            <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="sidebar-logo-img">
+            <div class="sidebar-logo-text">
+                <h2 class="sidebar-logo-text-title">كلية طرابلس</h2>
+                <p class="sidebar-logo-text-subtitle">بوابة خدمات الطالب</p>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{% url 'student:dashboard' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined">dashboard</span>
+                <span>الرئيسية</span>
+            </a>
+            <a href="{% url 'student:my_courses' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'my_courses' %}active{% endif %}">
+                <span class="material-symbols-outlined">auto_stories</span>
+                <span>المقررات الدراسية</span>
+            </a>
+            <a href="{% url 'student:my_grades' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'my_grades' %}active{% endif %}">
+                <span class="material-symbols-outlined">analytics</span>
+                <span>النتائج والتقديرات</span>
+            </a>
+            <a href="{% url 'student:term_result' %}"
+                class="nav-link {% if request.resolver_match.url_name == 'term_result' %}active{% endif %}">
+                <span class="material-symbols-outlined">workspace_premium</span>
+                <span>نتيجة الفصل</span>
+            </a>
+        </nav>
+    </aside>
+
+    <!-- ====== المحتوى الرئيسي ====== -->
+    <main class="student-main">
+
+        <!-- الهيدر -->
+        <header class="student-header">
+            <div class="header-background-effects">
+                <div class="header-blob header-blob-1"></div>
+                <div class="header-blob header-blob-2"></div>
+            </div>
+
+            <div class="header-content">
+                <div class="header-title-group">
+                    <!-- زر القائمة للموبايل -->
+                    <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="فتح القائمة Side Menu">
+                        <span class="material-symbols-outlined">menu</span>
+                    </button>
+                    <span class="header-icon material-symbols-outlined">school</span>
+                    <div>
+                        <h1 class="header-title">{% block page_title %}لوحة التحكم{% endblock %}</h1>
+                        <p class="header-subtitle">{% block page_subtitle %}مرحباً بك في النظام{% endblock %}</p>
+                    </div>
+                </div>
+
+                <div class="header-actions">
+                    <div class="header-controls-wrapper">
+                        <!-- 1. زر الإشعارات (Notifications) -->
+                        <a href="{% url 'student:my_notifications' %}" class="header-action-btn header-notification-btn"
+                            title="الإشعارات والتنبيهات" style="text-decoration: none;">
+                            <span class="material-symbols-outlined">notifications</span>
+                            {% if unread_notifications_count and unread_notifications_count > 0 %}
+                            <span class="header-notification-badge">{{ unread_notifications_count }}</span>
+                            {% endif %}
+                        </a>
+
+                        <!-- 2. زر الدارك مود (Dark Mode) -->
+                        <button onclick="toggleDarkMode()" class="header-action-btn" id="darkModeToggleBtn"
+                            title="تبديل المظهر">
+                            <span class="material-symbols-outlined" id="darkIcon">dark_mode</span>
+                        </button>
+
+                        <!-- 3. زر تسجيل الخروج الفعلي (Logout) -->
+                        <a href="{% url 'users:logout' %}" class="header-logout-btn" title="تسجيل الخروج">
+                            <span class="material-symbols-outlined">logout</span>
+                        </a>
+
+                        <!-- 4. الملف الشخصي والطالب المسجل حالياً -->
+                        <div class="relative" style="position: relative;">
+                            <button type="button" onclick="toggleProfileMenu(event)" id="userProfileDropdownBtn"
+                                class="header-profile-btn">
+                                <div class="header-profile-text">
+                                    <span class="header-profile-status-dot"></span>
+                                    <span class="header-profile-role">طالب</span>
+                                </div>
+                                <div class="header-profile-avatar">
+                                    <span class="material-symbols-outlined">person</span>
+                                </div>
+                            </button>
+                            <!-- القائمة المنسدلة للملف الشخصي -->
+                            <div id="profileMenu" class="header-profile-dropdown hidden">
+                                <div class="header-profile-dropdown-header">
+                                    <div class="header-profile-dropdown-label">حساب الطالب</div>
+                                    <div class="header-profile-dropdown-name">{% if student.name %}{{ student.name }}{%
+                                        elif student_name %}{{ student_name }}{% elif user.get_full_name %}{{
+                                        user.get_full_name }}{% else %}{{ user.username }}{% endif %}</div>
+                                </div>
+                                <div style="padding: 4px 0;">
+                                    <a href="{% url 'student:my_profile' %}" class="header-profile-dropdown-item">
+                                        <span class="material-symbols-outlined">account_circle</span>
+                                        <span>الملف الشخصي</span>
+                                    </a>
+                                    <a href="{% url 'student:personal_info' %}" class="header-profile-dropdown-item">
+                                        <span class="material-symbols-outlined">lock_reset</span>
+                                        <span>تغيير كلمة المرور</span>
+                                    </a>
+                                    <a href="{% url 'users:logout' %}" class="header-profile-dropdown-item logout-item">
+                                        <span class="material-symbols-outlined">logout</span>
+                                        <span>تسجيل الخروج</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- المحتوى -->
+        <div class="student-content">
+            {% block content %}
+            {% endblock %}
+        </div>
+
+    </main>
+
+    <!-- ====== BOTTOM NAV - موبايل فقط ====== -->
+    <nav class="bottom-nav">
+        <div class="bottom-nav-inner">
+            <a href="{% url 'student:dashboard' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                <span class="material-symbols-outlined nav-icon">dashboard</span>
+                <span class="nav-label">الرئيسية</span>
+            </a>
+            <a href="{% url 'student:my_courses' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'my_courses' %}active{% endif %}">
+                <span class="material-symbols-outlined nav-icon">auto_stories</span>
+                <span class="nav-label">المقررات</span>
+            </a>
+            <a href="{% url 'student:my_grades' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'my_grades' %}active{% endif %}">
+                <span class="material-symbols-outlined nav-icon">analytics</span>
+                <span class="nav-label">النتائج</span>
+            </a>
+            <a href="{% url 'student:term_result' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'term_result' %}active{% endif %}">
+                <span class="material-symbols-outlined nav-icon">workspace_premium</span>
+                <span class="nav-label">الفصل</span>
+            </a>
+            <a href="{% url 'student:my_profile' %}"
+                class="bottom-nav-item {% if request.resolver_match.url_name == 'my_profile' %}active{% endif %}">
+                <span class="material-symbols-outlined nav-icon">person</span>
+                <span class="nav-label">حسابي</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- ====== الفوتر ====== -->
+    <footer class="student-footer">
+        <p>© {% now "Y" %} كلية طرابلس للعلوم والتقنية - نظام إدارة الطلاب</p>
+        <p class="footer-version">بوابة خدمات الطالب الإلكترونية v2.0</p>
+    </footer>
+
+    <!-- sidebar-state.js يتولى: تنشيط الرابط النشط، تنظيف اسم المستخدم، وقائمة الإعدادات -->
+    <script src="{% static 'js/sidebar-state.js' %}?v=1.1.0"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Disable native browser autocomplete/autofill
+            document.querySelectorAll('form').forEach(form => {
+                form.setAttribute('autocomplete', 'off');
+            });
+            document.querySelectorAll('input').forEach(input => {
+                if (!input.hasAttribute('autocomplete')) {
+                    input.setAttribute('autocomplete', 'off');
+                }
+            });
+
+            // Mobile menu drawer toggle
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const sidebar = document.querySelector('.desktop-sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+
+            if (mobileMenuBtn && sidebar) {
+                mobileMenuBtn.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    sidebar.classList.toggle('active');
+                    if (overlay) overlay.classList.toggle('active');
+                });
+            }
+
+            if (overlay) {
+                overlay.addEventListener('click', function () {
+                    if (sidebar) sidebar.classList.remove('active');
+                    overlay.classList.remove('active');
+                });
+            }
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+
+</html>

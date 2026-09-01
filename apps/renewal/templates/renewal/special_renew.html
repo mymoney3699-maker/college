@@ -1,0 +1,968 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تجديد قيد (حالة خاصة) - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main special-renew-page">
+    <div class="special-renew-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title"> تجديد قيد (حالة خاصة)</h1>
+                <p class="page-header-subtitle">إدارة تجديد القيد للطلاب الموقوفين والجدد المتأخرين</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_enrollmentrenewal' and not request.user|has_exec_perm:'renewal.change_enrollmentrenewal' and not request.user|has_exec_perm:'add_enrollmentrenewal' and not request.user|has_exec_perm:'change_enrollmentrenewal' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_renew_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+            {% else %}
+            <div id="jobInactiveBanner" class="job-inactive-banner"
+                style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+                {% endif %}
+                <span class="material-symbols-outlined"
+                    style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+                <div style="flex: 1;">
+                    <span id="jobInactiveBannerText">{% if not is_renew_job_open %}{{ renew_job_message }}{% endif %}</span>
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- صندوق البحث -->
+            <!-- ============================================================ -->
+            <div class="group-box inquiry-group-box">
+                <span class="group-title">البحث عن طالب</span>
+
+                <div class="student-search-box">
+                    <div class="filters-grid-2col"
+                        style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;">
+                        <div>
+                            <label class="field-label"
+                                style="font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">رقم القيد
+                                للبحث</label>
+                            <input type="text" id="searchRegNum" placeholder="أدخل رقم القيد للبحث..."
+                                style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px;">
+                        </div>
+                        <div>
+                            <label class="field-label"
+                                style="font-weight: 600; color: #475569; display: block; margin-bottom: 4px;">اسم الطالب
+                                للبحث</label>
+                            <input type="text" id="searchStudentInput" placeholder="أدخل اسم الطالب للبحث..."
+                                style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px;">
+                        </div>
+                    </div>
+
+                    <div class="buttons-row-left mt-3"
+                        style="display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;">
+                        <button id="btnSearchStudent" type="button" class="btn-action btn-search"
+                            onclick="searchStudentForSpecialRenew()"
+                            style="background-color: #307e92; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; height: 38px;">
+                            <span class="material-symbols-outlined">search</span> بحث
+                        </button>
+                        <button id="btnResetSearch" type="button" class="btn-action btn-reset" onclick="clearSearch()"
+                            style="background-color: #64748b; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; height: 38px;">
+                            <span class="material-symbols-outlined">cleaning_services</span> تفريغ
+                        </button>
+                    </div>
+
+                    <div id="searchResults" class="search-results-list hidden mt-2"
+                        style="margin-top: 10px; background: white; border: 1px solid #cbd5e1; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); max-height: 260px; overflow-y: auto;">
+                    </div>
+                </div>
+
+                <!-- بطاقة معلومات الطالب -->
+                <div id="studentInfoCard" class="hidden mt-4"
+                    style="border: 2px solid #307e92; border-radius: 12px; padding: 20px; background: #f8fafc;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 id="studentNameDisplay" class="text-xl font-bold text-primary"
+                                style="color: #307e92; font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">-</h3>
+                            <p style="margin: 4px 0;"><strong>رقم القيد:</strong> <span id="studentIdDisplay">-</span>
+                            </p>
+                            <p style="margin: 4px 0;"><strong>التخصص:</strong> <span id="studentDeptDisplay">-</span>
+                            </p>
+                            <p style="margin: 4px 0;">
+                                <strong>المستوى:</strong>
+                                <span id="studentLevelDisplay">-</span>
+                                <span id="levelPromotionStatus" style="display: inline-block;"></span>
+                            </p>
+                            <p style="margin: 4px 0;">
+                                <strong>حالة الطالب:</strong>
+                                <span id="studentStatusDisplay"
+                                    class="px-3 py-1 rounded-full text-sm font-bold">-</span>
+                            </p>
+                            <p style="margin: 4px 0;">
+                                <strong>نوع الحالة:</strong>
+                                <span id="specialTypeDisplay" class="px-3 py-1 rounded-full text-sm font-bold">-</span>
+                            </p>
+                        </div>
+                        <div style="text-align: left;">
+                            <span class="text-sm text-gray-500" style="font-size: 0.875rem; color: #64748b;">الفصل
+                                الدراسي
+                                الحالي</span>
+                            <div id="currentSemesterDisplay"
+                                class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-bold text-center"
+                                style="font-size: 1.1rem; padding: 8px 16px; border-radius: 8px; font-weight: 700; text-align: center;">
+                                -</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- سبب التأخير وأزرار العمليات -->
+                <div id="renewActionArea" class="hidden mt-4">
+                    <div class="mt-4">
+                        <label class="field-label" style="font-weight: 700; color: #0f766e;">سبب التأخير / الملاحظات
+                            <span style="color: #e11d48;">*</span></label>
+                        <textarea id="renewReason" rows="3"
+                            placeholder="اكتب سبب تأخر الطالب في التسجيل أو سبب الإيقاف..."
+                            style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 10px 12px; resize: vertical;"></textarea>
+                    </div>
+                    <div class="buttons-row mt-4" style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 16px;">
+                        {% if request.user|has_exec_perm:'renewal.add_enrollmentrenewal' or request.user|has_exec_perm:'renewal.change_enrollmentrenewal' or request.user|has_exec_perm:'add_enrollmentrenewal' or request.user|has_exec_perm:'change_enrollmentrenewal' %}
+                        <button id="btnSpecialRenewAction" class="btn-action btn-save" onclick="confirmSpecialRenew()"
+                            style="background-color: #0f766e; color: white; padding: 10px 30px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                            <span id="renewActionIcon" class="material-symbols-outlined">autorenew</span>
+                            <span id="renewActionText">تجديد وقيد الطالب</span>
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- القسم السفلي: جدول الحالات الخاصة -->
+            <!-- ============================================================ -->
+            <div class="group-box mt-6">
+                <span class="group-title">الطلاب في الحالات الخاصة</span>
+
+                <!-- الفلاتر -->
+                <div class="filters-grid-3col mb-4"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; align-items: flex-end;">
+                    <div>
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.875rem; color: #475569; display: block; margin-bottom: 4px;">نوع
+                            الحالة الخاصة</label>
+                        <select id="specialCaseSelect" onchange="loadSpecialCaseStudents()"
+                            style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px;">
+                            <option value="all">-- الكل --</option>
+                            <option value="suspended">موقوف قيده</option>
+                            <option value="major_change">تغيير مسار</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.875rem; color: #475569; display: block; margin-bottom: 4px;">التخصص</label>
+                        <select id="majorSelect" onchange="loadSpecialCaseStudents()"
+                            style="width: 100%; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; height: 38px;">
+                            <option value="">-- الكل --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label" style="display: block; margin-bottom: 4px;">&nbsp;</label>
+                        <span id="specialCount" class="px-4 py-2 bg-gray-100 rounded-lg text-sm font-bold"
+                            style="display: inline-flex; align-items: center; justify-content: center; height: 38px; padding: 8px 16px; background-color: #f1f5f9; border-radius: 8px; font-weight: 700; font-size: 0.875rem; width: 100%; border: 1.5px solid #cbd5e1; box-sizing: border-box;">عدد
+                            الحالات: 0</span>
+                    </div>
+                </div>
+
+                <!-- الجدول -->
+                <div class="table-responsive-wrapper"
+                    style="width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
+                    <table class="data-table full-width-table"
+                        style="width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 700px;">
+                        <thead>
+                            <tr
+                                style="background: linear-gradient(135deg, #f1f5f9 0%, #e8edf5 100%); border-bottom: 3px solid #307e92;">
+                                <th
+                                    style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; width: 60px;">
+                                    #</th>
+                                <th
+                                    style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; width: 130px;">
+                                    رقم القيد</th>
+                                <th
+                                    style="text-align: right; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; min-width: 180px;">
+                                    اسم الطالب</th>
+                                <th
+                                    style="text-align: right; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; min-width: 140px;">
+                                    التخصص</th>
+                                <th
+                                    style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; width: 120px;">
+                                    المستوى</th>
+                                <th
+                                    style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; letter-spacing: 0.3px; white-space: nowrap; width: 140px;">
+                                    نوع الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="specialStudentsTable">
+                            <tr class="empty-row">
+                                <td colspan="6" class="empty-cell"
+                                    style="text-align: center; padding: 50px 20px; color: #94a3b8; font-size: 0.95rem;">
+                                    ⏳
+                                    جاري تحميل البيانات...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===========================================================
+         حاوية تقرير تجديد القيد (حالة خاصة) - A4 Portrait للطباعة
+         =========================================================== -->
+        <div id="printReportContainer">
+            <div class="print-page-frame">
+
+                <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+                <div class="print-header-section"
+                    style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+                    <!-- اليمين: العربية -->
+                    <div class="print-header-ar"
+                        style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                        <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                        <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                        <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                        <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+                    </div>
+
+                    <!-- الوسط: الشعار الدائري -->
+                    <div class="print-header-logo-box"
+                        style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                        <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                            style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                            onerror="this.style.display='none'">
+                    </div>
+
+                    <!-- اليسار: الإنجليزية -->
+                    <div class="print-header-en"
+                        style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                        <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                        <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                        <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education
+                        </div>
+                        <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                        <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI
+                            COLLAGE AND TECHNOLOGY</div>
+                    </div>
+                </div>
+                <div class="print-header-line" style="width:100%;margin:6px 0 10px;border-top:1.5px solid #000;"></div>
+                <div class="print-title"
+                    style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير تجديد
+                    القيد (حالة خاصة)</div>
+
+                <!-- ② معلومات التقرير (بدون وقت الطباعة) -->
+                <div class="print-info-grid">
+                    <div class="print-info-right">
+                        <div><span class="info-lbl">القسم:</span> <span id="printDeptName" class="info-val">جميع الأقسام
+                                / غير محدد</span></div>
+                        <div><span class="info-lbl">نوع الحالة الخاصة:</span> <span id="printCaseName"
+                                class="info-val">الكل</span></div>
+                    </div>
+                    <div class="print-info-left">
+                        <div><span id="printDateVal" class="info-val"></span></div>
+                        <div><span class="info-lbl">عدد الطلاب:</span> <span id="printCountVal"
+                                class="info-val">0</span></div>
+                    </div>
+                </div>
+
+                <!-- ③ جدول الطلاب -->
+                <div class="print-table-container">
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 6%;">م</th>
+                                <th style="width: 18%;">رقم القيد</th>
+                                <th style="width: 36%;">اسم الطالب</th>
+                                <th style="width: 22%;">القسم</th>
+                                <th style="width: 18%;">المستوى</th>
+                            </tr>
+                        </thead>
+                        <tbody id="printTableBody">
+                            <tr>
+                                <td colspan="5" class="empty-print-cell">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+
+
+                <!-- ⑤ صندوق التوقيع الرسمي (data-official → يملأه OfficialsHelper تلقائياً) -->
+                <div class="print-signature-box" data-official>
+                    <span class="off-name"
+                        style="display:block; font-size:13px; font-weight:bold; margin-bottom:3px; min-height:1em;"></span>
+                    <span class="off-pos"
+                        style="display:block; font-size:12px; font-weight:600; margin-bottom:10px;">المسجل العام
+                        بالكلية</span>
+                    <span class="off-sig-line" style="display:block; font-size:12px; letter-spacing:1px;">التوقيع
+                        والختم: ............................................</span>
+                </div>
+
+            </div>
+        </div>
+</main>
+
+<!-- ============================================================ -->
+<!-- Custom Confirmation Modal Component (خاص بصفحة تجديد القيد حالة خاصة) -->
+<!-- ============================================================ -->
+<div id="specialRenewConfirmModal"
+    class="fixed inset-0 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+    style="z-index: 99999;">
+    <div
+        class="theme-modal rounded-2xl max-w-md w-full p-6 space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl transition-all text-right">
+        <div class="flex items-start gap-4">
+            <div id="specialRenewModalIconBox"
+                class="w-12 h-12 rounded-xl bg-teal-500/10 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 flex items-center justify-center shrink-0 mt-0.5">
+                <span class="material-symbols-outlined text-2xl" id="specialRenewModalIcon">autorenew</span>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-base font-extrabold text-slate-800 dark:text-slate-100" id="specialRenewModalTitle">
+                    تأكيد تجديد وتفعيل القيد</h3>
+                <div class="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-1.5 leading-relaxed"
+                    id="specialRenewModalMessage">
+                    <!-- Dynamic content filled via JS -->
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" id="specialRenewModalBtnCancel" class="btn-grey-action text-xs"
+                style="background-color: #64748b; color: white; padding: 8px 18px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer;">
+                إلغاء
+            </button>
+            <button type="button" id="specialRenewModalBtnConfirm" class="btn-action text-xs"
+                style="background-color: #0f766e; color: white; padding: 8px 20px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined text-sm" id="specialRenewModalConfirmIcon">autorenew</span>
+                <span id="specialRenewModalConfirmText">تأكيد التجديد</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined"
+            style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage"
+            style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+        </p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       تنسيقات صفحة تجديد القيد (حالة خاصة) - الفاتحة والداكنة
+       ============================================================ */
+
+    /* صفوف الجدول القابلة للنقر */
+    .special-renew-page .clickable-row {
+        cursor: pointer;
+        transition: background-color 0.2s ease, transform 0.15s ease;
+    }
+
+    .special-renew-page .clickable-row:hover {
+        background-color: #f0f9ff !important;
+    }
+
+    /* الشارات الأساسية */
+    .special-renew-page .special-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-weight: 700;
+        font-size: 0.8rem;
+    }
+
+    .special-renew-page .special-status-badge.suspended,
+    .special-renew-page .status-badge-suspended {
+        background-color: #fef2f2;
+        color: #991b1b;
+        border: 1px solid #fca5a5;
+    }
+
+    .special-renew-page .status-badge-active {
+        background-color: #dcfce7;
+        color: #166534;
+        border: 1px solid #86efac;
+    }
+
+    .special-renew-page .badge-delayed {
+        background-color: #eff6ff;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+    }
+
+    .special-renew-page .badge-default {
+        background-color: #f1f5f9;
+        color: #475569;
+        border: 1px solid #cbd5e1;
+    }
+
+    /* نتيجة البحث المنسدلة */
+    .special-renew-page .search-result-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f1f5f9;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s ease;
+    }
+
+    .special-renew-page .search-result-item:hover {
+        background-color: #f8fafc;
+    }
+
+    .special-renew-page .result-student-name {
+        font-weight: 700;
+        color: #1e293b;
+        font-size: 0.9rem;
+    }
+
+    .special-renew-page .result-student-meta {
+        font-size: 0.78rem;
+        color: #64748b;
+        margin-top: 3px;
+    }
+
+    .special-renew-page .result-student-id {
+        color: #307e92;
+    }
+
+    /* ============================================================
+       الوضع الداكن (Dark Mode) - صفحة تجديد قيد (حالة خاصة) فقط
+       ============================================================ */
+
+    html.dark .special-renew-page {
+        color: #f8fafc;
+    }
+
+    /* العناوين */
+    html.dark .special-renew-page .page-header-title {
+        color: #f8fafc !important;
+    }
+
+    html.dark .special-renew-page .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* شريط تنبيه الخدمة الموقوفة */
+    html.dark .special-renew-page .job-inactive-banner {
+        background: linear-gradient(135deg, rgba(244, 63, 94, 0.15) 0%, rgba(225, 29, 72, 0.25) 100%) !important;
+        border-color: #f43f5e !important;
+        color: #fecdd3 !important;
+        box-shadow: 0 4px 14px rgba(244, 63, 94, 0.25) !important;
+    }
+
+    html.dark .special-renew-page .job-inactive-banner .material-symbols-outlined {
+        color: #fda4af !important;
+    }
+
+    /* الصناديق التجميعية (Group Box) */
+    html.dark .special-renew-page .group-box {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    html.dark .special-renew-page .group-title {
+        background-color: #1e293b !important;
+        color: #38bdf8 !important;
+        border-color: #334155 !important;
+    }
+
+    /* العناوين الفرعية وتسميات الحقول */
+    html.dark .special-renew-page .field-label {
+        color: #cbd5e1 !important;
+    }
+
+    /* عناصر التسميات والنصوص داخل البطاقات */
+    html.dark .special-renew-page strong {
+        color: #94a3b8;
+    }
+
+    /* حقول الإدخال والقوائم المنسدلة ومربع النص */
+    html.dark .special-renew-page input[type="text"],
+    html.dark .special-renew-page select,
+    html.dark .special-renew-page textarea {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #475569 !important;
+    }
+
+    html.dark .special-renew-page input[type="text"]:focus,
+    html.dark .special-renew-page select:focus,
+    html.dark .special-renew-page textarea:focus {
+        border-color: #38bdf8 !important;
+        box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+        outline: none;
+    }
+
+    html.dark .special-renew-page input::placeholder,
+    html.dark .special-renew-page textarea::placeholder {
+        color: #64748b !important;
+    }
+
+    /* قائمة نتائج البحث المنسدلة */
+    html.dark .special-renew-page #searchResults {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    html.dark .special-renew-page .search-results-wrapper {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .special-renew-page .search-result-item {
+        border-bottom-color: #1e293b !important;
+    }
+
+    html.dark .special-renew-page .search-result-item:hover {
+        background-color: #1e293b !important;
+    }
+
+    html.dark .special-renew-page .result-student-name {
+        color: #f8fafc !important;
+    }
+
+    html.dark .special-renew-page .result-student-meta {
+        color: #94a3b8 !important;
+    }
+
+    html.dark .special-renew-page .result-student-id {
+        color: #38bdf8 !important;
+    }
+
+    /* بطاقة الطالب (Student Info Card) */
+    html.dark .special-renew-page #studentInfoCard {
+        background-color: #0f172a !important;
+        border-color: #0284c7 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    html.dark .special-renew-page #studentNameDisplay {
+        color: #38bdf8 !important;
+    }
+
+    html.dark .special-renew-page #currentSemesterDisplay {
+        background-color: rgba(14, 165, 233, 0.15) !important;
+        color: #38bdf8 !important;
+        border: 1px solid rgba(56, 189, 248, 0.3) !important;
+    }
+
+    /* الشارات والحالات في الوضع الداكن */
+    html.dark .special-renew-page .special-status-badge.suspended,
+    html.dark .special-renew-page .status-badge-suspended {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        color: #fca5a5 !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+
+    html.dark .special-renew-page .status-badge-active {
+        background-color: rgba(34, 197, 94, 0.2) !important;
+        color: #86efac !important;
+        border-color: rgba(34, 197, 94, 0.4) !important;
+    }
+
+    html.dark .special-renew-page .badge-delayed {
+        background-color: rgba(59, 130, 246, 0.2) !important;
+        color: #93c5fd !important;
+        border-color: rgba(59, 130, 246, 0.4) !important;
+    }
+
+    html.dark .special-renew-page .badge-default {
+        background-color: rgba(148, 163, 184, 0.2) !important;
+        color: #cbd5e1 !important;
+        border-color: rgba(148, 163, 184, 0.3) !important;
+    }
+
+    /* شارة عدد الحالات فوق الجدول */
+    html.dark .special-renew-page #specialCount {
+        background-color: #0f172a !important;
+        color: #38bdf8 !important;
+        border-color: #334155 !important;
+    }
+
+    /* الجدول السفلي */
+    html.dark .special-renew-page .table-responsive-wrapper {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    html.dark .special-renew-page .data-table {
+        background-color: #0f172a !important;
+    }
+
+    html.dark .special-renew-page .data-table thead tr {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-bottom: 3px solid #0284c7 !important;
+    }
+
+    html.dark .special-renew-page .data-table th {
+        color: #38bdf8 !important;
+    }
+
+    html.dark .special-renew-page .data-table tbody tr {
+        background-color: #0f172a !important;
+        border-bottom: 1px solid #1e293b !important;
+    }
+
+    html.dark .special-renew-page .data-table tbody tr.clickable-row:hover {
+        background-color: #1e293b !important;
+    }
+
+    html.dark .special-renew-page .data-table td.col-index {
+        color: #94a3b8 !important;
+    }
+
+    html.dark .special-renew-page .data-table td.col-student-id {
+        color: #38bdf8 !important;
+    }
+
+    html.dark .special-renew-page .data-table td.col-student-name {
+        color: #f8fafc !important;
+    }
+
+    html.dark .special-renew-page .data-table td.col-dept {
+        color: #cbd5e1 !important;
+    }
+
+    html.dark .special-renew-page .data-table td.col-level {
+        color: #f8fafc !important;
+    }
+
+    html.dark .special-renew-page .empty-cell {
+        color: #94a3b8 !important;
+    }
+
+    /* الأزرار في الوضع الداكن */
+    html.dark .special-renew-page #btnSearchStudent {
+        background-color: #0284c7 !important;
+    }
+
+    html.dark .special-renew-page #btnResetSearch {
+        background-color: #475569 !important;
+    }
+
+    html.dark .special-renew-page #btnPrintReportCard,
+    html.dark .special-renew-page .btn-print {
+        background-color: #d97706 !important;
+    }
+
+    html.dark .special-renew-page .btn-save {
+        background-color: #0d9488 !important;
+    }
+
+    /* إخفاء التقرير المطبوع في العرض المباشر على الشاشة */
+    #printReportContainer {
+        display: none !important;
+    }
+
+    /* ============================================
+       PRINT STYLES - تقرير أبيض وأسود رسمي A4 Portrait
+       ============================================ */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        body>*:not(#printReportContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #printReportContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printReportContainer * {
+            visibility: visible !important;
+        }
+
+        .print-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .print-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .print-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .print-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .print-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .print-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        .print-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .print-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        .print-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.9 !important;
+            color: #000 !important;
+        }
+
+        .print-info-right {
+            text-align: right !important;
+        }
+
+        .print-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .info-lbl {
+            font-weight: bold !important;
+            color: #000000 !important;
+        }
+
+        .info-val {
+            font-weight: bold !important;
+            color: #000000 !important;
+        }
+
+        .print-table-container {
+            margin-top: 8px !important;
+        }
+
+        .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .print-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .print-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .empty-print-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        .print-total-box {
+            margin-top: 12px !important;
+            padding-top: 8px !important;
+            border-top: 1.5px solid #000000 !important;
+            font-size: 13px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            color: #000000 !important;
+        }
+
+        .total-num {
+            color: #000000 !important;
+            font-size: 14px !important;
+            margin-right: 4px !important;
+        }
+
+        /* ⑤ صندوق التوقيع الرسمي */
+        .print-signature-box {
+            margin-top: 35px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function (item, index) {
+                    setTimeout(function () {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch (e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+<script>
+    const isRenewJobOpen = "{{ is_renew_job_open|yesno:'true,false' }}" === "true";
+    window.is_renew_job_open = isRenewJobOpen;
+    window.IS_RENEW_JOB_OPEN = isRenewJobOpen;
+    window.RENEW_JOB_MESSAGE = "{{ renew_job_message|escapejs }}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/special_renew.js' %}?v=1.0.31"></script>
+{% endblock %}

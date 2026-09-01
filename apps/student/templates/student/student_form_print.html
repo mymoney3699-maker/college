@@ -1,0 +1,535 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}نموذج تسجيل طالب{% endblock %}
+
+{% block page_title %}نموذج تسجيل طالب{% endblock %}
+{% block page_subtitle %}تسجيل بيانات الطالب الجديد{% endblock %}
+
+{% block extra_head %}
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       الترويسة الحكومية الرسمية (Official Header)
+       ============================================================ */
+    .official-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 0.6rem;
+    }
+
+    .header-side {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+    }
+
+    .header-side-ar {
+        text-align: right;
+    }
+
+    .header-side-en {
+        text-align: left;
+        direction: ltr;
+    }
+
+    .header-logo-center {
+        flex: 0 0 auto;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 1.25rem;
+    }
+
+    .official-logo-img {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border-radius: 50%;
+    }
+
+    .gov-text-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1.3;
+    }
+
+    .gov-text-sub {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: #334155;
+        line-height: 1.3;
+    }
+
+    .gov-text-college {
+        font-size: 0.92rem;
+        font-weight: 800;
+        color: #307e92;
+        line-height: 1.3;
+    }
+
+    .gov-text-title-en {
+        font-size: 0.88rem;
+        font-weight: 800;
+        color: #1e293b;
+        letter-spacing: 0.5px;
+        line-height: 1.3;
+    }
+
+    .gov-text-sub-en {
+        font-size: 0.74rem;
+        font-weight: 700;
+        color: #334155;
+        line-height: 1.3;
+    }
+
+    .gov-text-college-en {
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #307e92;
+        letter-spacing: 0.2px;
+        line-height: 1.3;
+    }
+
+    .header-separator-line {
+        width: 100%;
+        border-bottom: 2px solid #307e92;
+        margin-bottom: 0.75rem;
+    }
+
+    .form-title-badge-wrapper {
+        text-align: center;
+        margin-bottom: 0.85rem;
+    }
+
+    .form-title-badge {
+        display: inline-block;
+        font-size: 1.15rem;
+        font-weight: 800;
+        color: #307e92;
+        border: 1.5px solid #307e92;
+        padding: 0.25rem 2.25rem;
+        border-radius: 50px;
+        background-color: rgba(48, 126, 146, 0.06);
+        margin: 0;
+    }
+
+    /* ============================================================
+       قسم التوقيعات الثنائي (اليمين: الطالب | اليسار: مسؤول التسجيل والقبول)
+       ============================================================ */
+    .signatures-box {
+        margin-top: 1.25rem !important;
+        border: none !important;
+        background: transparent !important;
+        padding: 0.5rem 1rem 0.25rem 1rem !important;
+    }
+
+    .signatures-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5rem;
+    }
+
+    .signature-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1.5rem;
+    }
+
+    .signature-label {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #1e293b;
+    }
+
+    .signature-line {
+        width: 100%;
+        border-bottom: 1.5px dotted #64748b;
+    }
+
+    .signature-person {
+        font-size: 0.9rem;
+        font-weight: 700;
+        color: #334155;
+        min-height: 1.2rem;
+    }
+
+    .signature-highlight {
+        color: #307e92;
+        font-weight: 800;
+    }
+
+    /* ============================================================
+       قواعد الطباعة الرسمية
+       ============================================================ */
+    @media print {
+        .no-print { display: none !important; }
+        .app-sidebar, aside, .app-header, .app-footer, .sidebar-backdrop, nav {
+            display: none !important;
+            visibility: hidden !important;
+        }
+
+        .app-shell, .app-content, .custom-main, .register-main {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            background: white !important;
+        }
+
+        .register-container {
+            margin: 0 !important;
+            padding: 0.2rem 0.4rem !important;
+            border: none !important;
+            box-shadow: none !important;
+            background: white !important;
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+
+        .official-header-section {
+            margin-bottom: 0.4rem !important;
+        }
+
+        .official-logo-img { 
+            width: 60px !important; 
+            height: 60px !important; 
+        }
+
+        .gov-text-title { font-size: 9.5pt !important; color: #000 !important; font-weight: bold !important; }
+        .gov-text-sub { font-size: 8pt !important; color: #000 !important; font-weight: bold !important; }
+        .gov-text-college { font-size: 9pt !important; color: #000 !important; font-weight: bold !important; }
+
+        .gov-text-title-en { font-size: 8.5pt !important; color: #000 !important; font-weight: bold !important; }
+        .gov-text-sub-en { font-size: 7pt !important; color: #000 !important; font-weight: bold !important; }
+        .gov-text-college-en { font-size: 7.5pt !important; color: #000 !important; font-weight: bold !important; }
+
+        .header-separator-line {
+            border-bottom: 1.5px solid #000 !important;
+            margin-bottom: 0.35rem !important;
+        }
+
+        .form-title-badge-wrapper {
+            margin-bottom: 0.4rem !important;
+        }
+
+        .form-title-badge {
+            font-size: 10pt !important;
+            color: #000 !important;
+            border: 1.5px solid #000 !important;
+            padding: 0.15rem 1.5rem !important;
+            background: transparent !important;
+        }
+
+        .info-box {
+            border: 1px solid #000 !important;
+            padding: 0.3rem 0.5rem !important;
+            margin-top: 0.35rem !important;
+            background: transparent !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+
+        .box-title {
+            font-size: 7.5pt !important;
+            color: #000 !important;
+            border-right-color: #000 !important;
+            margin-bottom: 0.2rem !important;
+        }
+
+        .field-item {
+            font-size: 7.5pt !important;
+            color: #000 !important;
+        }
+
+        .field-label {
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        .field-line {
+            border-bottom: 1px dotted #444 !important;
+            height: 0.4rem !important;
+        }
+
+        .signatures-box {
+            border: none !important;
+            padding: 0.25rem 0.5rem !important;
+            margin-top: 0.5rem !important;
+        }
+
+        .signatures-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 4rem !important;
+        }
+
+        .signature-item {
+            gap: 1.2rem !important;
+        }
+
+        .signature-label {
+            font-size: 8.5pt !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        .signature-line {
+            border-bottom: 1px solid #000 !important;
+        }
+
+        .signature-person {
+            font-size: 8pt !important;
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        .signature-highlight {
+            color: #000 !important;
+            font-weight: bold !important;
+        }
+
+        @page {
+            size: A4 portrait;
+            margin: 5mm;
+        }
+    }
+
+    /* ---- داكن ---- */
+    html.dark .register-container { background: #1e293b; border-color: #334155; }
+    html.dark .info-box { background: #1e293b; border-color: #475569; }
+    html.dark .gov-text-title,
+    html.dark .gov-text-title-en { color: #f8fafc; }
+    html.dark .gov-text-sub,
+    html.dark .gov-text-sub-en { color: #cbd5e1; }
+    html.dark .gov-text-college,
+    html.dark .gov-text-college-en { color: #38bdf8; }
+    html.dark .header-separator-line { border-bottom-color: #38bdf8; }
+    html.dark .form-title-badge { color: #38bdf8; border-color: #38bdf8; background-color: rgba(56, 189, 248, 0.1); }
+    html.dark .box-title { color: #38bdf8; }
+    html.dark .field-label { color: #e2e8f0; }
+    html.dark .field-item { color: #94a3b8; }
+    html.dark .field-line { border-bottom-color: #475569; }
+    html.dark .signature-label { color: #e2e8f0; }
+    html.dark .signature-line { border-bottom-color: #475569; }
+    html.dark .signature-person { color: #cbd5e1; }
+    html.dark .signature-highlight { color: #38bdf8; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<main class="register-main">
+
+    <!-- زر الطباعة -->
+    <div class="print-btn-wrapper no-print" style="width: 100%; max-width: 900px; display: flex; justify-content: flex-end; margin-bottom: 0.5rem;">
+        <button onclick="printForm()" class="btn-print" style="display: inline-flex; align-items: center; gap: 0.5rem; background: #307e92; color: white; border: none; padding: 0.5rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer;">
+            <span class="material-symbols-outlined">print</span>
+            طباعة
+        </button>
+    </div>
+
+    <div class="register-container">
+
+        <!-- الترويسة الرسمية (Header) -->
+        <div class="official-header-section">
+            <div class="header-side header-side-ar">
+                <div class="gov-text-title">دولة ليبيا</div>
+                <div class="gov-text-sub">حكومة الوحدة الوطنية</div>
+                <div class="gov-text-sub">وزارة التعليم التقني والفني</div>
+                <div class="gov-text-college">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <div class="header-logo-center">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="official-logo-img">
+            </div>
+
+            <div class="header-side header-side-en">
+                <div class="gov-text-title-en">STATE OF LIBYA</div>
+                <div class="gov-text-sub-en">Government of National Unity</div>
+                <div class="gov-text-sub-en">Ministry of Technical and Vocational Education</div>
+                <div class="gov-text-college-en">TRIPOLI COLLEGE OF SCIENCE AND TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <!-- خط فاصل -->
+        <div class="header-separator-line"></div>
+
+        <!-- عنوان النموذج -->
+        <div class="form-title-badge-wrapper">
+            <h2 class="form-title-badge">نموذج تسجيل طالب</h2>
+        </div>
+
+        <!-- البيانات الشخصية -->
+        <div class="info-box">
+            <div class="box-title">البيانات الشخصية</div>
+            <div class="info-grid">
+                <div class="field-item">
+                    <span class="field-label">اسم الطالب</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">اسم الأب</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">اسم الجد</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">اللقب</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">تاريخ الميلاد</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">مكان الميلاد</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">الجنسية</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">فصيلة الدم</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">الجنس</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">الحالة الاجتماعية</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">الرقم الوطني</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">رقم الهاتف</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item full-width">
+                    <span class="field-label">البريد الإلكتروني</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item full-width">
+                    <span class="field-label">العنوان</span>
+                    <div class="field-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- البيانات الأكاديمية -->
+        <div class="info-box">
+            <div class="box-title">البيانات الأكاديمية</div>
+            <div class="info-grid">
+                <div class="field-item">
+                    <span class="field-label">التخصص</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">فصل الإلتحاق</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">تاريخ الإلتحاق</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item full-width">
+                    <span class="field-label">ملاحظات</span>
+                    <div class="field-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ولي الأمر -->
+        <div class="info-box">
+            <div class="box-title">بيانات ولي الأمر</div>
+            <div class="info-grid">
+                <div class="field-item">
+                    <span class="field-label">اسم ولي الأمر</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">رقم الهاتف</span>
+                    <div class="field-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- المؤهل -->
+        <div class="info-box">
+            <div class="box-title">المؤهل العلمي</div>
+            <div class="info-grid">
+                <div class="field-item">
+                    <span class="field-label">المؤهل</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">التاريخ</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">المكان</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">التخصص</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">التقدير</span>
+                    <div class="field-line"></div>
+                </div>
+                <div class="field-item">
+                    <span class="field-label">النسبة</span>
+                    <div class="field-line"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- قسم التوقيعات والاعتماد (توقيعان: الطالب على اليمين، مسؤول التسجيل والقبول على اليسار) -->
+        <div class="info-box signatures-box">
+            <div class="signatures-grid">
+                <div class="signature-item">
+                    <span class="signature-label">توقيع الطالب</span>
+                    <div class="signature-line"></div>
+                    <span class="signature-person">الاسم والتوقيع</span>
+                </div>
+                <div class="signature-item">
+                    <span class="signature-label">اعتماد / توقيع مسؤول قسم التسجيل والقبول</span>
+                    <div class="signature-line"></div>
+                    <span class="signature-person signature-highlight" id="admissionOfficialName">
+                        {% if admission_official_name %}
+                            {{ admission_official_name }}
+                        {% elif registrar_official_name %}
+                            {{ registrar_official_name }}
+                        {% else %}
+                            رئيس قسم التسجيل والقبول
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</main>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'student/js/student_form_print.js' %}?v=1.0.3"></script>
+{% endblock %}

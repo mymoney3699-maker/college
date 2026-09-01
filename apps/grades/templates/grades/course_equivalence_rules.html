@@ -1,0 +1,664 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}إدارة قواعد معادلة المواد | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 🌙 Dynamic Dark Mode Overrides for Course Equivalence Rules Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .equivalence-rules-page,
+    html.dark .equivalence-rules-container,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-title,
+    html.dark h1,
+    html.dark h2,
+    html.dark h3,
+    html.dark h4,
+    html.dark h5,
+    html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Group Boxes & Containers */
+    html.dark .group-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+
+    /* Alert & Notice Boxes */
+    html.dark .alert-info,
+    html.dark div[class*="alert-info"] {
+        background-color: rgba(6, 78, 59, 0.4) !important;
+        border-color: #059669 !important;
+        color: #a7f3d0 !important;
+    }
+
+    html.dark .alert-danger,
+    html.dark div[class*="alert-danger"] {
+        background-color: rgba(153, 27, 27, 0.4) !important;
+        border-color: #ef4444 !important;
+        color: #fca5a5 !important;
+    }
+
+    /* Labels & Form Selects */
+    html.dark .field-label,
+    html.dark label {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark .filter-select,
+    html.dark .filter-input {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    /* Table Styles */
+    html.dark .table-responsive {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead tr,
+    html.dark tr[style*="background: var(--primary"] {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .data-table th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table td,
+    html.dark .data-table tbody tr {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    html.dark .data-table strong {
+        color: #f8fafc !important;
+    }
+
+    html.dark .data-table div[style*="color: #64748b"] {
+        color: #94a3b8 !important;
+    }
+
+    /* Action Delete Button */
+    html.dark a[title="حذف القاعدة"] {
+        background-color: rgba(239, 68, 68, 0.2) !important;
+        color: #fca5a5 !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main equivalence-rules-page" dir="rtl">
+    <div class="equivalence-rules-container">
+
+        <!-- الهيدر العلوي -->
+        <div class="page-header-row">
+            <div class="header-icon-wrapper">
+                <div>
+                    <h1 class="page-header-title">إدارة قواعد معادلة المواد الدراسية</h1>
+                    <p class="page-header-subtitle">تحديد وإدارة المواد البديلة والمكافئة في خطة الدراسة والأقسام
+                        الأكاديمية</p>
+                </div>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_courseequivalence' and not request.user|has_exec_perm:'renewal.change_courseequivalence' and not request.user|has_exec_perm:'add_courseequivalence' and not request.user|has_exec_perm:'change_courseequivalence' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        {% if messages %}
+        <div class="messages-container my-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}"
+                style="padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 0.75rem; background: rgba(16, 185, 129, 0.12); color: #065f46; font-weight: 700; border: 1px solid #10b981;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- نموذج إضافة/تعديل قاعدة معادلة -->
+        {% if request.user|has_exec_perm:'renewal.add_courseequivalence' or request.user|has_exec_perm:'renewal.change_courseequivalence' or request.user|has_exec_perm:'add_courseequivalence' or request.user|has_exec_perm:'change_courseequivalence' %}
+        <div class="group-box no-print mb-6" id="ruleFormBox">
+            <span class="group-title" id="ruleFormTitle">إضافة قاعدة معادلة جديدة بين التخصصات</span>
+
+            <form method="POST" action="{% url 'grades:course_equivalence_rules' %}" class="equivalence-form"
+                id="equivalenceForm">
+                {% csrf_token %}
+                <input type="hidden" name="rule_id" id="ruleIdInput" value="">
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; margin-bottom: 1rem;">
+                    
+                    <!-- بطاقة الطرف الأول: المادة الأصلية (المصدر) -->
+                    <div style="background: rgba(2, 132, 199, 0.04); border: 1px solid rgba(2, 132, 199, 0.2); border-radius: 10px; padding: 1.1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; color: #0284c7; font-weight: 800; font-size: 0.95rem;">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">source</span>
+                            <span>الطرف الأول: المادة الأصلية (المحول منه)</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                            <div class="field-group">
+                                <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+                                    تخصص المصدر
+                                </label>
+                                <select name="source_department" id="sourceDeptSelect" class="filter-select"
+                                    style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; font-size: 0.85rem;">
+                                    <option value="">-- كافة الأقسام (عام) --</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+                                    المادة الأصلية <span style="color: #dc2626;">*</span>
+                                </label>
+                                <select name="source_course" id="sourceCourseSelect" required class="filter-select"
+                                    style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; font-size: 0.85rem;">
+                                    <option value="">-- اختر المادة الأصلية --</option>
+                                    {% for c in courses %}
+                                    <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- بطاقة الطرف الثاني: المادة البديلة (المكافئة) -->
+                    <div style="background: rgba(22, 163, 74, 0.04); border: 1px solid rgba(22, 163, 74, 0.2); border-radius: 10px; padding: 1.1rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.85rem; color: #16a34a; font-weight: 800; font-size: 0.95rem;">
+                            <span class="material-symbols-outlined" style="font-size: 20px;">published_with_changes</span>
+                            <span>الطرف الثاني: المادة البديلة المكافئة (المحول إليه)</span>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
+                            <div class="field-group">
+                                <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+                                    تخصص الوجهة (المحول إليه)
+                                </label>
+                                <select name="target_department" id="targetDeptSelect" class="filter-select"
+                                    style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; font-size: 0.85rem;">
+                                    <option value="">-- كافة الأقسام (عام) --</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="field-group">
+                                <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+                                    المادة المكافئة <span style="color: #dc2626;">*</span>
+                                </label>
+                                <select name="target_course" id="targetCourseSelect" required class="filter-select"
+                                    style="width: 100%; padding: 0.6rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600; font-size: 0.85rem;">
+                                    <option value="">-- اختر المادة المكافئة --</option>
+                                    {% for c in courses %}
+                                    <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- ملاحظات وأزرار الحفظ -->
+                <div style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end; justify-content: space-between;">
+                    <div class="field-group" style="flex: 1; min-width: 280px;">
+                        <label class="field-label" style="font-weight: 700; display: block; margin-bottom: 0.35rem; font-size: 0.85rem; color: var(--text-color, #1e293b);">
+                            ملاحظات القرار الإداري
+                        </label>
+                        <input type="text" name="notes" id="ruleNotesInput" placeholder="ملاحظات توضيحية اختياري (مثل: قرار لجنة المعادلات رقم...)"
+                            class="filter-input"
+                            style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff;">
+                    </div>
+
+                    <div class="buttons-row" style="display: flex; gap: 0.75rem;">
+                        <button type="button" id="btnCancelEdit" onclick="window.resetEquivalenceForm()" class="btn-action"
+                            style="display: none; padding: 0.65rem 1.5rem; font-weight: 700; align-items: center; gap: 0.5rem; background: #64748b; color: #fff; border-radius: 8px; border: none; cursor: pointer;">
+                            <span class="material-symbols-outlined">close</span>
+                            إلغاء
+                        </button>
+                        <button type="submit" id="btnSaveRule" class="btn-action btn-save"
+                            style="padding: 0.65rem 2rem; font-weight: 700; display: inline-flex; align-items: center; gap: 0.5rem; background: #16a34a; color: #fff; border-radius: 8px; border: none; cursor: pointer;">
+                            <span class="material-symbols-outlined" id="btnSaveRuleIcon">add_task</span>
+                            <span id="btnSaveRuleText">حفظ قاعدة المعادلة</span>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- جدول عرض قواعد المعادلة المسجلة -->
+        <div class="group-box">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.5rem;">
+                <span class="group-title" style="margin: 0;">سجل قواعد المعادلة المسجلة (العدد: {{ total_rules }})</span>
+                <form method="GET" style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                    <label style="font-weight: 700; font-size: 0.85rem; color: #475569;">تصفية حسب تخصص الوجهة:</label>
+                    <select name="target_department" onchange="this.form.submit()" class="filter-select" style="padding: 0.4rem 0.8rem; border-radius: 6px; border: 1px solid #cbd5e1; font-weight: 600; font-size: 0.85rem;">
+                        <option value="">-- كل التخصصات --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_target_dept == dept.id|stringformat:"s" %}selected{% endif %}>{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
+            </div>
+
+            <div class="table-responsive" style="margin-top: 1rem;">
+                <table class="data-table"
+                    style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: var(--primary, #307e92); color: #fff; text-align: right;">
+                            <th style="padding: 0.85rem 1rem; width: 50px; text-align: center;">#</th>
+                            <th style="padding: 0.85rem 1rem;">المادة الأصلية (المحول منه)</th>
+                            <th style="padding: 0.85rem 1rem; text-align: center; width: 60px;">⬅️</th>
+                            <th style="padding: 0.85rem 1rem;">المادة المكافئة (المحول إليه)</th>
+                            <th style="padding: 0.85rem 1rem;">ملاحظات القرار</th>
+                            <th style="padding: 0.85rem 1rem; width: 130px; text-align: center;">تاريخ الإضافة</th>
+                            <th style="padding: 0.85rem 1rem; width: 100px; text-align: center;" class="no-print">
+                                الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rule in rules %}
+                        <tr style="border-bottom: 1px solid #e2e8f0;">
+                            <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <strong style="color: #1e293b; font-size: 0.95rem; display: block; margin-bottom: 3px;">{{ rule.source_course.name }}</strong>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                    <span style="font-family: monospace; font-weight: 800; color: #0284c7; background: #e0f2fe; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">{{ rule.source_course.code }}</span>
+                                    {% if rule.source_department %}
+                                    <span style="background: #e0f2fe; color: #0369a1; font-weight: 700; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; border: 1px solid #bae6fd;">
+                                        {{ rule.source_department.name }}
+                                    </span>
+                                    {% else %}
+                                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px;">عام</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center; font-size: 1.2rem;">➡️</td>
+                            <td style="padding: 0.85rem 1rem;">
+                                <strong style="color: #16a34a; font-size: 0.95rem; display: block; margin-bottom: 3px;">{{ rule.target_course.name }}</strong>
+                                <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                    <span style="font-family: monospace; font-weight: 800; color: #16a34a; background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem;">{{ rule.target_course.code }}</span>
+                                    {% if rule.target_department %}
+                                    <span style="background: #dcfce7; color: #15803d; font-weight: 700; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px; border: 1px solid #bbf7d0;">
+                                        {{ rule.target_department.name }}
+                                    </span>
+                                    {% else %}
+                                    <span style="background: #f1f5f9; color: #64748b; font-size: 0.75rem; padding: 1px 6px; border-radius: 4px;">عام</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td style="padding: 0.85rem 1rem; color: #475569; font-size: 0.85rem;">
+                                {{ rule.notes|default:"—" }}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center; color: #64748b; font-size: 0.8rem;">
+                                {{ rule.created_at|date:"Y-m-d" }}
+                            </td>
+                            <td style="padding: 0.85rem 1rem; text-align: center;" class="no-print">
+                                {% if request.user|has_exec_perm:'renewal.add_courseequivalence' or request.user|has_exec_perm:'renewal.change_courseequivalence' or request.user|has_exec_perm:'add_courseequivalence' or request.user|has_exec_perm:'change_courseequivalence' %}
+                                <button type="button"
+                                    class="btn-edit-rule"
+                                    data-rule-id="{{ rule.id }}"
+                                    data-src-dept-id="{{ rule.source_department.id|default:'' }}"
+                                    data-tgt-dept-id="{{ rule.target_department.id|default:'' }}"
+                                    data-source-id="{{ rule.source_course.id }}"
+                                    data-target-id="{{ rule.target_course.id }}"
+                                    data-notes="{{ rule.notes|default:'' }}"
+                                    onclick="window.handleEditRuleClick(this)"
+                                    style="display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: 6px; background: rgba(14, 165, 233, 0.12); color: #0284c7; border: 1px solid rgba(14, 165, 233, 0.3); cursor: pointer; transition: all 0.2s;"
+                                    title="تعديل القاعدة">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">edit</span>
+                                </button>
+                                {% else %}
+                                <span class="text-xs text-slate-400 font-bold">عرض فقط</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7"
+                                style="padding: 2.5rem; text-align: center; color: #64748b; font-weight: 700;">
+                                ℹ️ لا توجد قواعد معادلة مسجلة حتى الآن. يمكنك إضافة قاعدة جديدة بالنموذج أعلاه.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined"
+            style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage"
+            style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+        </p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+
+<script id="django-messages-data" type="application/json">
+[
+    {% if error_msg %}
+    {
+        "tag": "error",
+        "message": "{{ error_msg|escapejs }}"
+    }{% if messages %},{% endif %}
+    {% endif %}
+    {% if messages %}
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+    {% endif %}
+]
+</script>
+
+<script>
+    // ============================================================
+    // 🔔 نظام الإشعارات العائمة الموحد (showNotification)
+    // ============================================================
+    function showNotification(type, message) {
+        const toast = document.getElementById('toastNotification');
+        const iconCircle = document.getElementById('toastIconCircle');
+        const icon = document.getElementById('toastIcon');
+        const msg = document.getElementById('toastMessage');
+
+        if (!toast || !icon || !msg) {
+            console.warn('⚠️ Toast Notification elements not found:', type, message);
+            return;
+        }
+
+        msg.innerText = message;
+        const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+
+        // ضبط لون وخلفية البطاقة حسب النمط الليلي / النهاري
+        if (isDark) {
+            toast.style.background = '#1e293b';
+            toast.style.backgroundColor = '#1e293b';
+            toast.style.boxShadow = '0 14px 45px rgba(0, 0, 0, 0.7)';
+            msg.style.color = '#f8fafc';
+        } else {
+            toast.style.background = '#ffffff';
+            toast.style.backgroundColor = '#ffffff';
+            toast.style.boxShadow = '0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08)';
+            msg.style.color = '#1e293b';
+        }
+
+        if (type === 'success') {
+            toast.style.borderRight = '4.5px solid #10b981';
+            toast.style.borderRightColor = '#10b981';
+            icon.innerText = "check_circle";
+            icon.style.color = '#10b981';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)';
+            }
+        } else if (type === 'warning') {
+            toast.style.borderRight = '4.5px solid #f59e0b';
+            toast.style.borderRightColor = '#f59e0b';
+            icon.innerText = "warning";
+            icon.style.color = '#f59e0b';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.12)';
+            }
+        } else if (type === 'info') {
+            toast.style.borderRight = '4.5px solid #3b82f6';
+            toast.style.borderRightColor = '#3b82f6';
+            icon.innerText = "info";
+            icon.style.color = '#3b82f6';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.12)';
+            }
+        } else {
+            toast.style.borderRight = '4.5px solid #e11d48';
+            toast.style.borderRightColor = '#e11d48';
+            icon.innerText = "error";
+            icon.style.color = '#e11d48';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(225, 29, 72, 0.2)' : 'rgba(225, 29, 72, 0.12)';
+            }
+        }
+
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+
+        clearTimeout(window.notificationTimeout);
+        window.notificationTimeout = setTimeout(() => {
+            toast.style.transform = 'translateY(80px)';
+            toast.style.opacity = '0';
+        }, 4000);
+    }
+
+    window.showNotification = showNotification;
+    window.toastSuccess = (msg) => showNotification('success', msg);
+    window.toastError = (msg) => showNotification('error', msg);
+    window.toastWarning = (msg) => showNotification('warning', msg);
+    window.toastInfo = (msg) => showNotification('info', msg);
+    window.showToastMessage = (message, isError = false, type = null) => {
+        if (type) {
+            showNotification(type, message);
+        } else {
+            showNotification(isError ? 'error' : 'success', message);
+        }
+    };
+
+    window.handleEditRuleClick = function (btn) {
+        if (!btn) return;
+        const ruleId = btn.dataset.ruleId;
+        const srcDeptId = btn.dataset.srcDeptId || '';
+        const tgtDeptId = btn.dataset.tgtDeptId || '';
+        const sourceId = btn.dataset.sourceId;
+        const targetId = btn.dataset.targetId;
+        const notes = btn.dataset.notes || '';
+        window.editEquivalenceRule(ruleId, srcDeptId, tgtDeptId, sourceId, targetId, notes);
+    };
+
+    window.editEquivalenceRule = function (ruleId, srcDeptId, tgtDeptId, sourceId, targetId, notes) {
+        const title = document.getElementById('ruleFormTitle');
+        const btnText = document.getElementById('btnSaveRuleText');
+        const btnIcon = document.getElementById('btnSaveRuleIcon');
+        const btnCancel = document.getElementById('btnCancelEdit');
+        const ruleIdInput = document.getElementById('ruleIdInput');
+        const srcDeptSelect = document.getElementById('sourceDeptSelect');
+        const tgtDeptSelect = document.getElementById('targetDeptSelect');
+        const sourceSelect = document.querySelector('select[name="source_course"]');
+        const targetSelect = document.querySelector('select[name="target_course"]');
+        const notesInput = document.querySelector('input[name="notes"]');
+
+        if (ruleIdInput) ruleIdInput.value = ruleId;
+        if (title) title.textContent = 'تعديل قاعدة المعادلة بين التخصصات';
+        if (btnText) btnText.textContent = 'تعديل وحفظ القاعدة';
+        if (btnIcon) btnIcon.textContent = 'edit_note';
+        if (btnCancel) btnCancel.style.display = 'inline-flex';
+
+        if (srcDeptSelect) srcDeptSelect.value = srcDeptId || '';
+        if (tgtDeptSelect) tgtDeptSelect.value = tgtDeptId || '';
+        if (sourceSelect) sourceSelect.value = sourceId;
+        if (targetSelect) targetSelect.value = targetId;
+        if (notesInput) notesInput.value = notes || '';
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        if (srcDeptSelect) srcDeptSelect.focus();
+
+        showNotification('info', '✏️ تم تفعيل وضع تعديل القاعدة، يرجى مراجعة وتعديل التخصصات والمواد ثم النقر على حفظ.');
+    };
+
+    window.resetEquivalenceForm = function () {
+        const title = document.getElementById('ruleFormTitle');
+        const btnText = document.getElementById('btnSaveRuleText');
+        const btnIcon = document.getElementById('btnSaveRuleIcon');
+        const btnCancel = document.getElementById('btnCancelEdit');
+        const ruleIdInput = document.getElementById('ruleIdInput');
+        const srcDeptSelect = document.getElementById('sourceDeptSelect');
+        const tgtDeptSelect = document.getElementById('targetDeptSelect');
+        const form = document.getElementById('equivalenceForm');
+
+        if (ruleIdInput) ruleIdInput.value = '';
+        if (title) title.textContent = 'إضافة قاعدة معادلة جديدة بين التخصصات';
+        if (btnText) btnText.textContent = 'حفظ قاعدة المعادلة';
+        if (btnIcon) btnIcon.textContent = 'add_task';
+        if (btnCancel) btnCancel.style.display = 'none';
+        if (srcDeptSelect) srcDeptSelect.value = '';
+        if (tgtDeptSelect) tgtDeptSelect.value = '';
+        if (form) form.reset();
+
+        showNotification('info', '🧹 تم إلغاء وضع التعديل وتفريغ النموذج');
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // 1. معالجة رسائل Django الواردة من السيرفر
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function (item, index) {
+                    setTimeout(function () {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        showNotification(type, item.message);
+                    }, index * 450);
+                });
+            }
+        } catch (e) {
+            console.error('Error parsing django messages:', e);
+        }
+
+        // 2. التحقق من صحة مدخلات النموذج قبل الإرسال لمنع التكرار ونفس المادة
+        const form = document.getElementById('equivalenceForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                const sourceSelect = document.getElementById('sourceCourseSelect') || document.querySelector('select[name="source_course"]');
+                const targetSelect = document.getElementById('targetCourseSelect') || document.querySelector('select[name="target_course"]');
+                const sourceVal = sourceSelect ? sourceSelect.value : '';
+                const targetVal = targetSelect ? targetSelect.value : '';
+
+                if (!sourceVal) {
+                    e.preventDefault();
+                    showNotification('warning', '⚠️ الرجاء اختيار المادة الأصلية (المصدر)');
+                    if (sourceSelect) sourceSelect.focus();
+                    return;
+                }
+
+                if (!targetVal) {
+                    e.preventDefault();
+                    showNotification('warning', '⚠️ الرجاء اختيار المادة المكافئة (البديلة)');
+                    if (targetSelect) targetSelect.focus();
+                    return;
+                }
+
+                if (sourceVal === targetVal) {
+                    e.preventDefault();
+                    showNotification('warning', '⚠️ لا يمكن اختيار نفس المادة كقاعدة معادلة لنفسها');
+                    if (targetSelect) targetSelect.focus();
+                    return;
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}سجلات النظام والتدقيق - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main system-logs-page">
+    <div class="system-logs-container">
+        <!-- Header -->
+        <div class="page-header-row no-print">
+            <div>
+                <h1 class="page-header-title">
+                    <span class="material-symbols-outlined align-middle text-3xl text-primary">manage_history</span>
+                    سجلات النظام والتدقيق
+                </h1>
+                <p class="page-header-subtitle">مركز مجمع لمتابعة أنشطة التشغيل وأرشيف التدقيق والمحذوفات</p>
+            </div>
+        </div>
+
+        <!-- 🏷️ شريط التبويبات العلوي (Tabs Header) -->
+        <div class="tabs-header-nav no-print mb-6 border-b border-gray-200 flex gap-2">
+            <button type="button" class="tab-btn {% if active_tab == 'activity' or not active_tab %}active-tab{% endif %}" onclick="switchLogTab('activity')">
+                <span class="material-symbols-outlined align-middle">history</span>
+                <span>أنشطة النظام العامة (Activity Log)</span>
+                <span class="tab-badge bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full text-xs font-bold mr-1">{{ activity_count|default:"0" }}</span>
+            </button>
+            <button type="button" class="tab-btn {% if active_tab == 'audit' %}active-tab{% endif %}" onclick="switchLogTab('audit')">
+                <span class="material-symbols-outlined align-middle">archive</span>
+                <span>أرشيف التدقيق والمحذوفات (Audit Log)</span>
+                <span class="tab-badge bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-xs font-bold mr-1">{{ audit_count|default:"0" }}</span>
+            </button>
+        </div>
+
+        <!-- ============================================================
+             TAB 1: أنشطة النظام العامة (Activity Log)
+             ============================================================ -->
+        <div id="tab-activity-content" class="tab-pane-content {% if active_tab == 'audit' %}hidden{% endif %}">
+            <!-- فلترة أنشطة النظام -->
+            <div class="group-box no-print mb-6">
+                <span class="group-title">🔍 فلترة أنشطة النظام</span>
+                <form method="GET" action="{% url 'users:system_logs' %}" id="activityFilterForm">
+                    <input type="hidden" name="tab" value="activity">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                        <div>
+                            <label class="field-label">نوع الإجراء</label>
+                            <select name="act_action" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                                <option value="">-- الكل --</option>
+                                <option value="login" {% if request.GET.act_action == 'login' or request.GET.action == 'login' %}selected{% endif %}>تسجيل دخول</option>
+                                <option value="logout" {% if request.GET.act_action == 'logout' or request.GET.action == 'logout' %}selected{% endif %}>تسجيل خروج</option>
+                                <option value="create" {% if request.GET.act_action == 'create' or request.GET.action == 'create' %}selected{% endif %}>إضافة</option>
+                                <option value="update" {% if request.GET.act_action == 'update' or request.GET.action == 'update' %}selected{% endif %}>تعديل</option>
+                                <option value="delete" {% if request.GET.act_action == 'delete' or request.GET.action == 'delete' %}selected{% endif %}>حذف</option>
+                                <option value="renew" {% if request.GET.act_action == 'renew' or request.GET.action == 'renew' %}selected{% endif %}>تجديد قيد</option>
+                                <option value="download" {% if request.GET.act_action == 'download' or request.GET.action == 'download' %}selected{% endif %}>تنزيل مواد</option>
+                                <option value="grade" {% if request.GET.act_action == 'grade' or request.GET.action == 'grade' %}selected{% endif %}>رصد درجة</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">من تاريخ</label>
+                            <input type="date" name="date_from" value="{{ request.GET.date_from|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="field-label">إلى تاريخ</label>
+                            <input type="date" name="date_to" value="{{ request.GET.date_to|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="field-label">المستخدم</label>
+                            <input type="text" name="act_user" placeholder="اسم المستخدم" autocomplete="off" value="{{ request.GET.act_user|default:request.GET.user|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn-action btn-edit flex-1 text-sm py-2">
+                                <span class="material-symbols-outlined text-sm">search</span> بحث
+                            </button>
+                            <a href="{% url 'users:system_logs' %}?tab=activity" class="btn-action btn-reset text-sm py-2 px-3">
+                                <span class="material-symbols-outlined text-sm">cleaning_services</span>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- جدول أنشطة النظام -->
+            <div class="group-box">
+                <span class="group-title">📋 سجل حركات التشغيل</span>
+                <div class="overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المستخدم</th>
+                                <th>الإجراء</th>
+                                <th>العنصر / الكائن</th>
+                                <th>التفاصيل</th>
+                                <th>عنوان IP</th>
+                                <th>التاريخ والوقت</th>
+                                <th class="no-print">التفاصيل الكاملة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in activity_logs %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><strong class="text-gray-800">{{ log.user.username|default:"غير معروف" }}</strong></td>
+                                <td>
+                                    <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                        {% if log.action == 'login' %}bg-green-100 text-green-700
+                                        {% elif log.action == 'logout' %}bg-gray-100 text-gray-700
+                                        {% elif log.action == 'create' %}bg-blue-100 text-blue-700
+                                        {% elif log.action == 'update' %}bg-yellow-100 text-yellow-700
+                                        {% elif log.action == 'delete' %}bg-red-100 text-red-700
+                                        {% else %}bg-purple-100 text-purple-700{% endif %}">
+                                        {% if log.action == 'login' %}تسجيل دخول
+                                        {% elif log.action == 'logout' %}تسجيل خروج
+                                        {% elif log.action == 'create' %}إضافة
+                                        {% elif log.action == 'update' %}تعديل
+                                        {% elif log.action == 'delete' %}حذف
+                                        {% elif log.action == 'renew' %}تجديد قيد
+                                        {% elif log.action == 'download' %}تنزيل مواد
+                                        {% elif log.action == 'grade' %}رصد درجة
+                                        {% else %}{{ log.action }}{% endif %}
+                                    </span>
+                                </td>
+                                <td>{{ log.object_name|default:"-" }}</td>
+                                <td class="text-xs">{{ log.details|truncatechars:65 }}</td>
+                                <td class="font-mono text-xs text-gray-500">{{ log.ip_address|default:"-" }}</td>
+                                <td class="text-xs dir-ltr text-right">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                                <td class="no-print">
+                                    <button onclick="toggleDetails(this, 'act-details-{{ log.id }}')" class="text-primary text-xs underline font-semibold">
+                                        📋 تفاصيل
+                                    </button>
+                                    <div id="act-details-{{ log.id }}" class="hidden mt-2 p-3 bg-gray-50 border border-gray-200 rounded text-xs text-right space-y-1">
+                                        <div><strong>التفاصيل:</strong> {{ log.details|default:"لا توجد تفاصيل إضافية" }}</div>
+                                        {% if log.model_name %}<div><strong>الجدول:</strong> {{ log.model_name }}</div>{% endif %}
+                                        {% if log.object_name %}<div><strong>العنصر:</strong> {{ log.object_name }}</div>{% endif %}
+                                        <div><strong>معرف السجل:</strong> #{{ log.id }}</div>
+                                        <div><strong>التاريخ الكامل:</strong> {{ log.created_at|date:"Y-m-d H:i:s" }}</div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-8 text-gray-500">
+                                    <span class="material-symbols-outlined text-4xl block mb-2">history</span>
+                                    لا توجد أحداث تشغيل مسجلة
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- الترقيم لـ Activity Log -->
+                {% if activity_logs.has_other_pages %}
+                <div class="flex justify-center gap-2 mt-4 no-print">
+                    {% if activity_logs.has_previous %}
+                        <a href="?tab=activity&act_page={{ activity_logs.previous_page_number }}{% if request.GET.act_action %}&act_action={{ request.GET.act_action }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.act_user %}&act_user={{ request.GET.act_user }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-3">← السابق</a>
+                    {% endif %}
+                    <span class="px-3 py-1 bg-gray-200 rounded text-xs flex items-center font-bold">صفحة {{ activity_logs.number }} من {{ activity_logs.paginator.num_pages }}</span>
+                    {% if activity_logs.has_next %}
+                        <a href="?tab=activity&act_page={{ activity_logs.next_page_number }}{% if request.GET.act_action %}&act_action={{ request.GET.act_action }}{% endif %}{% if request.GET.date_from %}&date_from={{ request.GET.date_from }}{% endif %}{% if request.GET.date_to %}&date_to={{ request.GET.date_to }}{% endif %}{% if request.GET.act_user %}&act_user={{ request.GET.act_user }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-3">التالي →</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- ============================================================
+             TAB 2: أرشيف التدقيق والمحذوفات (Audit Log)
+             ============================================================ -->
+        <div id="tab-audit-content" class="tab-pane-content {% if active_tab != 'audit' %}hidden{% endif %}">
+            <!-- فلترة أرشيف التدقيق -->
+            <div class="group-box no-print mb-6">
+                <span class="group-title">🔍 فلترة أرشيف التدقيق</span>
+                <form method="GET" action="{% url 'users:system_logs' %}" id="auditFilterForm">
+                    <input type="hidden" name="tab" value="audit">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 items-end">
+                        <div>
+                            <label class="field-label">نوع الإجراء</label>
+                            <select name="audit_action" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                                <option value="">-- الكل --</option>
+                                <option value="create" {% if request.GET.audit_action == 'create' or request.GET.action == 'create' %}selected{% endif %}>إضافة (Create)</option>
+                                <option value="update" {% if request.GET.audit_action == 'update' or request.GET.action == 'update' %}selected{% endif %}>تعديل (Update)</option>
+                                <option value="delete" {% if request.GET.audit_action == 'delete' or request.GET.action == 'delete' %}selected{% endif %}>حذف (Delete)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="field-label">اسم الجدول (Model)</label>
+                            <input type="text" name="model_name" placeholder="مثال: student" value="{{ request.GET.model_name|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="field-label">المستخدم</label>
+                            <input type="text" name="audit_user" placeholder="اسم المستخدم" value="{{ request.GET.audit_user|default:request.GET.user|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" class="btn-action btn-edit flex-1 text-sm py-2">
+                                <span class="material-symbols-outlined text-sm">search</span> بحث
+                            </button>
+                            <a href="{% url 'users:system_logs' %}?tab=audit" class="btn-action btn-reset text-sm py-2 px-3">
+                                <span class="material-symbols-outlined text-sm">cleaning_services</span>
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- جدول أرشيف التدقيق -->
+            <div class="group-box">
+                <span class="group-title">🛡️ سجل الفروقات والتغييرات الحساسة (Audit Trail)</span>
+                <div class="overflow-x-auto">
+                    <table class="data-table w-full">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المستخدم</th>
+                                <th>الإجراء</th>
+                                <th>الجدول</th>
+                                <th>العنصر</th>
+                                <th class="no-print">بيانات الفروقات / Snapshot</th>
+                                <th>عنوان IP</th>
+                                <th>التاريخ والوقت</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in audit_logs %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><strong class="text-gray-800">{{ log.user.username|default:"غير معروف" }}</strong></td>
+                                <td>
+                                    <span class="px-2 py-1 rounded-full text-xs font-bold 
+                                        {% if log.action == 'create' %}bg-green-100 text-green-700
+                                        {% elif log.action == 'update' %}bg-yellow-100 text-yellow-700
+                                        {% elif log.action == 'delete' %}bg-red-100 text-red-700
+                                        {% else %}bg-gray-100 text-gray-700{% endif %}">
+                                        {{ log.get_action_display }}
+                                    </span>
+                                </td>
+                                <td><code class="bg-gray-100 px-2 py-0.5 rounded text-xs font-mono text-blue-800">{{ log.model_name }}</code></td>
+                                <td>{{ log.object_repr|truncatechars:35 }}</td>
+                                <td class="no-print">
+                                    {% if log.action == 'create' %}
+                                        <button onclick="toggleDetails(this, 'audit-create-{{ log.id }}')" class="text-green-700 text-xs underline font-semibold">
+                                            ➕ البيانات المضافة
+                                        </button>
+                                        <div id="audit-create-{{ log.id }}" class="hidden mt-2 p-3 bg-green-50 border border-green-200 rounded text-xs dir-ltr text-left">
+                                            <strong class="text-green-800 dir-rtl block text-right mb-1">📌 تفاصيل الإضافة:</strong>
+                                            <pre class="text-xs overflow-x-auto font-mono text-gray-800">{{ log.created_data|pprint }}</pre>
+                                        </div>
+                                    {% elif log.action == 'update' %}
+                                        <button onclick="toggleDetails(this, 'audit-update-{{ log.id }}')" class="text-amber-700 text-xs underline font-semibold">
+                                            ✏️ عرض الفروقات (Diff)
+                                        </button>
+                                        <div id="audit-update-{{ log.id }}" class="hidden mt-2 p-3 bg-amber-50 border border-amber-200 rounded text-xs space-y-1">
+                                            {% if log.filtered_changed_fields %}
+                                                <strong class="text-amber-900 block mb-1 font-bold">✏️ أرشيف الفروقات التفصيلية (قبل ➔ بعد):</strong>
+                                                {% for field, values in log.filtered_changed_fields.items %}
+                                                    <div class="bg-white p-2 rounded border border-amber-100 flex flex-wrap items-center justify-between gap-2">
+                                                        <span class="font-bold text-gray-800">📌 {{ field }}:</span>
+                                                        <div class="flex items-center gap-2 font-mono">
+                                                            <span class="text-red-600 line-through bg-red-50 px-1.5 py-0.5 rounded border border-red-100">قبل: {{ values.old|truncatechars:50 }}</span>
+                                                            <span class="text-gray-400">➔</span>
+                                                            <span class="text-green-700 font-bold bg-green-50 px-1.5 py-0.5 rounded border border-green-100">بعد: {{ values.new|truncatechars:50 }}</span>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            {% else %}
+                                                <span class="text-gray-500">لا توجد تفاصيل حقول مسجلة</span>
+                                            {% endif %}
+                                        </div>
+                                    {% elif log.action == 'delete' %}
+                                        <button onclick="toggleDetails(this, 'audit-delete-{{ log.id }}')" class="text-red-700 text-xs underline font-semibold">
+                                            🗑️ السجل المحذوف (Snapshot)
+                                        </button>
+                                        <div id="audit-delete-{{ log.id }}" class="hidden mt-2 p-3 bg-red-50 border border-red-200 rounded text-xs dir-ltr text-left">
+                                            <strong class="text-red-800 dir-rtl block text-right mb-1">📌 لقطة الحذف الكاملة:</strong>
+                                            <pre class="text-xs overflow-x-auto font-mono text-gray-800">{{ log.deleted_data|pprint }}</pre>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="font-mono text-xs text-gray-500">{{ log.ip_address|default:"-" }}</td>
+                                <td class="text-xs dir-ltr text-right">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-8 text-gray-500">
+                                    <span class="material-symbols-outlined text-4xl block mb-2">archive</span>
+                                    لا توجد سجلات تدقيق مسجلة
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- الترقيم لـ Audit Log -->
+                {% if audit_logs.has_other_pages %}
+                <div class="flex justify-center gap-2 mt-4 no-print">
+                    {% if audit_logs.has_previous %}
+                        <a href="?tab=audit&audit_page={{ audit_logs.previous_page_number }}{% if request.GET.audit_action %}&audit_action={{ request.GET.audit_action }}{% endif %}{% if request.GET.model_name %}&model_name={{ request.GET.model_name }}{% endif %}{% if request.GET.audit_user %}&audit_user={{ request.GET.audit_user }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-3">← السابق</a>
+                    {% endif %}
+                    <span class="px-3 py-1 bg-gray-200 rounded text-xs flex items-center font-bold">صفحة {{ audit_logs.number }} من {{ audit_logs.paginator.num_pages }}</span>
+                    {% if audit_logs.has_next %}
+                        <a href="?tab=audit&audit_page={{ audit_logs.next_page_number }}{% if request.GET.audit_action %}&audit_action={{ request.GET.audit_action }}{% endif %}{% if request.GET.model_name %}&model_name={{ request.GET.model_name }}{% endif %}{% if request.GET.audit_user %}&audit_user={{ request.GET.audit_user }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-3">التالي →</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</main>
+
+<style>
+/* تنسيقات التبويبات الموحدة */
+.system-logs-container {
+    max-width: 1350px;
+    margin: 0 auto;
+    direction: rtl;
+}
+
+.tabs-header-nav .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #64748b;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    background: transparent;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.tabs-header-nav .tab-btn:hover {
+    color: #1e293b;
+    background-color: rgba(241, 245, 249, 0.6);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+
+.tabs-header-nav .tab-btn.active-tab {
+    color: #2b7d91;
+    border-bottom-color: #2b7d91;
+    background-color: rgba(43, 125, 145, 0.05);
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+</style>
+
+<script>
+function switchLogTab(tabName) {
+    // إخفاء كل التبويبات
+    document.getElementById('tab-activity-content').classList.add('hidden');
+    document.getElementById('tab-audit-content').classList.add('hidden');
+    
+    // إزالة التنسيق النشط عن جميع الأزرار
+    document.querySelectorAll('.tabs-header-nav .tab-btn').forEach(btn => {
+        btn.classList.remove('active-tab');
+    });
+    
+    // إظهار التبويب المطلوب
+    if (tabName === 'audit') {
+        document.getElementById('tab-audit-content').classList.remove('hidden');
+        document.querySelectorAll('.tabs-header-nav .tab-btn')[1].classList.add('active-tab');
+    } else {
+        document.getElementById('tab-activity-content').classList.remove('hidden');
+        document.querySelectorAll('.tabs-header-nav .tab-btn')[0].classList.add('active-tab');
+    }
+
+    // تحديث رابط الـ URL بدون مسح الفلاتر
+    const url = new URL(window.location);
+    url.searchParams.set('tab', tabName);
+    window.history.replaceState({}, '', url);
+}
+
+function toggleDetails(btn, detailsId) {
+    const detailsDiv = document.getElementById(detailsId);
+    if (!detailsDiv) return;
+    
+    if (detailsDiv.classList.contains('hidden')) {
+        detailsDiv.classList.remove('hidden');
+        btn.dataset.originalText = btn.innerText;
+        btn.innerText = '✖ إغلاق التفاصيل';
+    } else {
+        detailsDiv.classList.add('hidden');
+        if (btn.dataset.originalText) {
+            btn.innerText = btn.dataset.originalText;
+        }
+    }
+}
+</script>
+{% endblock %}

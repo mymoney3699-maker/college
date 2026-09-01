@@ -1,0 +1,955 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}شهادة تعريف طالبة | كلية طرابلس للعلوم والتقنية{% endblock %}
+
+{% block extra_css %}
+<style>
+    .enrollment-page-container {
+        max-width: 1050px;
+        margin: 0 auto;
+        padding: 1.5rem 1rem 3rem;
+    }
+
+    /* ─── بطاقة البحث ─── */
+    .search-card-system {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+        margin-bottom: 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .dark .search-card-system {
+        background: #1e293b;
+        border-color: #334155;
+        box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+    }
+
+    .search-input-wrap {
+        position: relative;
+    }
+
+    .search-input-field {
+        width: 100%;
+        padding: 0.85rem 1rem 0.85rem 3rem;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        background: #f8fafc;
+        font-size: 1rem;
+        font-weight: 700;
+        color: #0f172a;
+        transition: all 0.2s;
+    }
+
+    .dark .search-input-field {
+        background: #0f172a;
+        border-color: #475569;
+        color: #f8fafc;
+    }
+
+    .search-input-field:focus {
+        outline: none;
+        border-color: #0284c7;
+        background: #fff;
+        box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.15);
+    }
+
+    .search-icon-badge {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #64748b;
+        font-size: 24px;
+        pointer-events: none;
+    }
+
+    /* قائمة نتائج البحث السريع */
+    .autocomplete-dropdown {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 12px;
+        box-shadow: 0 12px 35px rgba(0,0,0,0.15);
+        max-height: 310px;
+        overflow-y: auto;
+        z-index: 60;
+    }
+
+    .dark .autocomplete-dropdown {
+        background: #1e293b;
+        border-color: #475569;
+    }
+
+    .autocomplete-item {
+        padding: 0.8rem 1.2rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        cursor: pointer;
+        border-bottom: 1px solid #f1f5f9;
+        transition: all 0.15s;
+    }
+
+    .dark .autocomplete-item {
+        border-color: #334155;
+    }
+
+    .autocomplete-item:hover {
+        background: #f0f9ff;
+    }
+
+    .dark .autocomplete-item:hover {
+        background: #0f172a;
+    }
+
+    .autocomplete-item.ineligible-item {
+        background: #fff1f2;
+        border-right: 4px solid #e11d48;
+    }
+
+    .dark .autocomplete-item.ineligible-item {
+        background: rgba(225, 29, 72, 0.1);
+        border-right-color: #f43f5e;
+    }
+
+    .autocomplete-item.ineligible-item:hover {
+        background: #ffe4e6;
+    }
+
+    .dark .autocomplete-item.ineligible-item:hover {
+        background: rgba(225, 29, 72, 0.2);
+    }
+
+    /* بطاقة الحالة الأولية الإرشادية */
+    .empty-state-guide {
+        background: #ffffff;
+        border: 2px dashed #cbd5e1;
+        border-radius: 18px;
+        padding: 4rem 1.5rem;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .dark .empty-state-guide {
+        background: #1e293b/50;
+        border-color: #475569;
+    }
+
+    /* ─── بطاقة ملف الطالبة المختارة (Light Mode & Dark Mode المتناسق) ─── */
+    .student-profile-panel {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 2rem;
+        color: #0f172a;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.2s;
+    }
+
+    .dark .student-profile-panel {
+        background: #1e293b;
+        border-color: #334155;
+        color: #f8fafc;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+
+    .student-profile-panel::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, #0284c7, #38bdf8, #818cf8);
+    }
+
+    .student-avatar-box {
+        width: 48px;
+        height: 48px;
+        border-radius: 14px;
+        background: #f0f9ff;
+        color: #0284c7;
+        border: 1.5px solid #bae6fd;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .dark .student-avatar-box {
+        background: rgba(2, 132, 199, 0.2);
+        color: #38bdf8;
+        border-color: rgba(56, 189, 248, 0.3);
+    }
+
+    .student-info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 1.25rem;
+    }
+
+    .dark .student-info-grid {
+        background: rgba(15, 23, 42, 0.6);
+        border-color: rgba(255, 255, 255, 0.08);
+    }
+
+    .info-chip-box {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .info-chip-label {
+        font-size: 0.75rem;
+        font-weight: 700;
+        color: #64748b;
+    }
+
+    .dark .info-chip-label {
+        color: #94a3b8;
+    }
+
+    .info-chip-val {
+        font-size: 0.95rem;
+        font-weight: 800;
+        color: #0f172a;
+    }
+
+    .dark .info-chip-val {
+        color: #f8fafc;
+    }
+
+    .info-chip-val.highlight {
+        color: #0284c7;
+        font-family: monospace;
+        font-size: 1.1rem;
+    }
+
+    .dark .info-chip-val.highlight {
+        color: #38bdf8;
+    }
+
+    /* شارات الحالة */
+    .status-badge-live {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 9999px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        background: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .dark .status-badge-live {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    /* زر الطباعة المباشر */
+    .btn-print-hero {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 0.85rem 2rem;
+        font-size: 1.05rem;
+        font-weight: 800;
+        color: #ffffff;
+        background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+        border: none;
+        border-radius: 12px;
+        cursor: pointer;
+        box-shadow: 0 4px 15px rgba(2, 132, 199, 0.35);
+        transition: all 0.2s;
+    }
+
+    .btn-print-hero:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(2, 132, 199, 0.5);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main enrollment-page-container" dir="rtl">
+
+    <!-- شريط ترويسة الصفحة -->
+    <div class="page-header-row" style="margin-bottom: 1.25rem;">
+        <div>
+            <h1 class="page-header-title">شهادة تعريف طالبة</h1>
+            <p class="page-header-subtitle">استدعاء بيانات الطالبة وإصدار شهادة التعريف الرسمية المعتمدة مع رمز التحقق الإلكتروني</p>
+        </div>
+    </div>
+
+    <!-- بطاقة البحث السريع بالاسم أو رقم القيد -->
+    <div class="search-card-system">
+        <label for="enrollmentSearchInput" class="block text-xs font-black text-slate-700 dark:text-sky-400 mb-2">
+            🔍 البحث عن طالبة لإصدار شهادة التعريف (أدخلي الاسم رباعياً أو رقم القيد أو الرقم الوطني):
+        </label>
+        <div class="search-input-wrap">
+            <input type="text" id="enrollmentSearchInput" class="search-input-field"
+                   placeholder="اكتبي اسم الطالبة أو رقم القيد هنا للاستدعاء الفوري..."
+                   value="{% if selected_student %}{{ selected_student.get_full_name }} ({{ selected_student.student_id }}){% endif %}"
+                   autocomplete="off" oninput="handleEnrollmentSearch(this.value)">
+            <span class="material-symbols-outlined search-icon-badge">search</span>
+            <div id="enrollmentAutocompleteList" class="autocomplete-dropdown hidden"></div>
+        </div>
+    </div>
+
+    <!-- الحالة 1: إرشاد المستخدم للبحث (تظهر فقط عند عدم تحديد طالبة) -->
+    <div id="certEmptyState" class="empty-state-guide" {% if selected_student %}style="display: none;"{% endif %}>
+        <div class="w-16 h-16 bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 rounded-full flex items-center justify-center mx-auto mb-3">
+            <span class="material-symbols-outlined" style="font-size: 34px;">person_search</span>
+        </div>
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 mb-1">يرجى البحث عن الطالبة أولاً</h3>
+        <p class="text-sm font-bold text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+            أدخلي اسم الطالبة أو رقم قيدها في حقل البحث أعلاه، ثم اختاري الطالبة لعرض بياناتها وطباعة شهادة التعريف الرسمية.
+        </p>
+    </div>
+
+    <!-- الحالة 2: بطاقة تفاصيل الطالبة بعد اختيارها (Light & Dark UI منسق) -->
+    <div id="studentProfilePanel" class="student-profile-panel" {% if not selected_student %}style="display: none;"{% endif %}>
+        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-700/60 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="student-avatar-box">
+                    <span class="material-symbols-outlined" style="font-size: 28px;">badge</span>
+                </div>
+                <div>
+                    <h2 class="text-xl font-black text-slate-900 dark:text-white" id="uiStudentName">
+                        {{ selected_student.get_full_name|default:"—" }}
+                    </h2>
+                    <div class="flex items-center gap-2 mt-1">
+                        <span class="status-badge-live">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span id="uiStudentStatus">{{ selected_student.student_status.name|default:"مستمرة بالدراسة" }}</span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- زر الطباعة المباشر -->
+            <button type="button" onclick="printEnrollmentCertificate()" class="btn-print-hero">
+                <span class="material-symbols-outlined" style="font-size: 22px;">print</span>
+                <span>طباعة شهادة التعريف الرسمية</span>
+            </button>
+        </div>
+
+        <!-- شبكة البيانات التفصيلية للطالبة في الواجهة -->
+        <div class="student-info-grid">
+            <div class="info-chip-box">
+                <span class="info-chip-label">رقم القيد الأكاديمي</span>
+                <span class="info-chip-val highlight" id="uiStudentId">{{ selected_student.student_id|default:"—" }}</span>
+            </div>
+            <div class="info-chip-box">
+                <span class="info-chip-label">الرقم الوطني / جواز السفر</span>
+                <span class="info-chip-val" id="uiStudentNationalId">{% if selected_student %}{% if selected_student.national_id %}{{ selected_student.national_id }}{% elif selected_student.passport_number %}{{ selected_student.passport_number }}{% else %}—{% endif %}{% else %}—{% endif %}</span>
+            </div>
+            <div class="info-chip-box">
+                <span class="info-chip-label">القسم الأكاديمي / التخصص</span>
+                <span class="info-chip-val" id="uiStudentDept">{{ selected_student.department.name|default:"—" }}</span>
+            </div>
+            <div class="info-chip-box">
+                <span class="info-chip-label">المستوى الدراسي الحالي</span>
+                <span class="info-chip-val" id="uiStudentLevel">{{ selected_student.level.name|default:"—" }}</span>
+            </div>
+            <div class="info-chip-box">
+                <span class="info-chip-label">الجنسية</span>
+                <span class="info-chip-val" id="uiStudentNationality">{{ selected_student.nationality.name|default:"ليبية" }}</span>
+            </div>
+            <div class="info-chip-box">
+                <span class="info-chip-label">الفصل الدراسي النشط</span>
+                <span class="info-chip-val" id="uiSemester">{{ active_semester|default:"الفصل الحالي" }}</span>
+            </div>
+        </div>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<!-- تمرير بيانات السيرفر بأمان لتجنب أخطاء محرر JS -->
+<script id="certServerConfig" type="application/json">
+{
+    "hasStudent": {% if selected_student %}true{% else %}false{% endif %},
+    "student": {
+        "name": "{{ selected_student.get_full_name|default:''|escapejs }}",
+        "student_id": "{{ selected_student.student_id|default:''|escapejs }}",
+        "national_id": "{% if selected_student.national_id %}{{ selected_student.national_id|escapejs }}{% elif selected_student.passport_number %}{{ selected_student.passport_number|escapejs }}{% else %}—{% endif %}",
+        "nationality": "{{ selected_student.nationality.name|default:'ليبية'|escapejs }}",
+        "department": "{{ selected_student.department.name|default:'—'|escapejs }}",
+        "level": "{{ selected_student.level.name|default:'—'|escapejs }}",
+        "status": "{{ selected_student.student_status.name|default:'مستمرة بالدراسة'|escapejs }}",
+        "qr_verification_url": "{{ qr_verification_url|default:''|escapejs }}"
+    },
+    "ineligibleError": "{{ ineligible_error|default:''|escapejs }}",
+    "registrarName": "{{ registrar_name|default:'المسجل العام'|escapejs }}",
+    "registrarPosition": "{{ registrar_position|default:'المسجل العام بالكلية'|escapejs }}",
+    "activeSemester": "{{ active_semester|default:'الفصل الحالي'|escapejs }}",
+    "semesterYear": "{{ active_semester.year|default:''|escapejs }}"
+}
+</script>
+
+<script>
+    const serverConfigEl = document.getElementById('certServerConfig');
+    const serverConfig = serverConfigEl ? JSON.parse(serverConfigEl.textContent) : {};
+
+    let searchTimer = null;
+    let currentSelectedStudent = (serverConfig.hasStudent && serverConfig.student && serverConfig.student.student_id) ? serverConfig.student : null;
+
+    const dynamicRegistrarName = serverConfig.registrarName || "المسجل العام";
+    const dynamicRegistrarPosition = serverConfig.registrarPosition || "المسجل العام بالكلية";
+
+    // 1. توليد رمز QR محلياً وفورياً بصيغة Base64 data URL لتسريع الطباعة في 0ms
+    function generateLocalQrDataUrl(text) {
+        if (!text) return '';
+        try {
+            if (typeof QRCode !== 'undefined') {
+                const tempDiv = document.createElement('div');
+                new QRCode(tempDiv, {
+                    text: text,
+                    width: 80,
+                    height: 80,
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+                const canvas = tempDiv.querySelector('canvas');
+                if (canvas) return canvas.toDataURL('image/png');
+                const img = tempDiv.querySelector('img');
+                if (img) return img.src;
+            }
+        } catch (e) {
+            console.warn('Local QR generation fallback:', e);
+        }
+        return `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(text)}`;
+    }
+
+    // 2. إظهار رسالة تنبيه عدم الأهلية وإيقاف العملية
+    function showIneligibleAlert(msg) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'تنبيه أكاديمي',
+                text: msg,
+                confirmButtonText: 'حسناً، فهمت',
+                confirmButtonColor: '#0284c7',
+                background: document.documentElement.classList.contains('dark') ? '#1e293b' : '#ffffff',
+                color: document.documentElement.classList.contains('dark') ? '#f8fafc' : '#0f172a',
+            });
+        } else {
+            alert(msg);
+        }
+    }
+
+    if (serverConfig.ineligibleError) {
+        document.addEventListener('DOMContentLoaded', () => {
+            showIneligibleAlert(serverConfig.ineligibleError);
+        });
+    }
+
+    // 3. البحث الحي عن الطالبات مع فلترة الأهلية
+    function handleEnrollmentSearch(query) {
+        clearTimeout(searchTimer);
+        const dropdown = document.getElementById('enrollmentAutocompleteList');
+
+        if (!query || query.trim().length < 1) {
+            dropdown.classList.add('hidden');
+            dropdown.innerHTML = '';
+            return;
+        }
+
+        searchTimer = setTimeout(() => {
+            fetch(`/renewal/api/search-enrollment-student/?q=${encodeURIComponent(query.trim())}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.students && data.students.length > 0) {
+                        dropdown.innerHTML = '';
+                        data.students.forEach(st => {
+                            const item = document.createElement('div');
+                            if (st.is_eligible) {
+                                item.className = 'autocomplete-item';
+                                item.innerHTML = `
+                                    <div>
+                                        <div style="font-weight: 800; font-size: 0.95rem; color: #0284c7;">${escapeHtml(st.name)}</div>
+                                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                                            قيد: <strong style="color:#0f172a; font-family:monospace;">${escapeHtml(st.student_id)}</strong> | ${escapeHtml(st.department)} | ${escapeHtml(st.level)}
+                                        </div>
+                                    </div>
+                                    <span class="material-symbols-outlined text-slate-400" style="font-size: 20px;">arrow_forward</span>
+                                `;
+                                item.onclick = () => selectEnrollmentStudent(st);
+                            } else {
+                                item.className = 'autocomplete-item ineligible-item';
+                                item.innerHTML = `
+                                    <div>
+                                        <div style="font-weight: 800; font-size: 0.95rem; color: #e11d48;">${escapeHtml(st.name)}</div>
+                                        <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                                            قيد: <strong style="font-family:monospace;">${escapeHtml(st.student_id)}</strong> |
+                                            <span style="color: #e11d48; font-weight: 800;">${escapeHtml(st.status)}</span>
+                                        </div>
+                                    </div>
+                                    <span class="inline-flex items-center gap-1 text-xs font-black text-rose-600 dark:text-rose-400 bg-rose-100 dark:bg-rose-950/60 px-2.5 py-1 rounded-lg">
+                                        غير متاح للإصدار 🚫
+                                    </span>
+                                `;
+                                item.onclick = () => {
+                                    dropdown.classList.add('hidden');
+                                    showIneligibleAlert(st.block_message || 'لا يمكن إصدار شهادة تعريف لهذه الطالبة.');
+                                };
+                            }
+                            dropdown.appendChild(item);
+                        });
+                        dropdown.classList.remove('hidden');
+                    } else {
+                        dropdown.innerHTML = '<div style="padding: 0.85rem; text-align: center; color: #94a3b8; font-size: 0.85rem; font-weight:700;">لم يتم العثور على أي طالبة مطابقة</div>';
+                        dropdown.classList.remove('hidden');
+                    }
+                })
+                .catch(err => console.error('Search error:', err));
+        }, 220);
+    }
+
+    // 4. اختيار طالبة مؤهلة وتحديث الواجهة
+    function selectEnrollmentStudent(st) {
+        if (!st.is_eligible) {
+            showIneligibleAlert(st.block_message || 'لا يمكن إصدار شهادة تعريف لهذه الطالبة.');
+            return;
+        }
+
+        currentSelectedStudent = st;
+
+        document.getElementById('enrollmentAutocompleteList').classList.add('hidden');
+        document.getElementById('enrollmentSearchInput').value = `${st.name} (${st.student_id})`;
+
+        document.getElementById('uiStudentName').textContent = st.name || '—';
+        document.getElementById('uiStudentId').textContent = st.student_id || '—';
+        document.getElementById('uiStudentNationalId').textContent = st.national_id || '—';
+        document.getElementById('uiStudentDept').textContent = st.department || '—';
+        document.getElementById('uiStudentLevel').textContent = st.level || '—';
+        document.getElementById('uiStudentNationality').textContent = st.nationality || 'ليبية';
+        document.getElementById('uiStudentStatus').textContent = st.status || 'مستمرة بالدراسة';
+
+        document.getElementById('certEmptyState').style.display = 'none';
+        document.getElementById('studentProfilePanel').style.display = 'block';
+
+        const newUrl = new URL(window.location);
+        newUrl.searchParams.set('student_id', st.student_id);
+        window.history.replaceState({}, '', newUrl);
+    }
+
+    // إغلاق القائمة عند النقر خارجها
+    document.addEventListener('click', (e) => {
+        const wrap = document.querySelector('.search-input-wrap');
+        const dropdown = document.getElementById('enrollmentAutocompleteList');
+        if (wrap && !wrap.contains(e.target) && dropdown) {
+            dropdown.classList.add('hidden');
+        }
+    });
+
+    // 5. نظام الطباعة المنفصل الفوري (0ms Instant Print via isolated iframe)
+    function printEnrollmentCertificate() {
+        if (!currentSelectedStudent) {
+            alert('الرجاء اختيار الطالبة أولاً قبل إجراء الطباعة.');
+            return;
+        }
+
+        const student = currentSelectedStudent;
+        const activeSemester = serverConfig.activeSemester || 'الفصل الحالي';
+        const semesterYear = serverConfig.semesterYear || new Date().getFullYear();
+        const logoUrl = '/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';
+
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const autoRefNumber = `ك.ط.ع.ت / ش.ت / ${student.student_id || '----'} / ${now.getFullYear()}`;
+
+        const verifyUrl = student.qr_verification_url || `${window.location.origin}/student/verify/${encodeURIComponent(student.student_id)}/`;
+        const qrImgSrc = generateLocalQrDataUrl(verifyUrl);
+
+        // إنشاء قالب الـ HTML المنفصل تماماً بصيغة نصية عربية متصلة للمؤنث وخلفية بيضاء نقية
+        const printHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>شهادة تعريف طالبة - ${escapeHtml(student.name)}</title>
+<style>
+    @page {
+        size: A4 portrait;
+        margin: 8mm;
+    }
+
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        background: transparent !important;
+        background-color: transparent !important;
+        color: #000000 !important;
+        text-shadow: none !important;
+        box-shadow: none !important;
+    }
+
+    html, body {
+        font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+        font-size: 13px;
+        direction: rtl;
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .cert-frame {
+        background: #ffffff !important;
+        background-color: #ffffff !important;
+        border: 2.5px solid #000000 !important;
+        outline: 1.5px solid #000000 !important;
+        outline-offset: -6px;
+        padding: 22px 28px;
+        box-sizing: border-box;
+        width: 100%;
+        min-height: 278mm;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    /* ─── الترويسة ─── */
+    .cert-header-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        direction: rtl;
+        margin-bottom: 6px;
+    }
+
+    .cert-header-ar {
+        flex: 1;
+        text-align: center;
+        font-size: 11.5px;
+        line-height: 1.5;
+        font-weight: 800;
+        color: #000;
+    }
+
+    .cert-header-ar .main-gov {
+        font-size: 14px;
+        font-weight: 900;
+        margin-bottom: 2px;
+    }
+
+    .cert-header-logo-box {
+        flex: 0 0 100px;
+        text-align: center;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 0 10px;
+    }
+
+    .cert-header-logo-box img {
+        max-height: 80px;
+        max-width: 80px;
+        width: auto;
+        object-fit: contain;
+        display: block;
+        margin: 0 auto;
+        background: transparent !important;
+    }
+
+    .cert-header-en {
+        flex: 1;
+        text-align: center;
+        font-size: 10px;
+        line-height: 1.4;
+        font-weight: 700;
+        color: #000;
+        direction: ltr;
+        font-family: Arial, Tahoma, sans-serif;
+    }
+
+    .cert-header-en .main-gov-en {
+        font-size: 11.5px;
+        font-weight: bold;
+        margin-bottom: 1px;
+    }
+
+    .cert-line-divider {
+        border-top: 1.5px solid #000000 !important;
+        margin: 8px 0 16px 0;
+        width: 100%;
+        display: block;
+    }
+
+    /* ─── عنوان الشهادة ─── */
+    .cert-title-container {
+        text-align: center;
+        margin: 10px 0 18px 0;
+    }
+
+    .cert-doc-title {
+        font-size: 23px;
+        font-weight: 900;
+        color: #000;
+        letter-spacing: 1.5px;
+        margin-bottom: 4px;
+        text-decoration: underline;
+        text-underline-offset: 7px;
+    }
+
+    /* ─── الرقم الإشاري والتاريخ ─── */
+    .cert-meta-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 12.5px;
+        font-weight: 800;
+        color: #000;
+        margin-bottom: 25px;
+        padding: 0 6px;
+    }
+
+    /* ─── النص الإقراري الفصيح المتصل (بصيغة المؤنث حصرياً) ─── */
+    .cert-body-statement {
+        font-size: 15px;
+        line-height: 2.5;
+        font-weight: 700;
+        color: #000;
+        text-align: justify;
+        margin-bottom: 24px;
+        padding: 4px 6px;
+    }
+
+    .cert-body-statement strong {
+        font-weight: 900;
+        color: #000;
+    }
+
+    .cert-val-highlight {
+        font-weight: 900;
+        padding: 0 4px;
+    }
+
+    .cert-font-mono {
+        font-family: monospace, Tahoma, Arial;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+    }
+
+    /* ─── العبارة الختامية ─── */
+    .cert-closing-clause {
+        font-size: 13.5px;
+        line-height: 2.1;
+        font-weight: 700;
+        color: #000;
+        text-align: justify;
+        margin-bottom: 25px;
+        padding: 0 6px;
+    }
+
+    /* ─── التذييل والتواقيع ─── */
+    .cert-footer-section {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-top: auto;
+        padding-top: 18px;
+        border-top: 1.5px dashed #000000 !important;
+        page-break-inside: avoid;
+        direction: rtl;
+        width: 100%;
+    }
+
+    .cert-footer-col.right {
+        text-align: right;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: flex-end;
+        flex: 1;
+    }
+
+    .cert-footer-col.left {
+        text-align: left;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        flex: 1;
+    }
+
+    .sig-post {
+        font-size: 13.5px;
+        font-weight: 900;
+        color: #000;
+        margin-bottom: 3px;
+    }
+
+    .sig-person {
+        font-size: 14.5px;
+        font-weight: 900;
+        color: #000;
+        margin-bottom: 16px;
+    }
+
+    .sig-dotted-line {
+        font-size: 12px;
+        font-weight: 800;
+        color: #000;
+        letter-spacing: 0.5px;
+    }
+
+    .qr-container-box {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+    }
+
+    .qr-img-tag {
+        width: 80px;
+        height: 80px;
+        object-fit: contain;
+        border: 1px solid #000000 !important;
+        border-radius: 4px;
+        padding: 2px;
+        background: #ffffff !important;
+        display: block;
+        margin: 0 auto 4px auto;
+    }
+
+    .qr-text-label {
+        font-size: 9px;
+        font-weight: 900;
+        color: #000;
+    }
+</style>
+</head>
+<body>
+<div class="cert-frame">
+    <div>
+        <!-- 1. الترويسة الرسمية للكلية -->
+        <div class="cert-header-section">
+            <div class="cert-header-ar">
+                <div class="main-gov">دولة ليبيــــا</div>
+                <div>حكومة الوحدة الوطنية</div>
+                <div>وزارة التعليم التقني والفني</div>
+                <div style="font-size: 13px; font-weight: 900; margin-top: 2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <div class="cert-header-logo-box">
+                <img src="${logoUrl}" alt="شعار الكلية" onerror="this.onerror=null;this.style.display='none';">
+            </div>
+
+            <div class="cert-header-en">
+                <div class="main-gov-en">State of Libya</div>
+                <div>Government of National Unity</div>
+                <div>Ministry of Technical and Vocational Education</div>
+                <div style="font-size: 10px; font-weight: bold; margin-top: 2px; letter-spacing: 0.3px;">TRIPOLI COLLEGE OF SCIENCE & TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="cert-line-divider"></div>
+
+        <!-- 2. عنوان الشهادة -->
+        <div class="cert-title-container">
+            <div class="cert-doc-title">شهــــادة تعريــــف طالــــب</div>
+        </div>
+
+        <!-- 3. الرقم الإشاري التلقائي والتاريخ -->
+        <div class="cert-meta-container">
+            <div><strong>الرقم الإشاري:</strong> <span style="font-family: monospace; font-size: 13px; font-weight: 900;">${autoRefNumber}</span></div>
+            <div><strong>التاريخ:</strong> ${dateStr} م</div>
+        </div>
+
+        <!-- 4. النص العربي المتصل بصيغة المؤنث حصرياً وبدون ذكر رقم الجواز/الوطني -->
+        <div class="cert-body-statement">
+            تشهد إدارة كلية طرابلس للعلوم والتقنية بأن الطالبة:
+            <span class="cert-val-highlight">« ${escapeHtml(student.name || '—')} »</span>،
+            حاملة الجنسية (<span class="cert-val-highlight">${escapeHtml(student.nationality || 'ليبية')}</span>)،
+            والمقيدة بالكلية برقم القيد الأكاديمي (<span class="cert-val-highlight cert-font-mono">${escapeHtml(student.student_id || '—')}</span>)،
+            في قسم: <span class="cert-val-highlight">« ${escapeHtml(student.department || '—')} »</span>،
+            بالمستوى الدراسي: (<span class="cert-val-highlight">${escapeHtml(student.level || '—')}</span>)،
+            <strong>هي طالبة مسجلة ومستمرة في الدراسة لدينا بشكل منتظم</strong> للفصل الدراسي
+            <strong>(${escapeHtml(activeSemester)})</strong> للعام الجامعي <strong>(${escapeHtml(semesterYear)})</strong>،
+            وحالتها الأكاديمية المسجلة بالمنظومة: (<span class="cert-val-highlight">${escapeHtml(student.status || 'مستمرة بالدراسة')}</span>).
+        </div>
+
+        <!-- 5. العبارة الختامية للغرض بصيغة المؤنث -->
+        <div class="cert-closing-clause">
+            وقد أُعطيت لها هذه الشهادة بناءً على طلبها لتقديمها إلى <strong>(من يهمه الأمر)</strong> دون أدنى مسؤولية أو التزام على الكلية تجاه حقوق الغير.
+        </div>
+    </div>
+
+    <!-- 6. التوقيع المعتمد ديناميكياً من قاعدة البيانات والـ QR -->
+    <div class="cert-footer-section">
+        <div class="cert-footer-col right">
+            <div class="sig-post">${escapeHtml(dynamicRegistrarPosition)}</div>
+            <div class="sig-person">${escapeHtml(dynamicRegistrarName)}</div>
+            <div class="sig-dotted-line">التوقيع والختم: ................................</div>
+        </div>
+
+        <div class="cert-footer-col left">
+            <div class="qr-container-box">
+                <img class="qr-img-tag" src="${qrImgSrc}" alt="QR Code">
+                <span class="qr-text-label">رمز التحقق الإلكتروني من صحة الشهادة</span>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>`;
+
+        // إنشاء الـ iframe المعزول للطباعة الفورية في أجزاء من الثانية
+        let iframe = document.getElementById('enrollmentPrintIframe');
+        if (!iframe) {
+            iframe = document.createElement('iframe');
+            iframe.id = 'enrollmentPrintIframe';
+            iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;opacity:0;';
+            document.body.appendChild(iframe);
+        }
+
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        doc.open();
+        doc.write(printHtml);
+        doc.close();
+
+        // إطلاق أمر الطباعة فوراً دون أي انتظار
+        setTimeout(() => {
+            try {
+                iframe.contentWindow.focus();
+                iframe.contentWindow.print();
+            } catch (e) {
+                console.error('Print launch error:', e);
+            }
+        }, 60);
+    }
+
+    function escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

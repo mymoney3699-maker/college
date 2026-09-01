@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}كشف حضور الطلاب | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'faculty/css/attendance_sheet.css' %}?v=2.0.3">
+<style>
+    /* ===================================================
+       إخفاء حاوية التقرير المطبوع في الشاشة العادية
+       =================================================== */
+    #reportPrintContainer {
+        display: none !important;
+    }
+
+    /* ===================================================
+       أنماط الطباعة الرسمية الموحدة - A4 Portrait
+       =================================================== */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        body>*:not(#reportPrintContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #reportPrintContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #reportPrintContainer * {
+            visibility: visible !important;
+        }
+
+        .rpt-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .rpt-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .rpt-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .rpt-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        .rpt-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .rpt-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        .rpt-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.9 !important;
+            color: #000 !important;
+        }
+
+        .rpt-info-right {
+            text-align: right !important;
+        }
+
+        .rpt-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .rpt-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-table-container {
+            margin-top: 8px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .rpt-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .rpt-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .rpt-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .rpt-empty-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        .rpt-signature-box {
+            margin-top: 35px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .rpt-signature-box .off-name {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1em !important;
+        }
+
+        .rpt-signature-box .off-pos {
+            display: block !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #000000 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .rpt-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- ===== واجهة العرض التفاعلية للمستخدم ===== -->
+<div class="صفحة-الكشف no-print">
+
+    <!-- رأس الصفحة -->
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-header-title">كشف حضور الطلاب (نموذج طباعة ورقي)</h1>
+            <p class="page-header-subtitle">توليد نموذج ورقي فارغ لكشف الحضور والغياب جاهز للطباعة والتعبئة اليدوية</p>
+        </div>
+    </div>
+
+    <!-- خيارات الاستعلام والتصفية -->
+    <div class="group-box no-print">
+        <span class="group-title">خيارات الاستعلام وتوليد النموذج</span>
+
+        <div class="filters-grid-5col">
+            <!-- القسم العلمي -->
+            <div class="filter-group">
+                <label class="field-label">القسم العلمي</label>
+                <select id="حقل-القسم" onchange="عند_تغيير_الإدخال()"
+                    style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                    <option value="الكل">كافة الأقسام</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.name }}" data-id="{{ dept.id }}">{{ dept.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- المجموعة الدراسية -->
+            <div class="filter-group">
+                <label class="field-label">المجموعة الدراسية</label>
+                <select id="حقل-المجموعة" onchange="عند_تغيير_الإدخال()"
+                    style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                    <option value="المجموعة الأولى">المجموعة الأولى</option>
+                    {% for grp in groups %}
+                    {% if grp.name != "المجموعة الأولى" %}
+                    <option value="{{ grp.name }}" data-id="{{ grp.id }}">{{ grp.name }}</option>
+                    {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- المادة الدراسية -->
+            <div class="filter-group">
+                <label class="field-label">المادة الدراسية</label>
+                <select id="حقل-المادة" onchange="عند_تغيير_الإدخال()"
+                    style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                    <option value="عامة">اختر المادة الدراسية</option>
+                    {% for crs in courses %}
+                    <option value="{{ crs.name }}" data-id="{{ crs.id }}">{{ crs.code }} - {{ crs.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- السنة الدراسية -->
+            <div class="filter-group">
+                <label class="field-label">السنة الدراسية</label>
+                <input type="text" id="حقل-السنة" placeholder="مثال: 2026" value="2026" oninput="عند_تغيير_الإدخال()"
+                    style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;" />
+                <input type="hidden" id="حقل-الفصل" value="ربيع" />
+            </div>
+
+            <!-- المستوى الدراسي -->
+            <div class="filter-group">
+                <label class="field-label">المستوى الدراسي</label>
+                <select id="اختيار-المستوى" onchange="عند_تغيير_الإدخال()"
+                    style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                    {% for lvl in levels %}
+                    <option value="{{ lvl.name }}">{{ lvl.name }}</option>
+                    {% empty %}
+                    <option value="الأول">المستوى الأول</option>
+                    <option value="الثاني">المستوى الثاني</option>
+                    <option value="الثالث">المستوى الثالث</option>
+                    <option value="الرابع">المستوى الرابع</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- أزرار الإجراءات -->
+    <div class="buttons-row mt-4 no-print" style="display: flex; gap: 0.75rem; align-items: center;">
+        <button id="زر-عرض-الكشف" onclick="توليد_الكشف()" class="btn-action btn-print">
+            <span class="material-symbols-outlined">visibility</span>
+            عرض النموذج
+        </button>
+        <button onclick="طباعة_الكشف_المباشر()" class="btn-action btn-print">
+            <span class="material-symbols-outlined">print</span>
+            طباعة النموذج (A4 PDF)
+        </button>
+    </div>
+
+    <!-- بطاقة المعاينة -->
+    <div id="بطاقة-الجدول" class="group-box mt-6 hidden" style="display: none;">
+        <span class="group-title">معاينة الكشف الورقي الفارغ</span>
+
+        <div class="search-actions-bar no-print"
+            style="margin-top: 0 !important; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; width: 100%;">
+            <div class="search-input-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                <span class="search-label" style="font-weight: 700; font-size: 0.85rem; color: #475569;">البحث:</span>
+                <input type="text" id="حقل-البحث" placeholder="ابحث باسم الطالب أو رقم القيد..."
+                    oninput="تصفية_الطلاب_بالاسم()"
+                    style="padding: 0.4rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; width: 280px; font-size: 0.85rem; height: 36px;">
+            </div>
+            <span id="عداد-الطلاب" class="text-sm font-bold text-slate-600 dark:text-slate-400">العدد: 0 طالب</span>
+        </div>
+
+        <div class="table-responsive">
+            <table class="data-table attendance-table" id="جدول-الحضور">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 45px;">ت</th>
+                        <th rowspan="2" style="width: 110px;">رقم القيد</th>
+                        <th rowspan="2" class="border-separator" style="text-align: right; padding-right: 0.75rem;">اسم
+                            الطالب</th>
+                        <th colspan="4" style="text-align: center;">الشهر الأول</th>
+                        <th colspan="4" style="text-align: center;">الشهر الثاني</th>
+                        <th colspan="4" style="text-align: center;">الشهر الثالث</th>
+                        <th colspan="2" style="text-align: center;">الشهر الرابع</th>
+                    </tr>
+                    <tr>
+                        {% for i in "12345678901234"|make_list %}
+                        <th class="day-column">{{ forloop.counter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody id="جسم-الجدول">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ===== واجهة الطباعة الرسمية الموحدة (A4 Portrait) ===== -->
+<div id="reportPrintContainer">
+    <div class="rpt-page-frame">
+
+        <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line"
+            style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="rpt-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">
+            كشف حضور وغياب الطلاب</div>
+
+        <!-- ② معلومات التقرير الفلاتر -->
+        <div class="rpt-info-grid">
+            <div class="rpt-info-right">
+                <div><span class="rpt-lbl">القسم العلمي:</span> <span id="rptPrintDept" class="rpt-val">كافة
+                        الأقسام</span></div>
+                <div><span class="rpt-lbl">المادة الدراسية:</span> <span id="rptPrintCourse" class="rpt-val">عامة</span>
+                </div>
+                <div><span class="rpt-lbl">المجموعة الدراسية:</span> <span id="rptPrintGroup" class="rpt-val">كافة
+                        المجموعات</span></div>
+            </div>
+            <div class="rpt-info-left">
+                <div><span id="rptPrintDateVal" class="rpt-val"></span></div>
+                <div><span class="rpt-lbl">المستوى الدراسي:</span> <span id="rptPrintLevel" class="rpt-val">كافة
+                        المستويات</span></div>
+            </div>
+        </div>
+
+        <!-- ③ جدول الحضور للطباعة (14 عموداً) -->
+        <div class="rpt-table-container">
+            <table class="rpt-table">
+                <thead>
+                    <tr>
+                        <th rowspan="2" style="width: 4%;">م</th>
+                        <th rowspan="2" style="width: 14%;">رقم القيد</th>
+                        <th rowspan="2" style="width: 32%; text-align: right; padding-right: 6px;">اسم الطالب الكامل
+                        </th>
+                        <th colspan="4" style="text-align: center;">الشهر الأول</th>
+                        <th colspan="4" style="text-align: center;">الشهر الثاني</th>
+                        <th colspan="4" style="text-align: center;">الشهر الثالث</th>
+                        <th colspan="2" style="text-align: center;">الشهر الرابع</th>
+                    </tr>
+                    <tr>
+                        {% for i in "12345678901234"|make_list %}
+                        <th style="width: 3.5%;">{{ forloop.counter }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody id="جسم-طباعة">
+                    <tr>
+                        <td colspan="17" class="rpt-empty-cell">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ صندوق التوقيع جهة اليسار أسفل التقرير -->
+        <div class="rpt-signature-box" data-official="exams_coordinator">
+            <span class="off-name"
+                style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:3px; min-height:1em;"></span>
+            <span class="off-pos" style="display:block; font-size:11.5px; font-weight:600; margin-bottom:8px;">منسق
+                الدراسة والامتحانات</span>
+            <span class="off-sig-line" style="display:block; font-size:11.5px; letter-spacing:1px;">التوقيع والختم:
+                ............................................</span>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script id="attendance-data" type="application/json">
+    {
+        "students": {{ students_json|safe }},
+        "students_by_group": {{ students_by_group_json|safe }},
+        "departments": {{ departments_json|safe }},
+        "groups": {{ groups_json|safe }},
+        "courses": {{ courses_json|safe }},
+        "semesters": {{ semesters_json|safe }}
+    }
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'faculty/js/attendance_sheet.js' %}?v=2.1.0"></script>
+{% endblock %}

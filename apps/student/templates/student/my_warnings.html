@@ -1,0 +1,21 @@
+{% extends 'student_base.html' %}
+{% block title %}الإنذارات الأكاديمية - بوابة الطالب{% endblock %}
+{% block page_title %}الإنذارات الأكاديمية{% endblock %}
+{% block page_subtitle %}متابعة الوضع الأكاديمي والإنذارات المسجلة{% endblock %}
+{% block content %}
+<div class="bg-white rounded-lg p-6 shadow-md text-right">
+    <h3 class="text-xl font-bold mb-4 text-red-600">تنبيهات وتوجيهات أكاديمية</h3>
+    {% if warnings %}
+        <div class="space-y-4">
+            {% for warning in warnings %}
+                <div class="border-r-4 border-red-500 bg-red-50 p-4 rounded">
+                    <p class="font-semibold text-red-800">{{ warning.message }}</p>
+                    <span class="text-sm text-gray-500">مستوى الخطورة: {{ warning.severity }}</span>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-gray-600">✅ لا توجد أي إنذارات أكاديمية مسجلة بحقك حالياً. واصل تميزك!</p>
+    {% endif %}
+</div>
+{% endblock %}

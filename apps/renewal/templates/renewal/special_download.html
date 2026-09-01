@@ -1,0 +1,992 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تنزيل مواد (حالة خاصة) - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main download-materials-page">
+    <div class="download-materials-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title"> تنزيل مواد (حالة خاصة)</h1>
+                <p class="page-header-subtitle">إدارة تنزيل المواد للطلاب مع التحقق من الحالة الأكاديمية</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_courseregistration' and not request.user|has_exec_perm:'renewal.change_courseregistration' and not request.user|has_exec_perm:'add_courseregistration' and not request.user|has_exec_perm:'change_courseregistration' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_download_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+            {% else %}
+            <div id="jobInactiveBanner" class="job-inactive-banner"
+                style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+                {% endif %}
+                <span class="material-symbols-outlined"
+                    style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+                <div style="flex: 1;">
+                    <span id="jobInactiveBannerText">{% if not is_download_job_open %}{{ download_job_message }}{% endif %}</span>
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- صندوق البحث الذكي عن طالب -->
+            <!-- ============================================================ -->
+            <div class="group-box">
+                <span class="group-title">البحث عن طالب لتنزيل المواد</span>
+
+                <div style="display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: flex-end;">
+                    <div>
+                        <label class="field-label">البحث برقم القيد أو الاسم</label>
+                        <div style="position: relative;">
+                            <input type="text" id="searchStudentInput" placeholder="اكتب رقم القيد أو اسم الطالب..."
+                                class="w-full"
+                                style="padding: 10px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; width: 100%;">
+                            <div id="searchResults" class="autocomplete-dropdown hidden"
+                                style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 250px; overflow-y: auto; z-index: 1000;">
+                            </div>
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button id="btnSearchStudent" class="btn-action btn-search" onclick="searchStudentForDownload()"
+                            style="background-color: #307e92; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; height: 42px;">
+                            <span class="material-symbols-outlined">search</span> بحث
+                        </button>
+                        <button id="btnResetSearch" class="btn-action btn-reset" onclick="clearSearch()"
+                            style="background-color: #64748b; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; height: 42px;">
+                            <span class="material-symbols-outlined">cleaning_services</span> مسح
+                        </button>
+                    </div>
+                </div>
+
+                <!-- بطاقة معلومات الطالب مع حالة القيد -->
+                <div id="studentInfoCard" class="hidden mt-4"
+                    style="border: 2px solid #307e92; border-radius: 12px; padding: 20px; background: #f8fafc;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <h3 id="studentNameDisplay" class="text-xl font-bold text-primary"
+                                style="color: #307e92; font-size: 1.25rem; font-weight: 700; margin-bottom: 8px;">-</h3>
+                            <p style="margin: 4px 0;"><strong>رقم القيد:</strong> <span id="studentIdDisplay">-</span>
+                            </p>
+                            <p style="margin: 4px 0;"><strong>التخصص:</strong> <span id="studentDeptDisplay">-</span>
+                            </p>
+                            <p style="margin: 4px 0;"><strong>المستوى:</strong> <span id="studentLevelDisplay">-</span>
+                            </p>
+                            <p style="margin: 4px 0;"><strong>حالة الطالب:</strong> <span id="studentStatusDisplay"
+                                    class="px-3 py-1 rounded-full text-sm font-bold">-</span></p>
+                        </div>
+                        <div style="text-align: left;">
+                            <span class="text-sm text-gray-500" style="font-size: 0.875rem; color: #64748b;">حالة القيد
+                                في الفصل الحالي</span>
+                            <div id="enrollmentStatusDisplay" class="px-4 py-2 rounded-lg font-bold text-center"
+                                style="font-size: 1.1rem; padding: 8px 16px; border-radius: 8px; font-weight: 700; text-align: center;">
+                                -</div>
+                            <div id="specialCaseBadge"
+                                class="hidden mt-2 px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-bold"
+                                style="display: none; margin-top: 8px; padding: 4px 12px; background-color: #fef3c7; color: #92400e; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;">
+                                ⚠️ تسجيل متأخر (حالة خاصة)
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- لوحة التنزيل (للطلاب النشطين) -->
+                    <div id="downloadPanel" class="hidden mt-4"
+                        style="display: none; border-top: 1px solid #e2e8f0; padding-top: 15px; margin-top: 16px;">
+                        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                            {% if request.user|has_exec_perm:'renewal.add_courseregistration' or request.user|has_exec_perm:'renewal.change_courseregistration' or request.user|has_exec_perm:'add_courseregistration' or request.user|has_exec_perm:'change_courseregistration' %}
+                            <button type="button" id="downloadMaterialsBtn" class="btn-action btn-save"
+                                onclick="downloadMaterialsForStudent(event)"
+                                style="background-color: #0f766e; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">download</span> تنزيل
+                                المواد
+                            </button>
+                            {% endif %}
+                            <button class="btn-action btn-print" onclick="printStudentMaterials()"
+                                style="background-color: #b59b66; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">print</span> طباعة كشف
+                                المواد
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- لوحة الحظر (للطلاب غير النشطين) -->
+                    <div id="blockedPanel" class="hidden mt-4"
+                        style="display: none; border-top: 1px solid #e11d48; padding-top: 15px; margin-top: 16px;">
+                        <div
+                            style="color: #e11d48; font-weight: 700; text-align: center; padding: 12px; background-color: #fef2f2; border-radius: 8px; border: 1px solid #fecaca;">
+                            ⛔ عذراً، هذا الطالب غير نشط في الفصل الحالي. يرجى تسوية وضع القيد أولاً.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============================================================ -->
+            <!-- الفلاتر وجدول الطلاب -->
+            <!-- ============================================================ -->
+            <div class="group-box mt-6">
+                <span class="group-title">قائمة الطلاب المؤهلين لتنزيل المواد</span>
+
+                <div class="download-filters-grid"
+                    style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; margin-bottom: 16px; align-items: flex-end;">
+                    <div style="min-width: 0;">
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">نوع الحالة الخاصة</label>
+                        <select id="specialCaseSelect" onchange="loadStudents()"
+                            style="width: 100%; height: 42px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;">
+                            <option value="all">-- الكل --</option>
+                            <option value="suspended">موقوف قيده</option>
+                            <option value="major_change">تغيير مسار</option>
+                        </select>
+                    </div>
+                    <div style="min-width: 0;">
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">التخصص</label>
+                        <select id="majorSelect" onchange="loadStudents()"
+                            style="width: 100%; height: 42px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;">
+                            <option value="">-- اختر التخصص --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="min-width: 0;">
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">المستوى الدراسي</label>
+                        <select id="level-select" onchange="loadStudents()"
+                            style="width: 100%; height: 42px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box;">
+                            <option value="">-- جميع المستويات --</option>
+                            {% for lvl in levels %}
+                            <option value="{{ lvl.id }}">المستوى {{ lvl.number }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div style="min-width: 0;">
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">نوع الفصل (مفعّل بالمنظومة)</label>
+                        <select id="seasonSelect" disabled
+                            style="width: 100%; height: 42px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; background-color: #f1f5f9; cursor: not-allowed; font-weight: 700; color: #0f766e;">
+                            <option value="{{ active_season }}" selected>{% if current_semester %}{{ current_semester.get_type_display }}{% elif active_season_display %}{{ active_season_display }}{% else %}ربيع{% endif %}</option>
+                        </select>
+                        <input type="hidden" id="currentSemesterId" value="{{ current_semester.id|default:'' }}">
+                    </div>
+                    <div style="min-width: 0;">
+                        <label class="field-label"
+                            style="font-weight: 600; font-size: 0.85rem; color: #475569; display: block; margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">السنة الدراسية (مفعّلة بالمنظومة)</label>
+                        <input type="text" id="yearInput" value="{{ active_year }}" readonly
+                            style="width: 100%; height: 42px; padding: 8px 12px; border: 1.5px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; background-color: #f1f5f9; cursor: not-allowed; font-weight: 700; color: #0f766e; text-align: center;">
+                    </div>
+                </div>
+
+                <div class="download-actions-toolbar" style="display: flex; gap: 12px; margin-bottom: 18px; flex-wrap: wrap;">
+                    <button id="btnLoadStudents" class="btn-action btn-search" onclick="loadStudents()"
+                        style="background-color: #307e92; color: white; padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; height: 40px; font-size: 0.88rem;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">downloading</span>
+                        <span>تحميل الطلبة</span>
+                    </button>
+                    <button type="button" id="btn-show-semester-courses" class="btn-action btn-search"
+                        onclick="window.viewSemesterPlan()"
+                        style="background-color: #0d9488; color: white; padding: 10px 22px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-weight: 700; height: 40px; font-size: 0.88rem;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">library_books</span>
+                        <span>عرض مواد الفصل</span>
+                    </button>
+                </div>
+
+                <!-- جدول الطلاب -->
+                <div id="studentTableWrapper" style="display: none;">
+                    <div class="table-responsive-wrapper"
+                        style="width: 100%; overflow-x: auto; border-radius: 12px; border: 1px solid #e2e8f0; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-top: 24px;">
+                        <table class="data-table full-width-table" id="studentsTable"
+                            style="width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 700px;">
+                            <thead>
+                                <tr
+                                    style="background: linear-gradient(135deg, #f1f5f9 0%, #e8edf5 100%); border-bottom: 3px solid #307e92;">
+                                    <th
+                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 60px;">
+                                        تحديد</th>
+                                    <th
+                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 130px;">
+                                        رقم القيد</th>
+                                    <th
+                                        style="text-align: right; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; min-width: 180px;">
+                                        اسم الطالب</th>
+                                    <th
+                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 110px;">
+                                        المستوى</th>
+                                    <th
+                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 180px;">
+                                        المواد المتبقية / المراد تنزيلها</th>
+                                </tr>
+                            </thead>
+                            <tbody id="studentsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الأزرار ورسالة النجاح -->
+            <div id="studentSelectionSection" style="display: none;">
+                <div class="buttons-row mt-6" style="display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px;">
+                    <button id="btnDownloadMaterials" class="btn-action btn-save" onclick="window.downloadMaterials()"
+                        style="background-color: #0f766e; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">library_add</span> تنزيل المواد
+                        للمحددين
+                    </button>
+                    <button class="btn-action btn-print" onclick="window.printPage()"
+                        style="background-color: #b59b66; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">print</span> طباعة التقرير
+                    </button>
+                    <button class="btn-action btn-exit" onclick="window.goBack()"
+                        style="background-color: #64748b; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> رجوع
+                    </button>
+                </div>
+
+                <!-- 🔄 زر عرض الطلاب المسجلين مسبقاً -->
+                <div id="registeredStudentsToggleBar"
+                    style="display:none; margin-top: 14px; border-top: 1px solid #e2e8f0; padding-top: 12px;">
+                    <button onclick="window.toggleRegisteredStudentsTable()"
+                        style="background-color: #0e7490; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.75rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                        <span id="registeredToggleLabel">عرض الطلاب الذين تم تنزيل موادهم لهذا الفصل</span>
+                        <span id="registeredStudentsBadge"
+                            style="background:#0e7490; border:1px solid white; border-radius:10px; padding:1px 8px; font-size:0.65rem;">0</span>
+                    </button>
+                </div>
+
+                <!-- 📖 جدول الطلاب المسجلين مسبقاً (Hidden افتراضياً) -->
+                <div id="registeredStudentsSection" style="display: none; margin-top: 8px;">
+                    <div style="background:#f0fdfa; border:1px solid #99f6e4; border-radius:6px; overflow:hidden;">
+                        <div
+                            style="padding: 6px 12px; background:#0e7490; color:white; font-weight:700; font-size:0.75rem; display:flex; align-items:center; gap:6px;">
+                            <span class="material-symbols-outlined" style="font-size:15px;">assignment_turned_in</span>
+                            الطلاب من الحالات الخاصة الذين تم تنزيل موادهم لهذا الفصل
+                        </div>
+                        <table style="width:100%; border-collapse:collapse; font-size:0.78rem;">
+                            <thead>
+                                <tr style="background:#ccfbf1; border-bottom:1px solid #99f6e4;">
+                                    <th
+                                        style="padding:5px 8px; text-align:center; font-weight:700; color:#064e3b; font-size:0.7rem;">
+                                        رقم القيد</th>
+                                    <th
+                                        style="padding:5px 8px; text-align:right; font-weight:700; color:#064e3b; font-size:0.7rem;">
+                                        اسم الطالب</th>
+                                    <th
+                                        style="padding:5px 8px; text-align:center; font-weight:700; color:#064e3b; font-size:0.7rem;">
+                                        الإجراء</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registeredStudentsTableBody">
+                                <tr>
+                                    <td colspan="3"
+                                        style="text-align:center; padding:12px; color:#64748b; font-size:0.75rem;">لا
+                                        توجد بيانات</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== Modal: عرض مواد الفصل الدراسي ===== -->
+        <div id="semesterCoursesSection"
+            style="display:none; position:fixed; inset:0; z-index:9990; background:rgba(15,23,42,0.55); backdrop-filter:blur(2px); overflow-y:auto; padding:20px;">
+            <div
+                style="max-width:760px; margin:40px auto; background:white; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.25); overflow:hidden;">
+
+                <!-- Header -->
+                <div
+                    style="background:linear-gradient(135deg,#0f766e,#0e7490); padding:14px 20px; display:flex; align-items:center; justify-content:space-between;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span class="material-symbols-outlined" style="color:white; font-size:20px;">menu_book</span>
+                        <span id="semesterCoursesTitle" style="color:white; font-weight:700; font-size:0.9rem;">مواد
+                            الفصل الدراسي</span>
+                    </div>
+                    <div style="display:flex; gap:8px; align-items:center;">
+                        <button onclick="window.printSemesterPlan()"
+                            style="background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:5px; padding:4px 12px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">print</span> طباعة
+                        </button>
+                        <button onclick="window.closeSemesterView()"
+                            style="background:rgba(255,255,255,0.15); color:white; border:1px solid rgba(255,255,255,0.4); border-radius:5px; padding:4px 12px; font-size:0.72rem; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:4px;">
+                            <span class="material-symbols-outlined" style="font-size:14px;">close</span> إغلاق
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div id="semesterCoursesTableWrapper" style="overflow-x:auto; padding:0 0 12px 0;">
+                    <table style="width:100%; border-collapse:collapse; font-size:0.8rem;">
+                        <thead>
+                            <tr style="background:#f1f5f9; border-bottom:2px solid #0f766e;">
+                                <th
+                                    style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:100px;">
+                                    رمز المادة</th>
+                                <th
+                                    style="padding:8px 10px; text-align:right; font-weight:700; color:#1e293b; font-size:0.72rem;">
+                                    اسم المادة</th>
+                                <th
+                                    style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:70px;">
+                                    الوحدات</th>
+                                <th
+                                    style="padding:8px 10px; text-align:center; font-weight:700; color:#1e293b; font-size:0.72rem; width:130px;">
+                                    المتطلب السابق</th>
+                            </tr>
+                        </thead>
+                        <tbody id="semesterCoursesTableBody">
+                            <tr class="empty-row">
+                                <td colspan="4"
+                                    style="text-align:center; padding:30px; color:#94a3b8; font-size:0.8rem;">⏳ جاري
+                                    التحميل...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer count -->
+                <div
+                    style="padding:8px 16px; background:#f8fafc; border-top:1px solid #e2e8f0; font-size:0.72rem; color:#64748b; font-weight:600; text-align:left;">
+                    <span id="semesterCoursesCount">0</span> مادة دراسية
+                </div>
+            </div>
+        </div>
+
+
+        <!-- مودال عرض المواد المراد تنزيلها -->
+        <div id="previewToDownloadModal" class="modal-custom hidden"
+            style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; z-index: 1000; display: flex; align-items: center; justify-content: center;">
+            <div class="modal-overlay" onclick="closePreviewToDownloadModal()"
+                style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1001;">
+            </div>
+            <div class="modal-content"
+                style="position: relative; z-index: 1002; background: white; border-radius: 16px; max-width: 700px; width: 95%; max-height: 90vh; overflow-y: auto; direction: rtl; text-align: right;">
+                <div class="modal-header"
+                    style="background: linear-gradient(135deg, #0d9488, #0f766e); color: white; padding: 1.25rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-radius: 16px 16px 0 0;">
+                    <h3 class="modal-title"
+                        style="color: white; font-weight: 800; font-size: 1.25rem; display: flex; align-items: center; gap: 8px; margin: 0;">
+                        <span class="material-symbols-outlined" style="font-size: 24px;">playlist_add_check</span>
+                        المواد المقترح تنزيلها للطلاب المحددين
+                    </h3>
+                    <button class="modal-close" onclick="closePreviewToDownloadModal()"
+                        style="color: rgba(255,255,255,0.8); font-size: 1.5rem; background: none; border: none; cursor: pointer;">&times;</button>
+                </div>
+                <div class="modal-body" id="previewToDownloadModalBody"
+                    style="padding: 1.5rem; background-color: #f8fafc; min-height: 180px; max-height: 450px; overflow-y: auto;">
+                </div>
+                <div class="modal-footer"
+                    style="padding: 1rem 1.5rem; background-color: #f1f5f9; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #e2e8f0; border-radius: 0 0 16px 16px;">
+                    <button class="btn-action btn-exit" onclick="closePreviewToDownloadModal()"
+                        style="background-color: #64748b; color: white; padding: 6px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 700;">إغلاق</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- حاوية الإشعارات -->
+        <div id="toastContainer"
+            style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px; width: 100%;">
+        </div>
+
+        <!-- ============================================================
+         ✅ وعاء التقرير الرسمي المخصص للطباعة فقط
+         ============================================================ -->
+        <div id="printReportContainer">
+            <div class="print-page-frame">
+                <!-- الترويسة الرسمية ثنائية اللغة المعتمدة -->
+                <div class="print-header-section"
+                    style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+                    <!-- اليمين: العربية -->
+                    <div class="print-header-ar"
+                        style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                        <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                        <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                        <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                        <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+                    </div>
+
+                    <!-- الوسط: الشعار الدائري -->
+                    <div class="print-header-logo-box"
+                        style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                        <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                            style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                            onerror="this.style.display='none'">
+                    </div>
+
+                    <!-- اليسار: الإنجليزية -->
+                    <div class="print-header-en"
+                        style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                        <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                        <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                        <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education
+                        </div>
+                        <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                        <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI
+                            COLLAGE AND TECHNOLOGY</div>
+                    </div>
+                </div>
+                <div class="print-header-line" style="width:100%;margin:6px 0 10px;border-top:1.5px solid #000;"></div>
+                <h1 class="print-main-title"
+                    style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير تنزيل
+                    مواد — حالة خاصة</h1>
+
+                <!-- معلومات التقرير -->
+                <div class="print-info-grid">
+                    <div class="print-info-right">
+                        <div><span class="info-lbl">التخصص:</span> <span id="rpt_dept" class="info-val">جميع
+                                التخصصات</span></div>
+                        <div><span class="info-lbl">المستوى:</span> <span id="rpt_level" class="info-val">الكل</span>
+                        </div>
+                    </div>
+                    <div class="print-info-left">
+                        <div><span class="info-lbl">التاريخ:</span> <span id="rpt_date" class="info-val">—</span></div>
+                        <div><span class="info-lbl">عدد الطلاب:</span> <span id="rpt_count" class="info-val">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- جدول الطلاب -->
+                <div class="print-table-section">
+                    <table class="print-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 8%;">م</th>
+                                <th style="width: 22%;">رقم القيد</th>
+                                <th style="width: 40%;">اسم الطالب</th>
+                                <th style="width: 18%;">التخصص</th>
+                                <th style="width: 12%;">المواد المتبقية</th>
+                            </tr>
+                        </thead>
+                        <tbody id="rpt_tbody">
+                            <tr>
+                                <td colspan="5" class="no-data-cell">لا توجد بيانات</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- توقيع منسق الدراسة والامتحانات -->
+                <div class="print-signature-box" data-official="exams_coordinator">
+                    <span class="off-name"
+                        style="display:block;font-size:13.5px;font-weight:bold;min-height:1.3em;"></span>
+                    <span class="off-pos"
+                        style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">منسق الدراسة والامتحانات</span>
+                    <span class="sig-dots" style="display:block;font-size:12.5px;letter-spacing:1px;">التوقيع والختم:
+                        ....................................</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+        <div id="toastNotification">
+            <div id="toastIconCircle" class="toast-icon-circle">
+                <span id="toastIcon" class="material-symbols-outlined"
+                    style="font-size: 24px; color: #10b981;">check_circle</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <p id="toastMessage"
+                    style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+                </p>
+            </div>
+        </div>
+</main>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 🌙 Dynamic Dark Mode Overrides for Special Download Materials Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .download-materials-page,
+    html.dark .download-materials-container,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-title,
+    html.dark h1,
+    html.dark h2,
+    html.dark h3,
+    html.dark h4,
+    html.dark h5,
+    html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Filters Grid Layout */
+    .download-filters-grid {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 16px;
+        align-items: flex-end;
+    }
+
+    @media (max-width: 1024px) {
+        .download-filters-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .download-filters-grid {
+            grid-template-columns: 1fr !important;
+        }
+    }
+
+    /* Container Boxes & Cards */
+    html.dark .group-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+
+    /* Search Inputs & Auto-complete Dropdown */
+    html.dark #searchStudentInput,
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark #specialCaseSelect,
+    html.dark #majorSelect,
+    html.dark #level-select,
+    html.dark #seasonSelect,
+    html.dark #yearInput {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark select:disabled,
+    html.dark input:read-only {
+        background-color: #0f172a !important;
+        color: #94a3b8 !important;
+        opacity: 0.8;
+    }
+
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .autocomplete-dropdown,
+    html.dark #searchResults {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    /* Student Info Card & Panels */
+    html.dark #studentInfoCard {
+        background-color: #1e293b !important;
+        border-color: #38bdf8 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark #studentInfoCard p,
+    html.dark #studentInfoCard strong,
+    html.dark #studentInfoCard span {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark #studentNameDisplay {
+        color: #38bdf8 !important;
+    }
+
+    html.dark #blockedPanel div[style*="background-color: #fef2f2"] {
+        background-color: rgba(153, 27, 27, 0.4) !important;
+        border-color: #ef4444 !important;
+        color: #fca5a5 !important;
+    }
+
+    /* Tables & Wrappers */
+    html.dark .table-responsive-wrapper,
+    html.dark div[style*="background: white"],
+    html.dark div[style*="background:white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table,
+    html.dark #studentsTable {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead tr,
+    html.dark #studentsTable thead tr,
+    html.dark tr[style*="background: linear-gradient"] {
+        background: #0f172a !important;
+        border-bottom-color: #38bdf8 !important;
+    }
+
+    html.dark .data-table th,
+    html.dark #studentsTable th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table td,
+    html.dark #studentsTable td,
+    html.dark #studentsTableBody td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tr:hover td,
+    html.dark #studentsTable tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    /* Registered Students Section */
+    html.dark #registeredStudentsSection div[style*="background:#f0fdfa"] {
+        background-color: #0f172a !important;
+        border-color: #0e7490 !important;
+    }
+
+    html.dark #registeredStudentsSection tr[style*="background:#ccfbf1"] th {
+        background-color: #0c4a6e !important;
+        color: #38bdf8 !important;
+        border-color: #0e7490 !important;
+    }
+
+    /* Modals (Semester Courses View & Preview Modal) */
+    html.dark #semesterCoursesSection div[style*="background:white"],
+    html.dark #semesterCoursesSection div[style*="background: white"],
+    html.dark .modal-content {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark #semesterCoursesSection div[style*="background:#f8fafc"],
+    html.dark #previewToDownloadModalBody,
+    html.dark .modal-body {
+        background-color: #0f172a !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .modal-footer {
+        background-color: #1e293b !important;
+        border-top-color: #334155 !important;
+    }
+
+    @media (min-width: 1024px) {
+        .download-filters-grid {
+            grid-template-columns: repeat(6, 1fr) !important;
+        }
+    }
+
+    @media (max-width: 1023px) {
+        .download-filters-grid {
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)) !important;
+        }
+    }
+
+    /* إخفاء التقرير على الشاشة */
+    #printReportContainer {
+        display: none !important;
+    }
+
+    /* ========================= PRINT STYLES ========================= */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 6mm;
+        }
+
+        body>*:not(#printReportContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #printReportContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 5px !important;
+            background: #fff !important;
+            color: #000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printReportContainer * {
+            visibility: visible !important;
+        }
+
+        .print-page-frame {
+            border: 2px solid #000 !important;
+            padding: 22px 28px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #fff !important;
+            color: #000 !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, sans-serif !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+        }
+
+        /* ── ترويسة مضغوطة ── */
+        .print-header-section {
+            text-align: center !important;
+            margin-bottom: 6px !important;
+            /* قلّلنا المسافة السفلية */
+        }
+
+        .print-college-logo {
+            max-height: 55px !important;
+            /* صغّرنا الشعار من 75px إلى 55px */
+            width: auto !important;
+            margin: 0 auto 4px !important;
+            display: block !important;
+        }
+
+        .print-gov-title {
+            font-size: 11.5px !important;
+            /* أصغر قليلاً */
+            font-weight: bold !important;
+            color: #000 !important;
+            margin-bottom: 1px !important;
+        }
+
+        .print-college-title {
+            font-size: 14px !important;
+            /* أصغر من 16px */
+            font-weight: 900 !important;
+            color: #000 !important;
+            margin-bottom: 4px !important;
+        }
+
+        .print-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px !important;
+            /* أقصر */
+            border-top: 1.5px solid #000 !important;
+        }
+
+        .print-main-title {
+            font-size: 17px !important;
+            /* أصغر من 19px */
+            font-weight: 900 !important;
+            color: #000 !important;
+            text-align: center !important;
+            margin: 4px 0 10px !important;
+            /* مسافات أقل */
+            padding: 0 !important;
+            border: none !important;
+            display: block !important;
+        }
+
+        /* ── معلومات التقرير ── */
+        .print-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 10px 0 10px !important;
+            font-size: 13px !important;
+            direction: rtl !important;
+        }
+
+        .print-info-right {
+            text-align: right !important;
+            line-height: 1.9 !important;
+        }
+
+        .print-info-left {
+            text-align: left !important;
+            line-height: 1.9 !important;
+            direction: rtl !important;
+        }
+
+        .info-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .info-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        /* ── الجدول ── */
+        .print-table-section {
+            margin-bottom: 20px !important;
+        }
+
+        .print-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 13px !important;
+            direction: rtl !important;
+        }
+
+        .print-table th {
+            border: 1.5px solid #000 !important;
+            padding: 8px 6px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            background: #fff !important;
+            color: #000 !important;
+        }
+
+        .print-table td {
+            border: 1px solid #000 !important;
+            padding: 8px 6px !important;
+            color: #000 !important;
+            background: #fff !important;
+        }
+
+        .no-data-cell {
+            text-align: center !important;
+            padding: 18px !important;
+            font-weight: bold !important;
+        }
+
+        /* ── التوقيع — 35px بدلاً من auto ── */
+        .print-signature-box {
+            margin-top: 35px !important;
+            padding-top: 0 !important;
+            text-align: left !important;
+            margin-left: 20px !important;
+            page-break-inside: avoid !important;
+        }
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function (item, index) {
+                    setTimeout(function () {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch (e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+<script id="download-job-data" type="application/json">
+    {
+        "isOpen": {% if is_download_job_open == False %}false{% else %}true{% endif %},
+        "message": "{{ download_job_message|default:''|escapejs }}"
+    }
+</script>
+<script>
+    try {
+        const _d = JSON.parse(document.getElementById('download-job-data').textContent);
+        window.IS_DOWNLOAD_JOB_OPEN = _d.isOpen;
+        window.DOWNLOAD_JOB_MESSAGE = _d.message;
+    } catch (e) {
+        window.IS_DOWNLOAD_JOB_OPEN = true;
+        window.DOWNLOAD_JOB_MESSAGE = "";
+    }
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/special_download.js' %}?v=1.0.23"></script>
+{% endblock %}

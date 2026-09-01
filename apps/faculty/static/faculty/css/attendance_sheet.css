@@ -1,0 +1,235 @@
+/* التنسيق الخاص بالصفحة التفاعلية */
+.attendance-sheet-page {
+    padding: 2rem 1.5rem;
+}
+
+/* تنسيق جدول الحضور للشاشة */
+.data-table.attendance-table th,
+.data-table.attendance-table td {
+    padding: 0.5rem 0.25rem !important;
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+.data-table.attendance-table th.day-column,
+.data-table.attendance-table td.day-column,
+.data-table.attendance-table th[colspan] {
+    border-left: 1px solid #cbd5e1 !important;
+}
+
+.data-table.attendance-table .border-separator,
+table.جدول-طباعة .border-separator {
+    border-left: 3px solid #64748b !important;
+}
+
+html.dark .data-table.attendance-table th.day-column,
+html.dark .data-table.attendance-table td.day-column,
+html.dark .data-table.attendance-table th[colspan] {
+    border-left: 1px solid #475569 !important;
+}
+
+html.dark .data-table.attendance-table .border-separator {
+    border-left: 3px solid #94a3b8 !important;
+}
+
+.group-box {
+    overflow: visible !important;
+}
+
+.data-table.attendance-table td.student-name-cell,
+table.جدول-طباعة td.name-cell-print {
+    text-align: right;
+    padding-right: 0.75rem !important;
+    font-weight: 700;
+    white-space: nowrap !important;
+    width: 1% !important;
+}
+
+.data-table.attendance-table th.border-separator,
+table.جدول-طباعة th.border-separator {
+    white-space: nowrap !important;
+    width: 1% !important;
+}
+
+.day-column {
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+}
+
+/* ============================================================
+   قواعد الطباعة الرسمية لكشف الحضور الأكاديمي (A4 Portrait)
+   ============================================================ */
+@media print {
+    html, body {
+        background: #ffffff !important;
+        color: #000000 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
+    }
+
+    /* إخفاء عناصر واجهة المتصفح والموقع التفاعلية */
+    .no-print,
+    .app-sidebar,
+    aside,
+    .app-header,
+    .app-footer,
+    .buttons-row,
+    .sidebar-backdrop {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+    }
+
+    /* إظهار ورقة الطباعة الرسمية كطبقة كاملة فوق الواجهة */
+    #ورقة-طباعة {
+        display: block !important;
+        visibility: visible !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+        direction: rtl !important;
+        z-index: 99999999 !important;
+        box-sizing: border-box !important;
+    }
+
+    #ورقة-طباعة * {
+        visibility: visible !important;
+    }
+
+    /* إعداد الورقة A4 Portrait وهوامش متناسقة */
+    @page {
+        size: A4 portrait;
+        margin: 10mm 10mm 10mm 10mm;
+    }
+
+    /* ترويسة التقرير الرسمية */
+    .رأس-الطباعة {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        border-bottom: 2px solid #000000 !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .رأس-الطباعة-يمين {
+        font-size: 11px !important;
+        font-weight: bold !important;
+        line-height: 1.5 !important;
+        text-align: right !important;
+    }
+
+    .رأس-الطباعة-شعار {
+        text-align: center !important;
+    }
+
+    .رأس-الطباعة-شعار img {
+        max-height: 60px !important;
+        width: auto !important;
+        display: block !important;
+        margin: 0 auto !important;
+    }
+
+    .رأس-الطباعة-يسار {
+        font-size: 11px !important;
+        font-weight: bold !important;
+        line-height: 1.5 !important;
+        text-align: left !important;
+    }
+
+    /* شريط عنوان التقرير والمعلومات */
+    .عنوان-طباعة {
+        font-size: 13px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        background-color: #f1f5f9 !important;
+        border: 1px solid #cbd5e1 !important;
+        padding: 5px 10px !important;
+        border-radius: 4px !important;
+        margin: 8px 0 4px 0 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .مادة-طباعة {
+        font-size: 11px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin-bottom: 12px !important;
+        color: #1e293b !important;
+    }
+
+    /* جدول الحضور والغياب للطباعة */
+    table.جدول-طباعة {
+        display: table !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin-bottom: 15px !important;
+        page-break-inside: auto;
+    }
+
+    table.جدول-طباعة thead {
+        display: table-header-group !important; /* تكرار رؤوس الأوردة تلقائياً في الصفحات الإضافية */
+    }
+
+    table.جدول-طباعة tr {
+        page-break-inside: avoid !important; /* منع انقسام صف الطالب بين صفحتين */
+        page-break-after: auto;
+    }
+
+    table.جدول-طباعة th,
+    table.جدول-طباعة td {
+        display: table-cell !important;
+        border: 1px solid #000000 !important;
+        padding: 5px 3px !important;
+        font-size: 10px !important;
+        text-align: center !important;
+        color: #000000 !important;
+        height: 26px !important; /* ارتفاع مريح مخصص للكتابة اليدوية */
+        vertical-align: middle !important;
+    }
+
+    table.جدول-طباعة th {
+        background-color: #f8fafc !important;
+        font-weight: bold !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    table.جدول-طباعة td.name-cell-print {
+        text-align: right !important;
+        padding-right: 6px !important;
+        font-weight: bold !important;
+        white-space: nowrap !important;
+    }
+
+    /* التذييل والتوقيعات الرسمية */
+    .تذييل-طباعة {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
+        margin-top: 25px !important;
+        font-size: 11px !important;
+        font-weight: bold !important;
+        page-break-inside: avoid !important;
+    }
+
+    .توقيع {
+        text-align: center !important;
+        width: 200px !important;
+    }
+
+    .اسم-النظام {
+        font-size: 9px !important;
+        color: #475569 !important;
+        text-align: center !important;
+    }
+}

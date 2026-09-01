@@ -1,0 +1,92 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}تغيير كلمة المرور - بوابة الطالب{% endblock %}
+
+{% block page_title %}تغيير كلمة المرور{% endblock %}
+{% block page_subtitle %}تحديث وتأمين كلمة المرور الخاصة بحسابك الجامعي{% endblock %}
+
+{% block content %}
+
+<div class="password-change-container" style="max-width: 620px; margin: 1.5rem auto 3rem;">
+
+    <!-- Password Card -->
+    <div class="profile-card" style="border-radius: 18px; padding: 2rem; box-shadow: 0 10px 30px rgba(0,0,0,0.06);">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 1.5rem; border-bottom: 1.5px solid var(--st-border, #e2e8f0); padding-bottom: 1rem;">
+            <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(56, 189, 248, 0.12); border: 1px solid rgba(56, 189, 248, 0.25); display: flex; align-items: center; justify-content: center; color: #0284c7;">
+                <span class="material-symbols-outlined" style="font-size: 26px;">lock_reset</span>
+            </div>
+            <div>
+                <h3 class="profile-card-title" style="margin: 0; font-size: 1.2rem; font-weight: 900; border: none; padding: 0;">تغيير كلمة المرور</h3>
+                <p style="margin: 0.2rem 0 0; font-size: 0.84rem; color: var(--st-text-muted, #64748b);">قم بإدخال كلمة المرور الحالية لتأكيد هويتك، ثم عين كلمة المرور الجديدة</p>
+            </div>
+        </div>
+
+        <div id="passwordAlert" class="hidden mb-4 p-3 rounded-xl text-sm font-bold" style="display: none;"></div>
+
+        <form action="#" method="POST" id="passwordForm">
+            {% csrf_token %}
+            
+            <!-- كلمة المرور الحالية -->
+            <div style="margin-bottom: 1.25rem;">
+                <label class="tile-label" style="display: block; margin-bottom: 0.5rem; font-weight: 800; font-size: 0.88rem;">كلمة المرور الحالية <span style="color: #ef4444;">*</span></label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span class="material-symbols-outlined" style="position: absolute; right: 14px; font-size: 20px; color: #94a3b8; pointer-events: none;">key</span>
+                    <input id="currentPass" type="password" placeholder="أدخل كلمة المرور الحالية" class="field-input" style="width: 100%; padding: 0.75rem 2.8rem 0.75rem 2.8rem; border-radius: 12px; font-size: 0.95rem;" required autocomplete="current-password">
+                    <button type="button" onclick="togglePass('currentPass', this)" style="position: absolute; left: 12px; background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; padding: 4px;" title="إظهار / إخفاء">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- كلمة المرور الجديدة -->
+            <div style="margin-bottom: 1.25rem;">
+                <label class="tile-label" style="display: block; margin-bottom: 0.5rem; font-weight: 800; font-size: 0.88rem;">كلمة المرور الجديدة <span style="color: #ef4444;">*</span></label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span class="material-symbols-outlined" style="position: absolute; right: 14px; font-size: 20px; color: #94a3b8; pointer-events: none;">lock</span>
+                    <input id="newPass" type="password" placeholder="كلمة المرور الجديدة (6 أحرف على الأقل)" class="field-input" style="width: 100%; padding: 0.75rem 2.8rem 0.75rem 2.8rem; border-radius: 12px; font-size: 0.95rem;" required autocomplete="new-password">
+                    <button type="button" onclick="togglePass('newPass', this)" style="position: absolute; left: 12px; background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; padding: 4px;" title="إظهار / إخفاء">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- تأكيد كلمة المرور -->
+            <div style="margin-bottom: 0.85rem;">
+                <label class="tile-label" style="display: block; margin-bottom: 0.5rem; font-weight: 800; font-size: 0.88rem;">تأكيد كلمة المرور الجديدة <span style="color: #ef4444;">*</span></label>
+                <div style="position: relative; display: flex; align-items: center;">
+                    <span class="material-symbols-outlined" style="position: absolute; right: 14px; font-size: 20px; color: #94a3b8; pointer-events: none;">verified_user</span>
+                    <input id="confirmPass" type="password" placeholder="أعد إدخال كلمة المرور الجديدة" class="field-input" style="width: 100%; padding: 0.75rem 2.8rem 0.75rem 2.8rem; border-radius: 12px; font-size: 0.95rem;" required autocomplete="new-password">
+                    <button type="button" onclick="togglePass('confirmPass', this)" style="position: absolute; left: 12px; background: none; border: none; cursor: pointer; color: #94a3b8; display: flex; align-items: center; padding: 4px;" title="إظهار / إخفاء">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">visibility</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- رابط نسيت كلمة المرور أسفل حقل تأكيد كلمة المرور -->
+            <div style="margin-bottom: 1.5rem; display: flex; justify-content: flex-start;">
+                <a href="{% url 'users:password_reset' %}" style="font-size: 0.84rem; font-weight: 800; color: #38bdf8; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">
+                    <span class="material-symbols-outlined" style="font-size: 17px;">help</span>
+                    <span>هل نسيت كلمة المرور؟</span>
+                </a>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--st-border, #e2e8f0); padding-top: 1.25rem;">
+                <button type="reset" class="btn-action btn-reset" style="padding: 0.65rem 1.4rem; border-radius: 10px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                    <span class="material-symbols-outlined" style="font-size: 18px;">restart_alt</span> إلغاء
+                </button>
+                <button type="submit" id="btnSubmitPassword" class="btn-action btn-save" style="padding: 0.65rem 1.6rem; border-radius: 10px; font-weight: 800; background: linear-gradient(135deg, #1A5D63 0%, #0F4C50 100%); color: #ffffff; border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(26, 93, 99, 0.3);">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+                    <span id="btnSubmitText">حفظ وتحديث كلمة المرور</span>
+                </button>
+            </div>
+        </form>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'student/js/personal_info.js' %}?v=1.1.0"></script>
+{% endblock %}

@@ -1,0 +1,1336 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}استعلام وإحصائيات الطلاب غير الليبيين | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+   🔥 Non-Libyan Students Module Stylesheet (BEM Methodology)
+   ============================================================ */
+
+    .non-libyan-page {
+        padding: 1.5rem;
+        background-color: #f8fafc;
+        min-height: 100vh;
+        font-family: inherit;
+        color: #1e293b;
+    }
+
+    .non-libyan-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Header Component */
+    .non-libyan-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        background: #ffffff;
+        padding: 1.5rem 1.75rem;
+        border-radius: 1rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        border-right: 5px solid #2b7d91;
+    }
+
+    .non-libyan-header__title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0 0 0.35rem 0;
+    }
+
+    .non-libyan-header__subtitle {
+        font-size: 0.9rem;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .non-libyan-header__actions {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    /* Buttons System */
+    .non-libyan-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 0.625rem;
+        border: none;
+        cursor: pointer;
+        transition: all 0.25s ease-in-out;
+    }
+
+    .non-libyan-btn .material-symbols-outlined {
+        font-size: 1.2rem;
+    }
+
+    .non-libyan-btn--export {
+        background-color: #10b981;
+        color: #ffffff;
+    }
+
+    .non-libyan-btn--export:hover {
+        background-color: #059669;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+
+    .non-libyan-btn--print {
+        background-color: #6366f1;
+        color: #ffffff;
+    }
+
+    .non-libyan-btn--print:hover {
+        background-color: #4f46e5;
+        box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    .non-libyan-btn--refresh {
+        background-color: #0284c7;
+        color: #ffffff;
+    }
+
+    .non-libyan-btn--refresh:hover {
+        background-color: #0369a1;
+        box-shadow: 0 4px 12px rgba(2, 132, 199, 0.25);
+    }
+
+    .non-libyan-btn--search {
+        background-color: #2b7d91;
+        color: #ffffff;
+        width: auto;
+        flex-shrink: 0;
+    }
+
+    .non-libyan-btn--search:hover {
+        background-color: #205e6d;
+        box-shadow: 0 4px 12px rgba(43, 125, 145, 0.25);
+    }
+
+    .non-libyan-btn--reset {
+        background-color: #f1f5f9;
+        color: #475569;
+        width: 100%;
+    }
+
+    .non-libyan-btn--reset:hover {
+        background-color: #e2e8f0;
+        color: #1e293b;
+    }
+
+    /* Square Stats Cards Grid */
+    .non-libyan-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.25rem;
+    }
+
+    .non-libyan-card {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1.25rem;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        aspect-ratio: 1 / 1;
+        min-height: 200px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0;
+        transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .non-libyan-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08);
+    }
+
+    .non-libyan-card__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .non-libyan-card__icon {
+        width: 3.25rem;
+        height: 3.25rem;
+        border-radius: 0.875rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s ease;
+    }
+
+    .non-libyan-card:hover .non-libyan-card__icon {
+        transform: scale(1.1);
+    }
+
+    .non-libyan-card__icon .material-symbols-outlined {
+        font-size: 1.8rem;
+    }
+
+    .non-libyan-card__badge {
+        font-size: 0.75rem;
+        font-weight: 700;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        text-transform: uppercase;
+    }
+
+    .non-libyan-card__body {
+        display: flex;
+        flex-direction: column;
+        margin: 0.75rem 0;
+    }
+
+    .non-libyan-card__value {
+        font-size: 2.25rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #0f172a;
+    }
+
+    .non-libyan-card__label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #64748b;
+        margin-top: 0.35rem;
+    }
+
+    .non-libyan-card__footer {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        font-size: 0.75rem;
+        color: #94a3b8;
+        border-top: 1px solid #f1f5f9;
+        padding-top: 0.625rem;
+    }
+
+    .non-libyan-card__footer .material-symbols-outlined {
+        font-size: 1rem;
+    }
+
+    /* Card Variations */
+    .non-libyan-card--primary {
+        border-top: 4px solid #2b7d91;
+    }
+
+    .non-libyan-card--primary .non-libyan-card__icon {
+        background: rgba(43, 125, 145, 0.12);
+        color: #2b7d91;
+    }
+
+    .non-libyan-card--primary .non-libyan-card__badge {
+        background: rgba(43, 125, 145, 0.1);
+        color: #2b7d91;
+    }
+
+    .non-libyan-card--secondary {
+        border-top: 4px solid #cca462;
+    }
+
+    .non-libyan-card--secondary .non-libyan-card__icon {
+        background: rgba(204, 164, 98, 0.12);
+        color: #cca462;
+    }
+
+    .non-libyan-card--secondary .non-libyan-card__badge {
+        background: rgba(204, 164, 98, 0.1);
+        color: #b58d4a;
+    }
+
+    .non-libyan-card--success {
+        border-top: 4px solid #10b981;
+    }
+
+    .non-libyan-card--success .non-libyan-card__icon {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+    }
+
+    .non-libyan-card--success .non-libyan-card__badge {
+        background: rgba(16, 185, 129, 0.1);
+        color: #047857;
+    }
+
+    .non-libyan-card--warning {
+        border-top: 4px solid #f59e0b;
+    }
+
+    .non-libyan-card--warning .non-libyan-card__icon {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+    }
+
+    .non-libyan-card--warning .non-libyan-card__badge {
+        background: rgba(245, 158, 11, 0.1);
+        color: #b45309;
+    }
+
+    /* Filter Bar Component */
+    .non-libyan-filter-bar {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+    }
+
+    .non-libyan-filter-bar__header {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.25rem;
+        color: #2b7d91;
+    }
+
+    .non-libyan-filter-bar__title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        margin: 0;
+        color: #0f172a;
+    }
+
+    .non-libyan-filter-grid {
+        display: grid;
+        grid-template-columns: 2fr 1.5fr 1.5fr 1.5fr;
+        gap: 1.25rem;
+        align-items: flex-end;
+    }
+
+    .non-libyan-filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.4rem;
+    }
+
+    .non-libyan-filter-label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #475569;
+        display: flex;
+        align-items: center;
+        gap: 0.35rem;
+    }
+
+    .non-libyan-filter-label .material-symbols-outlined {
+        font-size: 1.1rem;
+        color: #94a3b8;
+    }
+
+    .non-libyan-filter-input,
+    .non-libyan-filter-select {
+        width: 100%;
+        padding: 0.65rem 0.875rem;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 0.625rem;
+        font-size: 0.875rem;
+        color: #1e293b;
+        background-color: #ffffff;
+        transition: all 0.2s ease;
+    }
+
+    .non-libyan-filter-input:focus,
+    .non-libyan-filter-select:focus {
+        outline: none;
+        border-color: #2b7d91;
+        box-shadow: 0 0 0 3px rgba(43, 125, 145, 0.15);
+    }
+
+    .non-libyan-filter-actions {
+        display: flex;
+        gap: 0.625rem;
+    }
+
+    .non-libyan-search-summary {
+        margin-top: 1rem;
+        padding: 0.75rem 1rem;
+        background-color: #f0f9ff;
+        border: 1px solid #bae6fd;
+        border-radius: 0.625rem;
+        color: #0369a1;
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .non-libyan-search-summary--hidden {
+        display: none;
+    }
+
+    /* Table Section */
+    .non-libyan-table-card {
+        background: #ffffff;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+        border: 1px solid #e2e8f0;
+    }
+
+    .non-libyan-table-header {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.25rem;
+    }
+
+    .non-libyan-table-header__title-wrap {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #2b7d91;
+    }
+
+    .non-libyan-table-header__title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #0f172a;
+        margin: 0;
+    }
+
+    .non-libyan-table-controls {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .non-libyan-records-count {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .non-libyan-page-size {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .non-libyan-page-size__label {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .non-libyan-page-size__select {
+        padding: 0.35rem 0.65rem;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        background: #ffffff;
+    }
+
+    .non-libyan-table-wrapper {
+        overflow-x: auto;
+        border-radius: 0.75rem;
+        border: 1px solid #f1f5f9;
+    }
+
+    .non-libyan-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.875rem;
+        text-align: right;
+    }
+
+    .non-libyan-table thead {
+        background-color: #f8fafc;
+    }
+
+    .non-libyan-table__th {
+        padding: 0.875rem 1rem;
+        font-weight: 700;
+        color: #334155;
+        border-bottom: 2px solid #e2e8f0;
+        white-space: nowrap;
+    }
+
+    .non-libyan-table__th--sortable {
+        cursor: pointer;
+        user-select: none;
+    }
+
+    .non-libyan-table__th--sortable:hover {
+        background-color: #f1f5f9;
+    }
+
+    .non-libyan-sort-icon {
+        font-size: 0.75rem;
+        color: #94a3b8;
+        margin-right: 0.25rem;
+    }
+
+    .non-libyan-table td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        vertical-align: middle;
+    }
+
+    .non-libyan-table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    /* Columns Sizes */
+    .non-libyan-col--serial {
+        width: 3rem;
+        text-align: center;
+    }
+
+    .non-libyan-col--id {
+        min-width: 110px;
+    }
+
+    .non-libyan-col--name {
+        min-width: 200px;
+    }
+
+    .non-libyan-col--nationality {
+        min-width: 130px;
+    }
+
+    .non-libyan-col--passport {
+        min-width: 140px;
+    }
+
+    .non-libyan-col--dept {
+        min-width: 160px;
+    }
+
+    .non-libyan-col--status {
+        min-width: 130px;
+    }
+
+    .non-libyan-col--actions {
+        min-width: 120px;
+        text-align: center;
+    }
+
+    /* Empty & Badges */
+    .non-libyan-table__td--empty {
+        text-align: center;
+        padding: 3rem 1rem !important;
+    }
+
+    .non-libyan-empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+    }
+
+    .non-libyan-empty-state .material-symbols-outlined {
+        font-size: 4rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .non-libyan-empty-state__title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #475569;
+        margin: 0;
+    }
+
+    .non-libyan-empty-state__sub {
+        font-size: 0.875rem;
+        margin-top: 0.25rem;
+    }
+
+    .non-libyan-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.75rem;
+        font-weight: 700;
+        border-radius: 9999px;
+    }
+
+    .non-libyan-badge--success {
+        background: #dcfce7;
+        color: #15803d;
+    }
+
+    .non-libyan-badge--info {
+        background: #e0f2fe;
+        color: #0369a1;
+    }
+
+    .non-libyan-badge--warning {
+        background: #fef3c7;
+        color: #b45309;
+    }
+
+    .non-libyan-badge--danger {
+        background: #fee2e2;
+        color: #b91c1c;
+    }
+
+    .non-libyan-badge--primary {
+        background: #e0e7ff;
+        color: #4338ca;
+    }
+
+    .non-libyan-passport-code {
+        padding: 0.2rem 0.5rem;
+        background: #f1f5f9;
+        border-radius: 0.375rem;
+        font-family: monospace;
+        font-size: 0.8rem;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+    }
+
+    /* Action Icon Button */
+    .non-libyan-btn-icon {
+        width: 2.25rem;
+        height: 2.25rem;
+        border-radius: 0.5rem;
+        border: none;
+        background: transparent;
+        color: #64748b;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+
+    .non-libyan-btn-icon:hover {
+        background-color: #f1f5f9;
+        color: #2b7d91;
+    }
+
+    .non-libyan-btn-icon .material-symbols-outlined {
+        font-size: 1.25rem;
+    }
+
+    /* Pagination Footer */
+    .non-libyan-table-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-top: 1.25rem;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .non-libyan-pagination-info {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    .non-libyan-pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .non-libyan-btn-page {
+        padding: 0.4rem 0.875rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #334155;
+        background: #ffffff;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 0.5rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: all 0.2s ease;
+    }
+
+    .non-libyan-btn-page:hover:not(:disabled) {
+        background-color: #f8fafc;
+        border-color: #94a3b8;
+    }
+
+    .non-libyan-btn-page:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    .non-libyan-pagination-numbers {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .non-libyan-page-num {
+        width: 2.25rem;
+        height: 2.25rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #475569;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .non-libyan-page-num:hover:not(.non-libyan-page-num--active) {
+        background-color: #f1f5f9;
+    }
+
+    .non-libyan-page-num--active {
+        background-color: #2b7d91;
+        color: #ffffff;
+    }
+
+    /* Summary Footer */
+    .non-libyan-summary-footer {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 2rem;
+        padding: 1.25rem 1.5rem;
+        background: #ffffff;
+        border-radius: 1rem;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    }
+
+    .non-libyan-summary-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    .non-libyan-summary-label {
+        color: #64748b;
+        font-weight: 600;
+    }
+
+    .non-libyan-summary-value {
+        color: #0f172a;
+        font-weight: 700;
+    }
+
+    .non-libyan-summary-value--highlight {
+        color: #2b7d91;
+        font-size: 1.1rem;
+    }
+
+    /* ===================================================
+   إخفاء حاوية التقرير المطبوع في الشاشة العادية
+   =================================================== */
+    #reportPrintContainer {
+        display: none !important;
+    }
+
+    /* ===================================================
+   أنماط الطباعة الرسمية الموحدة - A4 Portrait
+   =================================================== */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        body>*:not(#reportPrintContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #reportPrintContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #reportPrintContainer * {
+            visibility: visible !important;
+        }
+
+        .rpt-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        .rpt-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .rpt-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .rpt-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        .rpt-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        .rpt-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        .rpt-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-start !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.9 !important;
+            color: #000 !important;
+        }
+
+        .rpt-info-right {
+            text-align: right !important;
+        }
+
+        .rpt-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .rpt-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-table-container {
+            margin-top: 8px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .rpt-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .rpt-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .rpt-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .rpt-empty-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        .rpt-signature-box {
+            margin-top: 35px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .rpt-signature-box .off-name {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1em !important;
+        }
+
+        .rpt-signature-box .off-pos {
+            display: block !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #000000 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .rpt-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+        }
+    }
+
+    /* Responsive Media Queries */
+    @media (max-width: 1024px) {
+        .non-libyan-stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+
+        .non-libyan-filter-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    @media (max-width: 640px) {
+        .non-libyan-stats-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .non-libyan-card {
+            aspect-ratio: auto;
+            min-height: auto;
+        }
+
+        .non-libyan-filter-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .non-libyan-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .non-libyan-header__actions {
+            width: 100%;
+        }
+
+        .non-libyan-header__actions .non-libyan-btn {
+            flex: 1;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="non-libyan-page" dir="rtl">
+    <div class="non-libyan-container">
+
+        <!-- Page Header Row -->
+        <div class="page-header-row border-accent-gold no-print mb-4">
+            <div>
+                <h1 class="page-header-title text-3xl sm:text-4xl">🌍 استعلام وإحصائيات الطلاب غير الليبيين</h1>
+                <p class="page-header-subtitle">
+                    استعراض وإدارة بيانات الطلاب من الجنسيات الأخرى المسجلين في المنظومة تلقائياً.
+                </p>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        كروت الإحصائيات السريعة (Quick Stats Cards Compact Grid)
+        ============================================================ -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 no-print">
+            <div class="stat-card-compact non-libyan-card">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">إجمالي الطلاب غير
+                        الليبيين</span>
+                    <span class="text-2xl font-black text-slate-800 dark:text-slate-100 leading-tight"
+                        id="totalStudents">0</span>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-[#307e92]/10 dark:bg-[#38bdf8]/10 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">groups</span>
+                </div>
+            </div>
+
+            <div class="stat-card-compact non-libyan-card">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">عدد الجنسيات
+                        المختلفة</span>
+                    <span class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-tight"
+                        id="totalNationalities">{{ nationalities|length }}</span>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">public</span>
+                </div>
+            </div>
+
+            <div class="stat-card-compact non-libyan-card">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">الطلاب المستمرون /
+                        المنتظمون</span>
+                    <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-tight"
+                        id="activeStudents">0</span>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">how_to_reg</span>
+                </div>
+            </div>
+
+            <div class="stat-card-compact non-libyan-card">
+                <div class="flex flex-col justify-center">
+                    <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">حاملو جوازات
+                        السفر</span>
+                    <span class="text-2xl font-black text-sky-600 dark:text-sky-400 leading-tight"
+                        id="passportHolders">0</span>
+                </div>
+                <div
+                    class="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center flex-shrink-0">
+                    <span class="material-symbols-outlined text-xl">badge</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============================================================
+        شريط الفلترة والبحث (Filter Bar)
+        ============================================================ -->
+        <section class="non-libyan-filter-bar">
+            <div class="non-libyan-filter-bar__header">
+                <span class="material-symbols-outlined">tune</span>
+                <h2 class="non-libyan-filter-bar__title">فلترة وتصفية البيانات المباشرة</h2>
+            </div>
+
+            <div class="non-libyan-filter-grid">
+                <div class="non-libyan-filter-group non-libyan-filter-group--wide" style="grid-column: span 2;">
+                    <label class="non-libyan-filter-label" for="searchInput">
+                        <span class="material-symbols-outlined">search</span>
+                        بحث عام (مباشر)
+                    </label>
+                    <div class="non-libyan-search-input-group"
+                        style="display: flex; align-items: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); width: 100%;">
+                        <input type="text" id="searchInput" class="non-libyan-filter-input"
+                            placeholder="ابحث باسم الطالب، رقم القيد، أو رقم الجواز..." autocomplete="off"
+                            style="flex: 1 1 auto; width: 85%; border: none; padding: 10px 14px; font-size: 0.95rem; outline: none; background: transparent;">
+                        <button type="button" class="non-libyan-btn non-libyan-btn--search"
+                            onclick="window.fetchNonLibyanStudents()"
+                            style="flex: 0 0 auto; width: auto; border-radius: 0; padding: 10px 18px; white-space: nowrap; height: 100%; margin: 0; display: inline-flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined">search</span>
+                            بحث
+                        </button>
+                    </div>
+                </div>
+
+                <div class="non-libyan-filter-group">
+                    <label class="non-libyan-filter-label" for="filterNationality">
+                        <span class="material-symbols-outlined">flag</span>
+                        الجنسية
+                    </label>
+                    <select id="filterNationality" class="non-libyan-filter-select">
+                        <option value="all">-- جميع الجنسيات --</option>
+                        {% for nationality in nationalities %}
+                        <option value="{{ nationality.id }}">{{ nationality.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="non-libyan-filter-group">
+                    <label class="non-libyan-filter-label" for="filterDepartment">
+                        <span class="material-symbols-outlined">domain</span>
+                        القسم / التخصص
+                    </label>
+                    <select id="filterDepartment" class="non-libyan-filter-select">
+                        <option value="all">-- جميع التخصصات --</option>
+                        {% for department in departments %}
+                        <option value="{{ department.id }}">{{ department.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="searchSummary" class="non-libyan-search-summary non-libyan-search-summary--hidden">
+                <span class="material-symbols-outlined">info</span>
+                <span id="searchSummaryText">تم العثور على 0 طالب</span>
+            </div>
+        </section>
+
+        <!-- ============================================================
+        جدول البيانات (Data Table Card)
+        ============================================================ -->
+        <section class="non-libyan-table-card">
+            <div class="non-libyan-table-header">
+                <div class="non-libyan-table-header__title-wrap">
+                    <span class="material-symbols-outlined">table_chart</span>
+                    <h3 class="non-libyan-table-header__title">نتائج استعلام الطلاب</h3>
+                </div>
+                <div class="non-libyan-table-controls">
+                    <span class="non-libyan-records-count" id="recordsCount">عرض 0 - 0 من 0</span>
+                    <div class="non-libyan-page-size">
+                        <label for="pageSizeSelect" class="non-libyan-page-size__label">عرض:</label>
+                        <select id="pageSizeSelect" class="non-libyan-page-size__select"
+                            onchange="window.changePageSize(this.value)">
+                            <option value="10">10</option>
+                            <option value="20" selected>20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="non-libyan-table-wrapper">
+                <table class="non-libyan-table" id="studentsTable">
+                    <thead>
+                        <tr>
+                            <th class="non-libyan-table__th non-libyan-col--serial">#</th>
+                            <th class="non-libyan-table__th non-libyan-col--id non-libyan-table__th--sortable"
+                                onclick="window.sortTable('student_id')">
+                                رقم القيد <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--name non-libyan-table__th--sortable"
+                                onclick="window.sortTable('full_name')">
+                                اسم الطالب الكامل <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--nationality non-libyan-table__th--sortable"
+                                onclick="window.sortTable('nationality_name')">
+                                الجنسية <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--passport non-libyan-table__th--sortable"
+                                onclick="window.sortTable('passport_number')">
+                                رقم الجواز <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--dept non-libyan-table__th--sortable"
+                                onclick="window.sortTable('department_name')">
+                                القسم <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--status non-libyan-table__th--sortable"
+                                onclick="window.sortTable('status_name')">
+                                حالة القيد <span class="non-libyan-sort-icon">⇅</span>
+                            </th>
+                            <th class="non-libyan-table__th non-libyan-col--actions">الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="studentsBody">
+                        <tr>
+                            <td colspan="8" class="non-libyan-table__td--empty">
+                                <div class="non-libyan-empty-state">
+                                    <span class="material-symbols-outlined">search_off</span>
+                                    <p class="non-libyan-empty-state__title">لا توجد بيانات</p>
+                                    <p class="non-libyan-empty-state__sub">قم بالبحث أو تغيير الفلاتر لعرض النتائج</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="non-libyan-table-footer">
+                <div class="non-libyan-pagination-info" id="paginationInfo">
+                    عرض 0 - 0 من 0 نتيجة
+                </div>
+                <div class="non-libyan-pagination-controls">
+                    <button type="button" class="non-libyan-btn non-libyan-btn--print" onclick="window.printReport()"
+                        style="margin-left: 12px; height: 36px; padding: 0 14px; font-size: 0.85rem;">
+                        <span class="material-symbols-outlined" style="font-size: 1.1rem;">print</span>
+                        طباعة التقرير
+                    </button>
+                    <button type="button" class="non-libyan-btn-page" id="prevPage" onclick="window.changePage(-1)"
+                        disabled>
+                        <span class="material-symbols-outlined">chevron_right</span>
+                        السابق
+                    </button>
+                    <span class="non-libyan-pagination-numbers" id="pageNumbers">
+                        <span class="non-libyan-page-num non-libyan-page-num--active">1</span>
+                    </span>
+                    <button type="button" class="non-libyan-btn-page" id="nextPage" onclick="window.changePage(1)"
+                        disabled>
+                        التالي
+                        <span class="material-symbols-outlined">chevron_left</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ملخص النتائج السفلي -->
+        <footer class="non-libyan-summary-footer">
+            <div class="non-libyan-summary-item">
+                <span class="non-libyan-summary-label">إجمالي النتائج:</span>
+                <span class="non-libyan-summary-value non-libyan-summary-value--highlight"
+                    id="footerTotalCount">0</span>
+            </div>
+            <div class="non-libyan-summary-item">
+                <span class="non-libyan-summary-label">آخر تحديث:</span>
+                <span class="non-libyan-summary-value" id="lastUpdateTime">-</span>
+            </div>
+            <div class="non-libyan-summary-item">
+                <span class="non-libyan-summary-label">الفلاتر النشطة:</span>
+                <span class="non-libyan-summary-value" id="activeFilters">لا يوجد</span>
+            </div>
+        </footer>
+
+    </div>
+</main>
+
+<!-- ============================================================
+     حاوية التقرير الرسمي العمودية المخصصة للطباعة (A4 Portrait)
+     ============================================================ -->
+<div id="reportPrintContainer">
+    <div class="rpt-page-frame">
+
+        <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line"
+            style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="rpt-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">
+            تقرير الطلاب المقيدين من الجنسيات غير الليبية</div>
+
+        <!-- ② معلومات التقرير الفلاتر -->
+        <div class="rpt-info-grid">
+            <div class="rpt-info-right">
+                <div><span class="rpt-lbl">التخصص / القسم:</span> <span id="rptPrintDept" class="rpt-val">جميع
+                        التخصصات</span></div>
+                <div><span class="rpt-lbl">الجنسية:</span> <span id="rptPrintNationality" class="rpt-val">جميع
+                        الجنسيات</span></div>
+            </div>
+            <div class="rpt-info-left">
+                <div><span id="rptPrintDateVal" class="rpt-val"></span></div>
+                <div><span class="rpt-lbl">إجمالي الطلاب:</span> <span id="rptPrintTotalCount" class="rpt-val">0
+                        طالب</span></div>
+            </div>
+        </div>
+
+        <!-- ③ جدول التقرير المطبوع (A4 Portrait) -->
+        <div class="rpt-table-container">
+            <table class="rpt-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 14%;">رقم القيد</th>
+                        <th style="width: 27%;">اسم الطالب الكامل</th>
+                        <th style="width: 14%;">الجنسية</th>
+                        <th style="width: 18%;">رقم الجواز</th>
+                        <th style="width: 12%;">القسم العلمي</th>
+                        <th style="width: 10%;">حالة القيد</th>
+                    </tr>
+                </thead>
+                <tbody id="rptPrintTableBody">
+                    <tr>
+                        <td colspan="7" class="rpt-empty-cell">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ صندوق التوقيع جهة اليسار أسفل التقرير -->
+        <div class="rpt-signature-box" data-official>
+            <span class="off-name"
+                style="display:block; font-size:12.5px; font-weight:bold; margin-bottom:3px; min-height:1em;"></span>
+            <span class="off-pos" style="display:block; font-size:11.5px; font-weight:600; margin-bottom:8px;">المسجل
+                العام بالكلية</span>
+            <span class="off-sig-line" style="display:block; font-size:11.5px; letter-spacing:1px;">التوقيع والختم:
+                ............................................</span>
+        </div>
+
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.NON_LIBYAN_API_URL = "{% url 'renewal:non_libyan_students_api' %}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/non_libyan_students.js' %}?v=1.0.0"></script>
+{% endblock %}

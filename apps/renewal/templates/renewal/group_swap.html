@@ -1,0 +1,297 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تبديل المجموعات - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+/* 🌙 Global Dark Mode Styling for Group Swap Page */
+html.dark .group-swap-page,
+html.dark .group-swap-page .group-box {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .group-swap-page .group-box .group-title {
+    background: #0f172a !important;
+    border-color: #38bdf8 !important;
+    color: #38bdf8 !important;
+}
+
+html.dark #targetGroupInfo,
+html.dark #targetStudentInfo {
+    background-color: #0f172a !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark #targetGroupInfo p,
+html.dark #targetStudentInfo p,
+html.dark #targetGroupInfo strong,
+html.dark #targetStudentInfo strong,
+html.dark #targetGroupInfo span,
+html.dark #targetStudentInfo span,
+html.dark #currentStudentCard p,
+html.dark #currentStudentCard strong,
+html.dark #currentStudentCard span:not(.badge-group) {
+    color: #cbd5e1 !important;
+}
+
+html.dark #currentStudentName {
+    color: #38bdf8 !important;
+}
+
+html.dark #swapSummary {
+    background-color: #0f172a !important;
+    border: 2px solid #0284c7 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .swap-direction div[class*="bg-white"],
+html.dark .swap-direction .swap-card-box {
+    background-color: #1e293b !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .swap-direction p {
+    color: #f8fafc !important;
+}
+
+html.dark #swapFromText,
+html.dark #swapToText {
+    color: #38bdf8 !important;
+}
+
+html.dark #currentStudentGroup {
+    background-color: rgba(14, 116, 144, 0.35) !important;
+    color: #38bdf8 !important;
+    border: 1px solid rgba(56, 189, 248, 0.4) !important;
+}
+
+html.dark #targetStudentGroup {
+    background-color: rgba(16, 185, 129, 0.25) !important;
+    color: #34d399 !important;
+    border: 1px solid rgba(52, 211, 153, 0.4) !important;
+}
+
+html.dark .group-swap-page select,
+html.dark .group-swap-page input {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .group-swap-page .field-label {
+    color: #94a3b8 !important;
+}
+
+/* Light Mode Defaults & Enhancements */
+#targetGroupInfo,
+#targetStudentInfo {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    transition: all 0.2s ease-in-out;
+}
+
+#swapSummary {
+    border: 2px solid #307e92;
+    background-color: #f0f7fa;
+    border-radius: 14px;
+    transition: all 0.2s ease-in-out;
+}
+
+.swap-direction div {
+    transition: all 0.2s ease-in-out;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main group-swap-page">
+    <div class="max-w-7xl mx-auto">
+        <div class="page-header-row border-accent-gold">
+            <div>
+                <h1 class="page-header-title">🔄 تبديل المجموعات</h1>
+                <p class="page-header-subtitle">مقايضة طالب بين مجموعتين (1-to-1 Swap)</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.change_group' and not request.user|has_exec_perm:'change_group' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+            <div>
+                <button class="btn-action btn-exit" onclick="window.location.href='/renewal/groups/'">
+                    <span class="material-symbols-outlined">arrow_back</span> العودة للمجموعات
+                </button>
+            </div>
+        </div>
+
+        <!-- عرض حالة التحميل -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            <p class="mt-4 text-gray-500 dark:text-slate-400">⏳ جاري تحميل البيانات...</p>
+        </div>
+
+        <!-- محتوى صفحة التبديل -->
+        <div id="swapContent" class="hidden">
+            <!-- بطاقة معلومات الطالب الحالي -->
+            <div class="group-box mb-6">
+                <span class="group-title">👤 الطالب المراد تبديله</span>
+                <div class="student-swap-card" id="currentStudentCard">
+                    <div class="swap-student-info">
+                        <div class="swap-avatar">
+                            <span class="material-symbols-outlined text-primary dark:text-[#38bdf8]" style="font-size: 48px;">account_circle</span>
+                        </div>
+                        <div class="swap-details">
+                            <h3 id="currentStudentName" class="text-xl font-bold text-primary dark:text-[#38bdf8]">-</h3>
+                            <p><strong>رقم القيد:</strong> <span id="currentStudentId">-</span></p>
+                            <p><strong>التخصص:</strong> <span id="currentStudentDept">-</span></p>
+                            <p><strong>المستوى:</strong> <span id="currentStudentLevel">-</span></p>
+                            <p><strong>المجموعة الحالية:</strong> <span id="currentStudentGroup" class="badge-group px-3 py-1 bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 rounded-full text-sm font-bold border border-blue-200 dark:border-blue-800/50">-</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- خيارات التبديل -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- العمود الأيسر: اختيار المجموعة المستهدفة -->
+                <div class="group-box">
+                    <span class="group-title">🎯 المجموعة المستهدفة</span>
+                    <div class="form-group mb-4">
+                        <label class="field-label">اختر المجموعة المستهدفة</label>
+                        <select id="targetGroupSelect" class="w-full" onchange="loadTargetGroupStudents()">
+                            <option value="">-- اختر المجموعة --</option>
+                        </select>
+                    </div>
+                    <div id="targetGroupInfo" class="hidden mt-4 p-4 rounded-lg">
+                        <p><strong>اسم المجموعة:</strong> <span id="targetGroupName">-</span></p>
+                        <p><strong>عدد الطلاب:</strong> <span id="targetGroupCount">0</span></p>
+                    </div>
+                </div>
+
+                <!-- العمود الأيمن: اختيار الطالب البديل -->
+                <div class="group-box">
+                    <span class="group-title">👥 الطالب البديل</span>
+                    <div class="form-group mb-4">
+                        <label class="field-label">اختر الطالب المراد مقايضته</label>
+                        <select id="targetStudentSelect" class="w-full" disabled>
+                            <option value="">-- اختر المجموعة أولاً --</option>
+                        </select>
+                    </div>
+                    <div id="targetStudentInfo" class="hidden mt-4 p-4 rounded-lg">
+                        <p><strong>اسم الطالب:</strong> <span id="targetStudentName">-</span></p>
+                        <p><strong>رقم القيد:</strong> <span id="targetStudentId">-</span></p>
+                        <p><strong>المجموعة الحالية:</strong> <span id="targetStudentGroup" class="badge-group px-3 py-1 bg-green-100 dark:bg-emerald-950/80 text-green-700 dark:text-emerald-300 rounded-full text-sm font-bold border border-green-200 dark:border-emerald-800/50">-</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ملخص التبديل -->
+            <div id="swapSummary" class="hidden group-box mt-6">
+                <span class="group-title">📋 ملخص عملية التبديل</span>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 p-4">
+                    <div class="swap-direction">
+                        <div class="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/90 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                            <span class="material-symbols-outlined text-primary dark:text-[#38bdf8]">arrow_forward</span>
+                            <div>
+                                <p class="font-bold text-primary dark:text-[#38bdf8]" id="swapFromText">-</p>
+                                <p class="text-sm text-gray-500 dark:text-slate-400">المجموعة: <span id="swapFromGroup">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="swap-direction">
+                        <div class="flex items-center gap-3 p-3 bg-white dark:bg-slate-800/90 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                            <span class="material-symbols-outlined text-accent dark:text-amber-400">arrow_back</span>
+                            <div>
+                                <p class="font-bold text-accent dark:text-amber-400" id="swapToText">-</p>
+                                <p class="text-sm text-gray-500 dark:text-slate-400">المجموعة: <span id="swapToGroup">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-center text-sm text-gray-500 dark:text-slate-400">
+                    <span class="material-symbols-outlined" style="font-size: 16px; vertical-align: middle;">info</span>
+                    سيتم تبادل المجموعات بين الطالبين المختارين
+                </div>
+            </div>
+
+            <!-- أزرار العمليات -->
+            <div class="buttons-row mt-6">
+                {% if request.user|has_exec_perm:'renewal.change_group' or request.user|has_exec_perm:'change_group' %}
+                <button class="btn-action btn-save" id="confirmSwapBtn" onclick="confirmSwap()" disabled style="background-color: #0f766e; color: white; padding: 12px 30px; font-size: 1.1rem;">
+                    <span class="material-symbols-outlined">swap_horiz</span> تأكيد المقايضة والتبديل
+                </button>
+                {% endif %}
+                <button class="btn-action btn-exit" onclick="window.location.href='/renewal/groups/'">
+                    <span class="material-symbols-outlined">close</span> إلغاء
+                </button>
+            </div>
+
+            <!-- رسائل الخطأ والنجاح -->
+            <div id="swapMessage" class="mt-4 hidden"></div>
+        </div>
+    </div>
+</main>
+
+<!-- Custom Confirmation Modal Component (نافذة تأكيد التبديل الحديثة) -->
+<div id="modalConfirmSwap" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" style="direction: rtl;">
+    <div class="rounded-2xl max-w-lg w-full p-6 space-y-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl transition-all text-right" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+        <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-xl bg-[#307e92]/10 dark:bg-[#38bdf8]/10 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-3xl">swap_horiz</span>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-800 dark:text-slate-100" id="confirmModalTitle">تأكيد عملية تبديل المجموعات</h3>
+                <p class="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-0.5">يرجى مراجعة تفاصيل التبديل قبل الاعتماد النهائي</p>
+            </div>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+            <div class="flex items-center justify-between text-sm font-bold text-slate-700 dark:text-slate-200">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+                    <span id="confirmStudentAName">-</span>
+                </div>
+                <span class="text-xs px-2.5 py-1 rounded-md bg-teal-100 dark:bg-teal-950/70 text-teal-800 dark:text-teal-300 font-bold" id="confirmStudentAGroup">-</span>
+            </div>
+            <div class="flex justify-center items-center text-slate-400">
+                <span class="material-symbols-outlined text-xl">sync_alt</span>
+            </div>
+            <div class="flex items-center justify-between text-sm font-bold text-slate-700 dark:text-slate-200">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    <span id="confirmStudentBName">-</span>
+                </div>
+                <span class="text-xs px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-950/70 text-amber-800 dark:text-amber-300 font-bold" id="confirmStudentBGroup">-</span>
+            </div>
+        </div>
+
+        <p class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            ℹ️ بمجرد التأكيد، سيتم تبادل المجموعات فوراً بين الطالبين في النظام وتحديث كشوفات الحضور.
+        </p>
+
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+            <button type="button" id="confirmSwapBtnCancel" class="btn-action btn-exit" style="padding: 8px 20px; font-size: 0.9rem;">
+                <span class="material-symbols-outlined text-base">close</span> إلغاء
+            </button>
+            <button type="button" id="confirmSwapBtnOk" class="btn-action btn-save" style="padding: 8px 24px; font-size: 0.9rem; background-color: #0f766e; color: white;">
+                <span class="material-symbols-outlined text-base">check</span> نعم، تأكيد التبديل
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- حاوية الإشعارات -->
+<div id="toastContainer" style="position: fixed; bottom: 30px; right: 30px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 400px; width: 100%;"></div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/group_swap.js' %}?v=1.0.4"></script>
+{% endblock %}

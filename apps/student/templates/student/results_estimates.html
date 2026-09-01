@@ -1,0 +1,273 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}السجل الأكاديمي والنتائج - بوابة الطالب{% endblock %}
+
+{% block page_title %}السجل الأكاديمي الشامل لكشف الدرجات{% endblock %}
+{% block page_subtitle %}استعراض المعدلات الفصلية والتراكمية والتقديرات التفصيلية{% endblock %}
+
+{% block content %}
+<div class="grades-dashboard-container" style="max-width: 1200px; margin: 0 auto; padding: 0.5rem 1rem;">
+
+    <!-- 1. هيدر البانر العلوي (Dark Teal Banner) -->
+    <div style="background: linear-gradient(135deg, #1A5D63 0%, #0F4C50 100%); border-radius: 16px; padding: 1.5rem 2rem; margin-bottom: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(15, 76, 80, 0.25);">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: white;">analytics</span>
+            </div>
+            <div>
+                <h1 style="font-size: 1.4rem; font-weight: 900; margin: 0; color: white; line-height: 1.2;">السجل الأكاديمي الشامل لكشف الدرجات</h1>
+                <p style="font-size: 0.9rem; color: #e0f2fe; margin: 0.25rem 0 0 0; opacity: 0.9;">استعراض المعدلات الفصلية والتراكمية والتقديرات التفصيلية</p>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'student:dashboard' %}" style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(6px); color: white; text-decoration: none; padding: 0.6rem 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; transition: all 0.25s ease;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                <span class="material-symbols-outlined" style="font-size: 20px;">dashboard</span>
+                <span>الرئيسية</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. كارت المعدل التراكمي المظلل (يسار) + رسم بياني لتطور المعدل (يمين) -->
+    <div style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.75rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <div style="display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: 1.5rem; align-items: center;">
+            
+            <!-- الصندوق المظلل للمعدل التراكمي باللون الداكن التايلي الصلب #1A5D63 (اليسار) -->
+            <div class="gpa-summary-card" style="background: #1A5D63; border-radius: 16px; padding: 1.75rem 1.5rem; color: white; text-align: center; display: flex; flex-direction: column; justify-content: center; align-items: center; box-shadow: 0 8px 20px rgba(26, 93, 99, 0.25); position: relative; overflow: hidden;">
+                <div style="position: absolute; top: -20px; right: -20px; width: 80px; height: 80px; background: rgba(255,255,255,0.08); border-radius: 50%;"></div>
+                
+                <span style="font-size: 0.9rem; font-weight: 700; color: #e0f2fe; text-transform: uppercase; letter-spacing: 0.5px;">المعدل التراكمي العام</span>
+                
+                <div id="cgpaDisplay" style="font-size: 3.2rem; font-weight: 900; color: white; line-height: 1; margin: 0.75rem 0 0.5rem 0;">
+                    {{ cgpa|default:"0.00" }}
+                </div>
+                
+                <div style="display: flex; gap: 8px; margin-top: 0.75rem; width: 100%; justify-content: center;">
+                    <span style="background: rgba(255,255,255,0.18); font-size: 0.78rem; padding: 0.35rem 0.75rem; border-radius: 20px; font-weight: 700; color: white;">
+                        ساعات مكتملة: <strong id="completedCreditsDisplay">{{ total_credits|default:0 }}</strong>
+                    </span>
+                    <span style="background: rgba(255,255,255,0.18); font-size: 0.78rem; padding: 0.35rem 0.75rem; border-radius: 20px; font-weight: 700; color: white;">
+                        مواد ناجحة: <strong id="passedCoursesDisplay">{{ passed_count|default:0 }}</strong>
+                    </span>
+                </div>
+            </div>
+
+            <!-- الرسم البياني للتقدم والتطور الأكاديمي (اليمين) - حل مشكلة undefined -->
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                    <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F4C50; margin: 0; display: flex; align-items: center; gap: 8px;">
+                        <span class="material-symbols-outlined" style="color: #1A5D63;">show_chart</span>
+                        <span>تطور المعدل الأكاديمي</span>
+                    </h3>
+                    <span style="font-size: 0.8rem; background: #e0f2fe; color: #0369a1; padding: 0.25rem 0.65rem; border-radius: 12px; font-weight: 700;">المعدل التراكمي</span>
+                </div>
+                
+                <div class="chart-container" style="position: relative; height: 180px; width: 100%;">
+                    <canvas id="academicGpaChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 3. شريط الفلترة حسب الفصل الدراسي -->
+    <div class="filter-bar" style="display:flex; justify-content: space-between; align-items:center; flex-wrap:wrap; background: white; padding:1rem 1.25rem; border-radius:14px; margin-bottom:1.5rem; border:1px solid #e2e8f0; box-shadow: 0 2px 6px rgba(0,0,0,0.02);">
+        <div style="display: flex; align-items: center; gap: 12px;">
+            <label style="font-weight:800; color:#0F4C50; font-size:0.92rem; display: flex; align-items: center; gap: 6px;">
+                <span class="material-symbols-outlined" style="font-size: 20px; color: #1A5D63;">filter_list</span>
+                <span>تصفية حسب الفصل:</span>
+            </label>
+            <select id="semester-filter" style="padding:0.5rem 1rem; border:1px solid #cbd5e1; border-radius:8px; font-size:0.9rem; font-family:inherit; background:white; cursor:pointer; min-width:220px; color: #1e293b; font-weight: 600;">
+                <option value="">كل الفصول الدراسية</option>
+            </select>
+        </div>
+        <button onclick="loadStudentGrades()" style="background: #1A5D63; color: white; border: none; padding: 0.55rem 1.25rem; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; display: flex; align-items: center; gap: 6px; transition: background 0.2s ease;" onmouseover="this.style.background='#0F4C50'" onmouseout="this.style.background='#1A5D63'">
+            <span class="material-symbols-outlined" style="font-size: 18px;">refresh</span>
+            <span>تحديث النتائج</span>
+        </button>
+    </div>
+
+    <!-- 4. قائمة الفصول الأكورديون ودرجات المواد -->
+    <div id="semesters-container" style="width: 100%; box-sizing: border-box; display: flex; flex-direction: column; gap: 1.25rem;">
+        <!-- رندر السيرفر التلقائي إذا لم يتم تحميل الـ API بعد -->
+        {% for sem in semesters %}
+        <div class="semester-accordion-card" style="width: 100%; box-sizing: border-box; background: white; border-radius: 16px; border: 1px solid #cbd5e1; margin-bottom: 0; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.03); transition: all 0.25s ease;">
+            
+            <!-- هيدر الأكورديون الداكن -->
+            <div class="semester-accordion-header" onclick="toggleSemesterAccordion(this)" style="width: 100%; box-sizing: border-box; background: linear-gradient(135deg, #1A5D63 0%, #0F4C50 100%); color: white; padding: 1.25rem 1.75rem; display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; transition: background 0.2s ease;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span class="material-symbols-outlined" style="font-size: 1.35rem; color: #e0f2fe;">calendar_month</span>
+                    <span style="font-size: 1.15rem; font-weight: 800; color: white;">
+                        📅 {{ sem.semester }}
+                    </span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    {% if sem.has_published_gpa %}
+                    <span style="font-size: 0.85rem; background: rgba(255,255,255,0.2); padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 700; color: white;">
+                        المعدل الفصلي: {{ sem.gpa_display }}
+                    </span>
+                    {% else %}
+                    <span style="font-size: 0.85rem; background: rgba(254, 242, 242, 0.15); border: 1px solid rgba(254, 202, 202, 0.3); padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 700; color: #fed7aa;">
+                        المعدل الفصلي: {{ sem.gpa_display }}
+                    </span>
+                    {% endif %}
+                    <span style="font-size: 0.85rem; background: rgba(255,255,255,0.2); padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 700; color: white;">
+                        {{ sem.total_credits }} ساعات
+                    </span>
+                    <span class="accordion-arrow" style="color: white; font-size: 0.9rem; transition: transform 0.3s ease; display: inline-block;">▼</span>
+                </div>
+            </div>
+
+            <!-- محتوى جدول الدرجات داخل الأكورديون -->
+            <div class="semester-accordion-body" style="width: 100%; box-sizing: border-box; padding: 1.5rem; display: block;">
+                <div class="table-responsive" style="width: 100%; box-sizing: border-box; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.92rem;">
+                        <thead>
+                            <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                                <th style="padding: 0.85rem; font-weight: 800;">الكود</th>
+                                <th style="padding: 0.85rem; font-weight: 800;">اسم المادة</th>
+                                <th style="padding: 0.85rem; text-align: center; font-weight: 800;">الساعات</th>
+                                <th style="padding: 0.85rem; text-align: center; font-weight: 800;">المجموع / 100</th>
+                                <th style="padding: 0.85rem; text-align: center; font-weight: 800;">التقدير</th>
+                                <th style="padding: 0.85rem; text-align: center; font-weight: 800;">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for course in sem.courses %}
+                            <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='transparent';">
+                                <td style="padding: 0.85rem; font-weight: 800; color: #1A5D63;">{{ course.code }}</td>
+                                <td style="padding: 0.85rem; font-weight: 700; color: #1e293b;">
+                                    {{ course.name }}
+                                    {% if course.appeal and course.appeal_badge %}
+                                    <div style="margin-top: 3px;">
+                                        <span style="padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 800; font-size: 0.72rem; background: {{ course.appeal_badge.bg_color }}; color: {{ course.appeal_badge.text_color }}; border: 1px solid {{ course.appeal_badge.border_color }}; display: inline-flex; align-items: center; gap: 3px;">
+                                            {{ course.appeal_badge.text }}
+                                        </span>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td style="padding: 0.85rem; text-align: center; font-weight: 600;">{{ course.credits }}</td>
+                                {% if course.is_blocked %}
+                                <td style="padding: 0.85rem; text-align: center; font-weight: 800; color: #dc2626;">--</td>
+                                <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #dc2626;">--</td>
+                                <td style="padding: 0.85rem; text-align: center;">
+                                    <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px;">
+                                        <span style="padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: inline-flex; align-items: center; gap: 4px;" title="{{ course.block_reason|default:'تجاوز نسبة الغياب الورقي' }}">
+                                            ⚠️ تم حجب النتيجة
+                                        </span>
+                                        <span style="font-size: 0.75rem; color: #991b1b; font-weight: 700; background: #fff5f5; padding: 2px 8px; border-radius: 6px; border: 1px dashed #fca5a5;">
+                                            {{ course.block_reason|default:"تجاوز نسبة الغياب الورقي" }}
+                                        </span>
+                                    </div>
+                                </td>
+                                {% else %}
+                                {% if course.is_published %}
+                                    {% if course.is_passed %}
+                                    <td style="padding: 0.85rem; text-align: center; font-weight: 800; color: #16a34a;">
+                                    {% else %}
+                                    <td style="padding: 0.85rem; text-align: center; font-weight: 800; color: #dc2626;">
+                                    {% endif %}
+                                        {{ course.grade|default:"--" }}
+                                    </td>
+                                    <td style="padding: 0.85rem; text-align: center; font-weight: 700;">{{ course.letter|default:"--" }}</td>
+                                    <td style="padding: 0.85rem; text-align: center;">
+                                        <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px;">
+                                            {% if course.is_passed %}
+                                            <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; gap: 4px;">
+                                                ✔ ناجح
+                                            </span>
+                                            {% else %}
+                                            <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #fee2e2; color: #b91c1c;">
+                                                راسب
+                                            </span>
+                                            {% endif %}
+                                            
+                                            {% if course.appeal and course.appeal_badge %}
+                                            <span style="padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 800; font-size: 0.72rem; background: {{ course.appeal_badge.bg_color }}; color: {{ course.appeal_badge.text_color }}; border: 1px solid {{ course.appeal_badge.border_color }}; display: inline-flex; align-items: center; gap: 3px;">
+                                                {{ course.appeal_badge.text }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                {% else %}
+                                    <td style="padding: 0.85rem; text-align: center; font-weight: 800; color: #475569;">--</td>
+                                    <td style="padding: 0.85rem; text-align: center; font-weight: 700;">--</td>
+                                    <td style="padding: 0.85rem; text-align: center;">
+                                        <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px;">
+                                            <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;">
+                                                ⏳ رصد نصفي
+                                            </span>
+                                            {% if course.appeal and course.appeal_badge %}
+                                            <span style="padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 800; font-size: 0.72rem; background: {{ course.appeal_badge.bg_color }}; color: {{ course.appeal_badge.text_color }}; border: 1px solid {{ course.appeal_badge.border_color }}; display: inline-flex; align-items: center; gap: 3px;">
+                                                {{ course.appeal_badge.text }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+                                {% endif %}
+                                {% endif %}
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" style="padding: 2rem; text-align: center; color: #64748b;">لا توجد درجات مسجلة لهذا الفصل</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- كارت الملخص السفلي مع إطار محدد لمعدل الفصل والمعدل التراكمي -->
+                <div style="margin-top: 1.25rem; padding: 1rem 1.25rem; background: #f8fafc; border: 1.5px dashed #cbd5e1; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; width: 100%; box-sizing: border-box;">
+                    <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap;">
+                        <span style="font-size: 0.9rem; font-weight: 700; color: #334155;">
+                            إجمالي ساعات الفصل: <strong style="color: #0F4C50;">{{ sem.total_credits }}</strong>
+                        </span>
+                        <span style="font-size: 0.9rem; font-weight: 700; color: #334155;">
+                            المعدل الفصلي: <strong style="color: #0284c7;">{{ sem.gpa }}</strong>
+                        </span>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.95rem; font-weight: 800; color: #1A5D63; background: #e0f2fe; padding: 0.4rem 1rem; border-radius: 8px;">
+                            المعدل التراكمي العام: {{ cgpa|default:"0.00" }}
+                        </span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        {% empty %}
+        <div class="empty-state-card" style="width: 100%; box-sizing: border-box; text-align: center; padding: 3.5rem 1.5rem; background: white; border-radius: 16px; border: 1.5px dashed #cbd5e1; color: #64748b; box-shadow: 0 4px 10px rgba(0,0,0,0.02);">
+            <span style="font-size: 2.8rem; display: block; margin-bottom: 0.75rem;">📊</span>
+            <h3 style="font-weight: 800; font-size: 1.2rem; color: #334155; margin: 0 0 0.4rem 0;">لا توجد درجات أو نتائج مسجلة حتى الآن</h3>
+            <p style="font-size: 0.9rem; color: #64748b; margin: 0;">سيتم عرض الدرجات والتقديرات التفصيلية فور اعتمادها ونشرها من قبل الكلية.</p>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'student/js/student_api_client.js' %}"></script>
+<script src="{% static 'student/js/results_estimates.js' %}?v=3.2.0"></script>
+
+<script>
+// دالة تبديل الأكورديون بسلاسة
+function toggleSemesterAccordion(headerElem) {
+    const card = headerElem.closest('.semester-accordion-card');
+    if (!card) return;
+    const body = card.querySelector('.semester-accordion-body');
+    const arrow = headerElem.querySelector('.accordion-arrow');
+    
+    if (body.style.display === 'none') {
+        body.style.display = 'block';
+        if (arrow) arrow.style.transform = 'rotate(0deg)';
+    } else {
+        body.style.display = 'none';
+        if (arrow) arrow.style.transform = 'rotate(-90deg)';
+    }
+}
+window.toggleSemesterAccordion = toggleSemesterAccordion;
+</script>
+{% endblock %}

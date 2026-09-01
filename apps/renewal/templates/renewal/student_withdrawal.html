@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}سحب الملف / Student Withdrawal - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/student_withdrawal.css' %}?v=1.0.2">
+{% endblock %}
+
+{% block content %}
+<main class="custom-main student-withdrawal-page">
+    <div class="max-w-7xl mx-auto">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إجراء سحب الملف (Student Withdrawal)</h1>
+                <p class="page-header-subtitle">إدارة وتوثيق طلبات سحب ملفات الطالبات واستخراج واستعراض الاستمارة
+                    الرسمية</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_studentwithdrawal' and not request.user|has_exec_perm:'student.change_studystatus' and not request.user|has_exec_perm:'student.change_student' and not request.user|has_exec_perm:'add_studentwithdrawal' and not request.user|has_exec_perm:'change_student' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_withdrawal_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+            {% else %}
+            <div id="jobInactiveBanner" class="job-inactive-banner"
+                style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+                {% endif %}
+                <span class="material-symbols-outlined"
+                    style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+                <div style="flex: 1;">
+                    <span id="jobInactiveBannerText">{% if not is_withdrawal_job_open %}{{
+                        withdrawal_job_message|default:"خدمة 'سحب الملف' غير مفعلة حالياً" }}{% endif %}</span>
+                </div>
+            </div>
+
+            <!-- Section 1: Search Bar -->
+            <div class="group-box search-box-card">
+                <span class="group-title">
+                    <span class="material-symbols-outlined group-title-icon">search</span>
+                    البحث عن الطالبة برقم القيد
+                </span>
+
+                <form id="searchWithdrawalForm" onsubmit="event.preventDefault(); searchStudentForWithdrawal();">
+                    <div class="search-input-grid">
+                        <div class="input-wrapper">
+                            <label class="field-label" for="searchStudentId">رقم القيد <span
+                                    class="required-star">*</span></label>
+                            <div class="relative-input-container">
+                                <span class="material-symbols-outlined input-left-icon">badge</span>
+                                <input type="text" id="searchStudentId"
+                                    class="custom-input with-icon {% if not is_withdrawal_job_open %}opacity-60 cursor-not-allowed{% endif %}"
+                                    placeholder="أدخلي رقم قيد الطالبة..." autocomplete="off"
+                                    {% if not is_withdrawal_job_open %}disabled style="opacity: 0.6 !important; cursor: not-allowed !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                            </div>
+                        </div>
+                        <div class="search-btn-group">
+                            <button id="btnSearchWithdrawal" type="button"
+                                class="btn-action btn-search-red {% if not is_withdrawal_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+                                onclick="searchStudentForWithdrawal()"
+                                {% if not is_withdrawal_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                                <span class="material-symbols-outlined">search</span> بحث عن الطالبة
+                            </button>
+                            <button id="btnResetWithdrawal" type="button"
+                                class="btn-action btn-reset {% if not is_withdrawal_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+                                onclick="resetWithdrawalForm()"
+                                {% if not is_withdrawal_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                                <span class="material-symbols-outlined">cleaning_services</span> مسح
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="searchLoader" class="loader-container hidden">
+                <div class="pulse-spinner"></div>
+                <p>جاري جلب البيانات الفعلية للطالبة من قاعدة البيانات...</p>
+            </div>
+
+            <!-- Section 2: Real Student Card & Withdrawal Actions -->
+            <div id="studentDetailsContainer" class="hidden animate-fade-in">
+
+                <!-- Dynamic Real Student Info Card -->
+                <div class="student-profile-card">
+                    <div class="card-header-bar">
+                        <div class="profile-avatar-badge">
+                            <span class="material-symbols-outlined avatar-icon">school</span>
+                        </div>
+                        <div class="header-main-info">
+                            <h2 id="cardStudentName" class="student-name-display">---</h2>
+                            <div class="card-pills-row">
+                                <span class="info-pill id-pill">
+                                    <span class="material-symbols-outlined">numbers</span>
+                                    <span id="cardStudentId">---</span>
+                                </span>
+                                <span class="info-pill dept-pill">
+                                    <span class="material-symbols-outlined">domain</span>
+                                    <span id="cardDepartment">---</span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">الفصل / المستوى</span>
+                            <span id="cardLevel" class="detail-value font-semibold">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الفصل الدراسي</span>
+                            <span id="cardSemester" class="detail-value font-semibold">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الرقم الوطني</span>
+                            <span id="cardNationalId" class="detail-value">---</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">الحالة الأكاديمية الحالية</span>
+                            <span id="cardStatusBadge" class="status-badge status-active">---</span>
+                        </div>
+                    </div>
+
+                    <!-- Red Banner Warning for Already Withdrawn Student -->
+                    <div id="alreadyWithdrawnWarning" class="alert-banner warning-banner hidden">
+                        <span class="material-symbols-outlined">warning</span>
+                        <div>
+                            <strong>تنبيه رسمي:</strong> هذه الطالبة مسجلة بوضع <strong>(مسحوبة ملف)</strong> في
+                            المنظومة. يمكنك طباعة الاستمارة الرسمية مباشرة من خلال زر الطباعة بالأسفل 🖨️.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Withdrawal Reason Form Inputs -->
+                <div id="withdrawalFormCard" class="group-box form-withdrawal-card mt-6">
+                    <span class="group-title text-red-dark">
+                        <span class="material-symbols-outlined group-title-icon">description</span>
+                        نموذج استمارة سحب الملف
+                    </span>
+
+                    <form id="withdrawalForm" onsubmit="event.preventDefault(); handleWithdrawalButtonClick();">
+                        <div class="form-grid-2col">
+
+                            <!-- Reason Selection -->
+                            <div class="form-group">
+                                <label class="field-label" for="withdrawalReasonSelect">
+                                    سبب سحب الملف <span class="required-star">*</span>
+                                </label>
+                                <div class="relative-input-container">
+                                    <span class="material-symbols-outlined input-left-icon">help_outline</span>
+                                    <select id="withdrawalReasonSelect"
+                                        class="custom-input with-icon {% if not is_withdrawal_job_open %}opacity-60 cursor-not-allowed{% endif %}"
+                                        {% if not is_withdrawal_job_open %}disabled style="opacity: 0.6 !important; cursor: not-allowed !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                                        <option value="" disabled selected>-- اختاري سبب سحب الملف --</option>
+                                        <option value="ظروف شخصية">ظروف شخصية</option>
+                                        <option value="انتقال لكليّة أخرى">انتقال لكليّة أخرى</option>
+                                        <option value="عدم رغبة في الإكمال">عدم رغبة في الإكمال</option>
+                                        <option value="أخرى">أخرى</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Withdrawal Date (Auto) -->
+                            <div class="form-group">
+                                <label class="field-label" for="withdrawalDate">
+                                    تاريخ اليوم (تلقائي)
+                                </label>
+                                <div class="relative-input-container">
+                                    <span class="material-symbols-outlined input-left-icon">calendar_today</span>
+                                    <input type="date" id="withdrawalDate" class="custom-input with-icon readonly-input"
+                                        value="{{ today_date }}" readonly>
+                                </div>
+                            </div>
+
+                            <!-- Custom Reason specify if "أخرى" -->
+                            <div id="customReasonContainer" class="form-group full-width-field hidden">
+                                <label class="field-label" for="customReasonInput">
+                                    تفاصيل السبب الآخر <span class="required-star">*</span>
+                                </label>
+                                <input type="text" id="customReasonInput"
+                                    class="custom-input {% if not is_withdrawal_job_open %}opacity-60 cursor-not-allowed{% endif %}"
+                                    placeholder="اكتبي توضيح سبب سحب الملف..."
+                                    {% if not is_withdrawal_job_open %}disabled style="opacity: 0.6 !important; cursor: not-allowed !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                            </div>
+
+                            <!-- Admin Notes -->
+                            <div class="form-group full-width-field">
+                                <label class="field-label" for="adminNotes">
+                                    ملاحظات إدارة التسجيل والشؤون الأكاديمية
+                                </label>
+                                <textarea id="adminNotes"
+                                    class="custom-textarea {% if not is_withdrawal_job_open %}opacity-60 cursor-not-allowed{% endif %}"
+                                    rows="3" placeholder="أدخلي أي ملاحظات إدارية ترغبين في تدوينها بالاستمارة..."
+                                    {% if not is_withdrawal_job_open %}disabled style="opacity: 0.6 !important; cursor: not-allowed !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Single Dynamic Action Button: Withdraw File -> Print -->
+                        <div class="actions-row mt-6">
+                            {% if request.user|has_exec_perm:'renewal.add_studentwithdrawal' or request.user|has_exec_perm:'student.change_studystatus' or request.user|has_exec_perm:'student.change_student' or request.user|has_exec_perm:'add_studentwithdrawal' or request.user|has_exec_perm:'change_student' %}
+                            <button id="btnWithdrawalAction" type="button" data-mode="withdraw"
+                                class="btn-primary-red {% if not is_withdrawal_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+                                onclick="handleWithdrawalButtonClick(event)"
+                                {% if not is_withdrawal_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
+                                <span class="material-symbols-outlined">person_remove</span>
+                                <span>سحب الملف</span>
+                            </button>
+                            {% endif %}
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+</main>
+
+<!-- Print Section (يظهر فقط أثناء عملية الطباعة الرسمية) -->
+<div id="withdrawalPrintSection" class="print-section">
+    <div class="print-container">
+        <div class="print-border">
+
+            <div class="print-header">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-logo"
+                    onerror="this.style.display='none'">
+                <h1 class="print-college-name">كلية طرابلس للعلوم والتقنية</h1>
+                <h2 class="print-form-title">إدارة القبول والتسجيل وشؤون الطالبات</h2>
+                <h3 class="print-undertaking">استمارة سحب ملف وإخلاء طرف طالبة</h3>
+            </div>
+
+            <div class="print-meta">
+                <div class="print-meta-item print-meta-right">
+                    <span>التاريخ:</span>
+                    <span class="print-line print-bold" id="printDate"></span>
+                </div>
+                <div class="print-meta-item print-meta-left">
+                    <span>رقم القيد:</span>
+                    <span class="print-line print-bold" id="printStudentId"></span>
+                </div>
+            </div>
+
+            <div class="print-student-data">
+                <div class="print-row">
+                    <span class="print-label">اسم الطالبة الكامل /</span>
+                    <span class="print-line print-bold" id="printStudentName"></span>
+                </div>
+                <div class="print-row">
+                    <span class="print-label">الرقم الوطني /</span>
+                    <span class="print-line print-bold" id="printNationalId"></span>
+                </div>
+                <div class="print-row">
+                    <span class="print-label">القسم / التخصص /</span>
+                    <span class="print-line print-bold" id="printDepartment"></span>
+                </div>
+                <div class="print-row">
+                    <span class="print-label">المستوى / الفصل الدراسي /</span>
+                    <span class="print-line print-bold" id="printLevel"></span>
+                </div>
+                <div class="print-row">
+                    <span class="print-label">سبب سحب الملف /</span>
+                    <span class="print-line print-bold" id="printReason"></span>
+                </div>
+                <div class="print-row">
+                    <span class="print-label">ملاحظات الإدارة /</span>
+                    <span class="print-line print-bold" id="printNotes"></span>
+                </div>
+            </div>
+
+            <div class="print-pledge">
+                <p>بناءً على طلب الطالبة المذكورة أعلاه، تم إجراء سحب ملفها وتوثيق الحالة رسمياً في منظومة الكلية.</p>
+            </div>
+
+            <div class="print-salutation">
+                والســلام عليكــم ورحمــة الله وبركاته
+            </div>
+
+            <div class="print-signatures">
+                <div class="print-signature-box">
+                    <span>توقيع الطالبة</span>
+                    <span class="print-line"></span>
+                </div>
+                <div class="print-signature-box">
+                    <span>توقيع الموظف المختص</span>
+                    <span class="print-line"></span>
+                </div>
+            </div>
+
+            <div class="print-registrar">
+                <span>اعتماد المسجل العام بالكلية والتوقيع والختم</span>
+                <span class="print-line" style="width: 70%; min-width: 250px;"></span>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined"
+            style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage"
+            style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+        </p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function (item, index) {
+                    setTimeout(function () {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch (e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+<script>
+    const isWithdrawalJobOpen = "{{ is_withdrawal_job_open|yesno:'true,false' }}" === "true";
+    window.is_withdrawal_job_open = isWithdrawalJobOpen;
+    window.IS_WITHDRAWAL_JOB_OPEN = isWithdrawalJobOpen;
+    window.WITHDRAWAL_JOB_MESSAGE = "{{ withdrawal_job_message|escapejs }}";
+    window.OFFICIAL_ADMISSION_HEAD = "{{ admission_head_name|escapejs }}";
+    window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/student_withdrawal.js' %}?v=2.1.3"></script>
+{% endblock %}

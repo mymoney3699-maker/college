@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}عرض النتائج - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* 🌙 Dynamic Dark Mode Overrides for Academic Results Page */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .results-page,
+    html.dark .results-container,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-title,
+    html.dark h1,
+    html.dark h2,
+    html.dark h3,
+    html.dark h4,
+    html.dark h5,
+    html.dark h6 {
+        color: #f8fafc !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    /* Container Boxes & Cards */
+    html.dark .group-box,
+    html.dark .inquiry-group-box,
+    html.dark div[class*="bg-white"] {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+
+    /* Form Fields & Filter Selects */
+    html.dark .filters-grid-5col label,
+    html.dark label {
+        color: #e2e8f0 !important;
+    }
+
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark #majorSelect,
+    html.dark #seasonSelect,
+    html.dark #levelSelect,
+    html.dark #subjectSelect,
+    html.dark #searchInput {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .search-results-list {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    /* Student Info Card & Results Table */
+    html.dark .student-info-wrapper,
+    html.dark #studentInfo {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .table-responsive {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #e2e8f0 !important;
+    }
+
+    html.dark .data-table thead tr {
+        background-color: #0f172a !important;
+        border-bottom-color: #38bdf8 !important;
+    }
+
+    html.dark .data-table th {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table td,
+    html.dark #resultsTableBody td {
+        background-color: #1e293b !important;
+        color: #e2e8f0 !important;
+        border-color: #334155 !important;
+    }
+
+    html.dark .data-table tr:hover td,
+    html.dark #resultsTableBody tr:hover td {
+        background-color: #334155 !important;
+        color: #ffffff !important;
+    }
+
+    /* ===================================================
+       إخفاء حاوية الطباعة في الشاشة العادية
+       =================================================== */
+    #reportPrintContainer {
+        display: none !important;
+    }
+
+    /* ===================================================
+       أنماط الطباعة الرسمية - الاتجاه العمودي (Portrait)
+       =================================================== */
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 5mm;
+        }
+
+        /* إخفاء جميع عناصر الواجهة */
+        body>*:not(#reportPrintContainer) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        /* إظهار التقرير المطبوع فقط */
+        #reportPrintContainer {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 2px !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #reportPrintContainer * {
+            visibility: visible !important;
+        }
+
+        /* إطار الصفحة الخارجي */
+        .rpt-page-frame {
+            border: 2px solid #000000 !important;
+            padding: 14px 18px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+            min-height: 275mm !important;
+            box-sizing: border-box !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            position: relative !important;
+            direction: rtl !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+        }
+
+        /* ① الترويسة (الشعار فوق والكلام تحته في المنتصف) */
+        .rpt-header-section {
+            text-align: center !important;
+            margin-bottom: 10px !important;
+        }
+
+        .rpt-college-logo {
+            max-height: 70px !important;
+            width: auto !important;
+            margin: 0 auto 5px auto !important;
+            display: block !important;
+        }
+
+        .rpt-country {
+            font-size: 13.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-ministry {
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 2px !important;
+            color: #000 !important;
+        }
+
+        .rpt-college {
+            font-size: 15.5px !important;
+            font-weight: bold !important;
+            margin-bottom: 5px !important;
+            color: #000 !important;
+        }
+
+        /* الخط الفاصل أسفل الكلية */
+        .rpt-header-line {
+            width: 70% !important;
+            margin: 5px auto 8px auto !important;
+            border-top: 1.5px solid #000000 !important;
+        }
+
+        /* عنوان التقرير */
+        .rpt-title {
+            font-size: 18px !important;
+            font-weight: bold !important;
+            margin: 4px 0 10px 0 !important;
+            letter-spacing: 1px !important;
+            color: #000 !important;
+            text-align: center !important;
+        }
+
+        /* ② معلومات التقرير الفلاتر (يمين ويسار) */
+        .rpt-info-grid {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            margin: 10px 0 8px 0 !important;
+            font-size: 12px !important;
+            line-height: 1.8 !important;
+            color: #000 !important;
+        }
+
+        .rpt-info-right {
+            text-align: right !important;
+        }
+
+        .rpt-info-left {
+            text-align: left !important;
+            direction: rtl !important;
+        }
+
+        .rpt-lbl {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        .rpt-val {
+            font-weight: bold !important;
+            color: #000 !important;
+        }
+
+        /* كرت معلومات الطالب المطبوع */
+        .rpt-student-card-print {
+            border: 1px solid #000 !important;
+            padding: 6px 10px !important;
+            margin-bottom: 10px !important;
+            font-size: 11.5px !important;
+            background: #fff !important;
+        }
+
+        /* ③ الجدول المطبوع */
+        .rpt-table-container {
+            margin-top: 6px !important;
+            margin-bottom: 20px !important;
+        }
+
+        .rpt-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            font-size: 10px !important;
+            direction: rtl !important;
+        }
+
+        .rpt-table th {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 5px 3px !important;
+            border: 1.5px solid #000000 !important;
+            font-weight: bold !important;
+            text-align: center !important;
+            white-space: nowrap !important;
+        }
+
+        .rpt-table td {
+            padding: 4px 3px !important;
+            border: 1px solid #000000 !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        .rpt-empty-cell {
+            padding: 16px !important;
+            text-align: center !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+        }
+
+        /* ④ صندوق التوقيع */
+        .rpt-signature-box {
+            margin-top: 35px !important;
+            text-align: left !important;
+            float: left !important;
+            margin-left: 10px !important;
+            page-break-inside: avoid !important;
+        }
+
+        .rpt-signature-box .off-name {
+            display: block !important;
+            font-size: 12.5px !important;
+            font-weight: bold !important;
+            color: #000000 !important;
+            margin-bottom: 3px !important;
+            min-height: 1em !important;
+        }
+
+        .rpt-signature-box .off-pos {
+            display: block !important;
+            font-size: 11.5px !important;
+            font-weight: 600 !important;
+            color: #000000 !important;
+            margin-bottom: 8px !important;
+        }
+
+        .rpt-signature-box .off-sig-line {
+            display: block !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            letter-spacing: 1px !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main results-page">
+    <div class="results-container">
+
+        <!-- رأس الصفحة -->
+        <div class="page-header-row no-print">
+            <div>
+                <h1 class="page-header-title">النتيجة الدراسية</h1>
+                <p class="page-header-subtitle">عرض واستعلام عن نتائج ومعدلات الطلاب الأكاديمية</p>
+            </div>
+        </div>
+
+        <!-- صندوق الفلاتر والبحث -->
+        <div class="group-box inquiry-group-box no-print">
+            <span class="group-title">تصفية نتائج الطلاب</span>
+
+            <div class="filters-grid-5col"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem;">
+                <div>
+                    <label for="majorSelect">التخصص</label>
+                    <select id="majorSelect">
+                        <option value="">كل التخصصات</option>
+                        {% for d in departments %}
+                        <option value="{{ d.id }}">{{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="seasonSelect">الموسم الدراسي</label>
+                    <select id="seasonSelect">
+                        <option value="">كل المواسم</option>
+                        {% for s in semesters %}
+                        <option value="{{ s.id }}">{{ s.year }} - {{ s.get_type_display }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="levelSelect">المستوى الدراسي</label>
+                    <select id="levelSelect">
+                        <option value="">كل المستويات</option>
+                        {% for l in levels %}
+                        <option value="{{ l.id }}">المستوى {{ l.number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label for="subjectSelect">المادة الدراسية</label>
+                    <select id="subjectSelect">
+                        <option value="">كل المواد</option>
+                        {% for c in courses %}
+                        <option value="{{ c.id }}">{{ c.code }} - {{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div style="position: relative;">
+                    <label for="searchInput">رقم القيد / الاسم</label>
+                    <input type="text" id="searchInput" placeholder="رقم القيد أو اسم الطالب..." autocomplete="off">
+                    <div id="studentSuggestions" class="search-results-list hidden"
+                        style="position: absolute; width: 100%; z-index: 100; right: 0; left: 0; max-height: 150px; overflow-y: auto;">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- كرت معلومات الطالب للشاشة -->
+        <div id="studentInfo" class="student-info-wrapper no-print"></div>
+
+        <!-- أزرار التحكم -->
+        <div class="buttons-row mt-6 no-print">
+            <button type="button" class="btn-action btn-search" onclick="searchResults()">
+                <span class="material-symbols-outlined">search</span> بحث
+            </button>
+            <button type="button" class="btn-action btn-exit" onclick="goBack()">
+                <span class="material-symbols-outlined">arrow_back</span> رجوع
+            </button>
+        </div>
+
+        <!-- جدول عرض النتائج للشاشة -->
+        <div class="group-box hidden no-print" id="resultsTableBox">
+            <span class="group-title">قائمة النتائج الدراسية</span>
+            <div class="table-actions-row">
+                <button type="button" class="btn-action btn-print" onclick="window.printPage()">
+                    <span class="material-symbols-outlined">print</span> طباعة
+                </button>
+                <button type="button" class="btn-action btn-exit" onclick="goBack()">
+                    <span class="material-symbols-outlined">logout</span> خروج
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>اسم الطالب</th>
+                            <th>المادة</th>
+                            <th>السنة/الفصل</th>
+                            <th>النصفي (40)</th>
+                            <th>النهائي (60)</th>
+                            <th>المجموع (100)</th>
+                            <th>التقدير / الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <tr>
+                            <td colspan="8" class="empty-cell">لا توجد بيانات</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ============================================================
+     حاوية التقرير الرسمي العمودية المخصصة للطباعة (A4 Portrait)
+     ============================================================ -->
+<div id="reportPrintContainer">
+    <div class="rpt-page-frame">
+
+        <!-- ① الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line"
+            style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="rpt-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">
+            تقرير النتائج الدراسية</div>
+
+        <!-- ② معلومات التقرير الفلاتر -->
+        <div class="rpt-info-grid">
+            <div class="rpt-info-right">
+                <div><span class="rpt-lbl">الموسم الدراسي:</span> <span id="rptPrintSeason" class="rpt-val">كل
+                        المواسم</span></div>
+                <div><span class="rpt-lbl">نوع الكشف:</span> <span class="rpt-val">النتائج الدراسية</span></div>
+            </div>
+            <div class="rpt-info-left">
+                <div><span class="rpt-lbl">القسم:</span> <span id="rptPrintDept" class="rpt-val">كل التخصصات</span>
+                </div>
+                <div><span class="rpt-lbl">المستوى الدراسي:</span> <span id="rptPrintLevel" class="rpt-val">كل
+                        المستويات</span></div>
+            </div>
+        </div>
+
+        <!-- كرت ملخص الطالب في التقرير المطبوع -->
+        <div id="rptPrintStudentCard" class="rpt-student-card-print" style="display: none;">
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;">
+                <div><strong>رقم القيد:</strong> <span id="printStId">—</span></div>
+                <div><strong>اسم الطالب الرباعي:</strong> <span id="printStName">—</span></div>
+                <div><strong>التخصص:</strong> <span id="printStDept">—</span></div>
+                <div><strong>المستوى:</strong> <span id="printStLevel">—</span></div>
+                <div><strong>المعدل التراكمي:</strong> <span id="printStGpa">—</span></div>
+                <div><strong>المواد الناجحة/الراسبة:</strong> <span id="printStCounts">—</span></div>
+            </div>
+        </div>
+
+        <!-- ③ جدول التقرير المطبوع العمودي (Portrait A4) - بدون عمود المستوى -->
+        <div class="rpt-table-container">
+            <table class="rpt-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">م</th>
+                        <th style="width: 14%;">رقم القيد</th>
+                        <th style="width: 31%;">اسم الطالب</th>
+                        <th style="width: 24%;">المادة</th>
+                        <th style="width: 12%;">السنة/الفصل</th>
+                        <th style="width: 5%;">النصفي</th>
+                        <th style="width: 5%;">النهائي</th>
+                        <th style="width: 4%;">المجموع</th>
+                        <th style="width: 4%;">التقدير</th>
+                    </tr>
+                </thead>
+                <tbody id="rptPrintTableBody">
+                    <tr>
+                        <td colspan="9" class="rpt-empty-cell">لا توجد بيانات مطابقة لمعايير البحث.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ④ صندوق التوقيع جهة اليسار -->
+        <div class="rpt-signature-box" data-official="exams_coordinator">
+            <span class="off-name"></span>
+            <span class="off-pos">منسق الدراسة والامتحانات</span>
+            <span class="off-sig-line">التوقيع والختم: ............................................</span>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'grades/js/show_results.js' %}?v=3.3.0"></script>
+{% endblock %}

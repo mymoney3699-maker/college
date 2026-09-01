@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}الملف الشخصي - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main profile-page">
+    <div class="profile-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">الملف الشخصي</h1>
+                <p class="page-header-subtitle">معلومات الحساب والبيانات الشخصية</p>
+            </div>
+        </div>
+
+        <div class="group-box">
+            <span class="group-title">الملف الشخصي</span>
+            
+            <!-- تبويبات -->
+            <div class="dashboard-tabs">
+                <button class="tab-btn active-tab" onclick="showProfileTab('info')">
+                    <span class="material-symbols-outlined">person</span> معلومات الحساب
+                </button>
+                <button class="tab-btn" onclick="showProfileTab('password')">
+                    <span class="material-symbols-outlined">lock</span> تغيير كلمة المرور
+                </button>
+            </div>
+
+            <!-- تبويب معلومات الحساب -->
+            <div id="infoTab" class="tab-content">
+                <div class="dashboard-grid">
+                    <!-- معلومات سريعة -->
+                    <div class="dashboard-info-box">
+                        <h3 class="dashboard-section-title">معلومات سريعة</h3>
+                        <div class="dashboard-info-list">
+                            <div class="dashboard-info-item">
+                                <span class="dashboard-info-label">العضوية منذ</span>
+                                <span class="dashboard-info-value" id="memberSince">-</span>
+                            </div>
+                            <div class="dashboard-info-item">
+                                <span class="dashboard-info-label">آخر تسجيل دخول</span>
+                                <span class="dashboard-info-value" id="lastLogin">-</span>
+                            </div>
+                            <div class="dashboard-info-item">
+                                <span class="dashboard-info-label">رقم الهاتف</span>
+                                <span class="dashboard-info-value" id="phoneNumber">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- بيانات الحساب -->
+                    <div class="dashboard-form">
+                        <h3 class="dashboard-section-title">بيانات الحساب</h3>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">اسم المستخدم</label>
+                            <input type="text" id="username" readonly class="readonly-field">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">الاسم الكامل</label>
+                            <input type="text" id="fullname">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">الوظيفة</label>
+                            <input type="text" id="jobTitle">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">القسم</label>
+                            <input type="text" id="department">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">البريد الإلكتروني</label>
+                            <input type="email" id="email">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="buttons-row mt-6">
+                    <button class="btn-action btn-save" onclick="saveProfile()">
+                        <span class="material-symbols-outlined">save</span> حفظ التغييرات
+                    </button>
+                    <button class="btn-action btn-exit" onclick="goBack()">
+                        <span class="material-symbols-outlined">arrow_back</span> رجوع
+                    </button>
+                </div>
+            </div>
+
+            <!-- تبويب تغيير كلمة المرور -->
+            <div id="passwordTab" class="tab-content hidden">
+                <div class="password-form-container">
+                    <div class="password-form">
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">كلمة المرور القديمة</label>
+                            <input type="password" id="oldPassword" placeholder="••••••••">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">كلمة المرور الجديدة</label>
+                            <input type="password" id="newPassword" placeholder="••••••••">
+                        </div>
+                        <div class="dashboard-form-group">
+                            <label class="dashboard-info-label">تأكيد كلمة المرور</label>
+                            <input type="password" id="confirmPassword" placeholder="••••••••">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="buttons-row mt-6">
+                    <button class="btn-action btn-edit" onclick="changePassword()">
+                        <span class="material-symbols-outlined">lock_reset</span> تغيير كلمة المرور
+                    </button>
+                    <button class="btn-action btn-exit" onclick="goBack()">
+                        <span class="material-symbols-outlined">arrow_back</span> رجوع
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'faculty/js/profile.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,1281 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}لوحة منسق الدراسة والامتحانات | كلية طرابلس للعلوم والتقنية{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* =========================================================================
+       📊 لوحة منسق الدراسة والامتحانات - التصميم المطور والأنيق
+       ========================================================================= */
+    .coord-dashboard {
+        --coord-teal: #307e92;
+        --coord-teal-dark: #1e5563;
+        --coord-teal-light: #48a2b8;
+        --coord-gold: #b59b66;
+        --coord-emerald: #10b981;
+        --coord-cyan: #0284c7;
+        --coord-purple: #8b5cf6;
+        --coord-rose: #f43f5e;
+        --coord-amber: #f59e0b;
+        --coord-card-bg: #ffffff;
+        --coord-card-border: #e2e8f0;
+        --coord-text-title: #0f172a;
+        --coord-text-body: #334155;
+        --coord-text-muted: #64748b;
+        --coord-bg-subtle: #f8fafc;
+        direction: rtl;
+        font-family: 'Segoe UI', Tahoma, Geneva, sans-serif;
+    }
+
+    html.dark .coord-dashboard {
+        --coord-card-bg: #1e293b;
+        --coord-card-border: #334155;
+        --coord-text-title: #f8fafc;
+        --coord-text-body: #cbd5e1;
+        --coord-text-muted: #94a3b8;
+        --coord-bg-subtle: #0f172a;
+    }
+
+    .coord-wrapper {
+        max-width: 1440px;
+        margin: 0 auto;
+        padding: 0.75rem 1.25rem 3.5rem 1.25rem;
+    }
+
+    /* Hero Banner Header - Clean & Purely Informative */
+    .coord-hero-banner {
+        position: relative;
+        background: linear-gradient(135deg, #1e5563 0%, #307e92 55%, #18444f 100%);
+        border-radius: 20px;
+        padding: 2rem 2.5rem;
+        margin-bottom: 2.25rem;
+        color: #ffffff;
+        box-shadow: 0 12px 32px -4px rgba(30, 85, 99, 0.32);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        overflow: hidden;
+    }
+
+    .coord-hero-content-wrap {
+        position: relative;
+        z-index: 2;
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .coord-banner-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        flex-wrap: wrap;
+    }
+
+    .coord-btn-print {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        padding: 0.68rem 1.25rem;
+        border-radius: 12px;
+        font-size: 0.9rem;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 1.5px solid transparent;
+        white-space: nowrap;
+    }
+
+    .coord-btn-print-stat {
+        background: #ffffff;
+        color: #1e5563;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    }
+
+    .coord-btn-print-stat:hover {
+        background: #f0fdfa;
+        color: #0f766e;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
+    }
+
+    .coord-btn-print-std {
+        background: rgba(255, 255, 255, 0.16);
+        color: #ffffff;
+        border-color: rgba(255, 255, 255, 0.35);
+        backdrop-filter: blur(8px);
+    }
+
+    .coord-btn-print-std:hover {
+        background: rgba(255, 255, 255, 0.28);
+        border-color: #ffffff;
+        transform: translateY(-2px);
+        color: #ffffff;
+    }
+
+    .coord-hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -70px;
+        left: -70px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .coord-hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -60px;
+        right: 20%;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(181, 155, 102, 0.22) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .coord-banner-title {
+        font-size: clamp(1.5rem, 2.4vw, 2.05rem);
+        font-weight: 900;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        color: #ffffff;
+        letter-spacing: -0.5px;
+    }
+
+    .coord-banner-desc {
+        font-size: 0.98rem;
+        color: rgba(255, 255, 255, 0.92);
+        margin: 0;
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    /* 4 High-Impact KPI Metric Cards */
+    .coord-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.35rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .coord-kpi-card {
+        background: var(--coord-card-bg);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 18px;
+        padding: 1.55rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.05);
+        transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .coord-kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 32px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .coord-kpi-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 4.5px;
+    }
+
+    .kpi-card-pass::after { background: linear-gradient(90deg, #34d399, #10b981); }
+    .kpi-card-fail::after { background: linear-gradient(90deg, #fb7185, #f43f5e); }
+    .kpi-card-best::after { background: linear-gradient(90deg, #f59e0b, #b59b66); }
+    .kpi-card-worst::after { background: linear-gradient(90deg, #f97316, #ea580c); }
+
+    .coord-kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 0.85rem;
+    }
+
+    .coord-kpi-icon {
+        width: 52px;
+        height: 52px;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 26px;
+    }
+
+    .kpi-card-pass .coord-kpi-icon { background: rgba(16, 185, 129, 0.14); color: #10b981; }
+    .kpi-card-fail .coord-kpi-icon { background: rgba(244, 63, 94, 0.14); color: #f43f5e; }
+    .kpi-card-best .coord-kpi-icon { background: rgba(181, 155, 102, 0.16); color: #b59b66; }
+    .kpi-card-worst .coord-kpi-icon { background: rgba(249, 115, 22, 0.14); color: #ea580c; }
+
+    .coord-kpi-label {
+        font-size: 0.86rem;
+        font-weight: 800;
+        color: var(--coord-text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .coord-kpi-value {
+        font-size: 2.1rem;
+        font-weight: 900;
+        color: var(--coord-text-title);
+        line-height: 1.1;
+        letter-spacing: -0.5px;
+        word-break: break-word;
+    }
+
+    .coord-kpi-footer {
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--coord-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.45rem;
+        margin-top: 1rem;
+        padding-top: 0.85rem;
+        border-top: 1px dashed var(--coord-card-border);
+    }
+
+    /* Charts Section Layout */
+    .coord-charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1.45fr;
+        gap: 1.5rem;
+        margin-bottom: 2.25rem;
+    }
+
+    .coord-chart-card {
+        background: var(--coord-card-bg);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 18px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .coord-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.35rem;
+        padding-bottom: 0.95rem;
+        border-bottom: 1.5px solid var(--coord-card-border);
+    }
+
+    .coord-card-title {
+        font-size: 1.15rem;
+        font-weight: 900;
+        color: var(--coord-text-title);
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+    }
+
+    .coord-chart-container {
+        position: relative;
+        flex: 1;
+        min-height: 290px;
+        max-height: 330px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* Department Results Table Panel */
+    .coord-panel-box {
+        background: var(--coord-card-bg);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 18px;
+        padding: 1.85rem;
+        margin-bottom: 2.25rem;
+        box-shadow: 0 4px 20px -3px rgba(0, 0, 0, 0.04);
+    }
+
+    .coord-depts-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+        gap: 1.25rem;
+    }
+
+    .coord-dept-summary-card {
+        background: var(--coord-bg-subtle);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 14px;
+        padding: 1.25rem;
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .coord-dept-summary-card:hover {
+        border-color: var(--coord-teal);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px -2px rgba(0, 0, 0, 0.06);
+    }
+
+    .coord-dept-card-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .coord-dept-title-text {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--coord-text-title);
+    }
+
+    .coord-dept-rates-row {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 0.65rem;
+        font-size: 0.84rem;
+        font-weight: 800;
+    }
+
+    .badge-pass-rate {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.12);
+        padding: 0.2rem 0.65rem;
+        border-radius: 6px;
+    }
+
+    .badge-fail-rate {
+        color: #f43f5e;
+        background: rgba(244, 63, 94, 0.12);
+        padding: 0.2rem 0.65rem;
+        border-radius: 6px;
+    }
+
+    .coord-dept-progress-container {
+        height: 8px;
+        background: #e2e8f0;
+        border-radius: 9999px;
+        overflow: hidden;
+        margin-bottom: 0.65rem;
+        display: flex;
+    }
+
+    html.dark .coord-dept-progress-container {
+        background: #334155;
+    }
+
+    .coord-dept-bar-pass {
+        height: 100%;
+        background: #10b981;
+    }
+
+    .coord-dept-bar-fail {
+        height: 100%;
+        background: #f43f5e;
+    }
+
+    .coord-dept-card-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: var(--coord-text-muted);
+    }
+
+    .coord-btn-dept-action {
+        background: none;
+        border: none;
+        color: var(--coord-teal);
+        font-weight: 800;
+        cursor: pointer;
+        padding: 0;
+        font-size: 0.82rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        transition: color 0.2s;
+    }
+
+    .coord-btn-dept-action:hover {
+        color: #0284c7;
+        text-decoration: underline;
+    }
+
+    /* Faculty Directory Toolbar & Cards */
+    .coord-profs-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1.6rem;
+    }
+
+    .coord-search-input-box {
+        position: relative;
+        flex: 1;
+        min-width: 280px;
+        max-width: 520px;
+    }
+
+    .coord-search-input-box .coord-search-icon {
+        position: absolute;
+        top: 50%;
+        right: 1.1rem;
+        transform: translateY(-50%);
+        color: var(--coord-text-muted);
+        font-size: 22px;
+        pointer-events: none;
+    }
+
+    .coord-search-input-box input {
+        width: 100%;
+        padding: 0.72rem 3rem 0.72rem 1.1rem;
+        border-radius: 12px;
+        border: 1.5px solid var(--coord-card-border);
+        background: var(--coord-card-bg);
+        color: var(--coord-text-title);
+        font-size: 0.92rem;
+        font-weight: 600;
+        box-sizing: border-box;
+        transition: border 0.2s, box-shadow 0.2s;
+    }
+
+    .coord-search-input-box input:focus {
+        border-color: var(--coord-teal);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18);
+    }
+
+    .coord-select-filter {
+        padding: 0.72rem 1.2rem;
+        border-radius: 12px;
+        border: 1.5px solid var(--coord-card-border);
+        background: var(--coord-card-bg);
+        color: var(--coord-text-title);
+        font-size: 0.92rem;
+        font-weight: 700;
+        cursor: pointer;
+        min-width: 220px;
+    }
+
+    .coord-select-filter:focus {
+        border-color: var(--coord-teal);
+        outline: none;
+    }
+
+    .coord-profs-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(390px, 1fr));
+        gap: 1.4rem;
+    }
+
+    .coord-prof-card {
+        background: var(--coord-card-bg);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 16px;
+        padding: 1.45rem;
+        transition: all 0.28s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    }
+
+    .coord-prof-card:hover {
+        border-color: var(--coord-teal);
+        transform: translateY(-4px);
+        box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.09);
+    }
+
+    .coord-prof-header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1.15rem;
+    }
+
+    .coord-prof-avatar {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #307e92 0%, #1e5563 100%);
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        font-weight: 900;
+        flex-shrink: 0;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.28);
+    }
+
+    .coord-prof-meta {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .coord-prof-name {
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: var(--coord-text-title);
+        margin: 0 0 0.3rem 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .coord-prof-dept-badge {
+        display: inline-block;
+        font-size: 0.76rem;
+        font-weight: 800;
+        padding: 0.2rem 0.65rem;
+        border-radius: 6px;
+        background: rgba(181, 155, 102, 0.15);
+        color: #b59b66;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    html.dark .coord-prof-dept-badge {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+    }
+
+    .coord-prof-contact-box {
+        display: flex;
+        flex-direction: column;
+        gap: 0.45rem;
+        font-size: 0.84rem;
+        font-weight: 600;
+        color: var(--coord-text-muted);
+        margin-bottom: 1.15rem;
+        padding: 0.85rem 1rem;
+        border-radius: 10px;
+        background: var(--coord-bg-subtle);
+        border: 1px solid var(--coord-card-border);
+    }
+
+    .coord-contact-line {
+        display: flex;
+        align-items: center;
+        gap: 0.55rem;
+    }
+
+    .coord-contact-line .material-symbols-outlined {
+        font-size: 17px;
+        color: var(--coord-teal);
+    }
+
+    .coord-courses-assigned-container {
+        margin-top: auto;
+        padding-top: 1rem;
+        border-top: 1px dashed var(--coord-card-border);
+    }
+
+    .coord-courses-title-row {
+        font-size: 0.85rem;
+        font-weight: 800;
+        color: var(--coord-text-title);
+        margin-bottom: 0.65rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .coord-courses-count-pill {
+        background: rgba(48, 126, 146, 0.15);
+        color: var(--coord-teal);
+        padding: 0.15rem 0.6rem;
+        border-radius: 9999px;
+        font-size: 0.78rem;
+        font-weight: 800;
+    }
+
+    .coord-courses-pill-grid {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        max-height: 120px;
+        overflow-y: auto;
+    }
+
+    .coord-course-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding: 0.35rem 0.75rem;
+        border-radius: 8px;
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #334155;
+    }
+
+    html.dark .coord-course-tag {
+        background: #1e293b;
+        border-color: #475569;
+        color: #e2e8f0;
+    }
+
+    .coord-course-tag .coord-course-code {
+        color: var(--coord-teal);
+        font-family: monospace;
+        font-weight: 900;
+    }
+
+    html.dark .coord-course-tag .coord-course-code {
+        color: #38bdf8;
+    }
+
+    .coord-empty-courses-alert {
+        font-size: 0.8rem;
+        color: #94a3b8;
+        font-style: italic;
+        padding: 0.35rem 0;
+    }
+
+    /* Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+
+    /* Dynamic Signatures Panel */
+    .coord-signatures-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.35rem;
+        margin-top: 0.5rem;
+    }
+
+    .coord-sig-card {
+        background: var(--coord-bg-subtle);
+        border: 1px solid var(--coord-card-border);
+        border-radius: 14px;
+        padding: 1.25rem 1rem;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .coord-sig-title {
+        font-size: 0.9rem;
+        font-weight: 900;
+        color: var(--coord-text-title);
+        margin-bottom: 0.35rem;
+    }
+
+    .coord-sig-name {
+        font-size: 1.02rem;
+        font-weight: 800;
+        color: var(--coord-teal);
+        margin: 0.4rem 0 0.2rem 0;
+    }
+
+    .coord-sig-role {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--coord-text-muted);
+        margin-bottom: 1.6rem;
+    }
+
+    .coord-sig-line {
+        width: 75%;
+        margin: 0 auto;
+        border-bottom: 1.5px dashed var(--coord-card-border);
+    }
+
+    /* الترويسة الحكومية الرسمية للطباعة */
+    .coord-print-official-header {
+        display: none;
+    }
+
+    /* Print Optimization Rules */
+    @media print {
+        body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+        .app-sidebar, .app-header, .coord-banner-actions, .coord-profs-toolbar,
+        #toastNotification, .coord-badge-interactive, .mobile-menu-toggle-btn,
+        .coord-btn-dept-action, .coord-search-input-box, .coord-select-filter,
+        .quick-filter-badge {
+            display: none !important;
+        }
+        .custom-main, .coord-wrapper {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        .coord-print-official-header {
+            display: grid !important;
+            grid-template-columns: 1.2fr 0.8fr 1.2fr;
+            align-items: center;
+            padding-bottom: 1.2rem;
+            border-bottom: 2.5px solid #1e5563;
+            margin-bottom: 1.5rem;
+        }
+        .coord-print-official-header .header-col-ar {
+            text-align: right;
+            line-height: 1.4;
+        }
+        .coord-print-official-header .header-col-ar h3 {
+            font-size: 0.98rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .coord-print-official-header .header-col-ar p {
+            font-size: 0.82rem;
+            font-weight: 700;
+            color: #475569;
+        }
+        .coord-print-official-header .header-col-center {
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .coord-print-official-header .print-college-logo {
+            width: 75px;
+            height: 75px;
+            object-fit: contain;
+            border-radius: 50%;
+        }
+        .coord-print-official-header .header-col-en {
+            text-align: left;
+            direction: ltr;
+            line-height: 1.35;
+        }
+        .coord-print-official-header .header-col-en h3 {
+            font-size: 0.88rem;
+            font-weight: 900;
+            color: #0f172a;
+        }
+        .coord-print-official-header .header-col-en p {
+            font-size: 0.76rem;
+            font-weight: 700;
+            color: #475569;
+        }
+        .coord-hero-banner {
+            background: #1e5563 !important;
+            color: #ffffff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            border-radius: 8px !important;
+            padding: 1.2rem 1.5rem !important;
+            margin-bottom: 1.2rem !important;
+        }
+        .coord-kpi-card, .coord-chart-card, .coord-panel-box, .coord-sig-card, .coord-dept-summary-card {
+            border: 1px solid #cbd5e1 !important;
+            box-shadow: none !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .coord-charts-row {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 1.2rem !important;
+            margin-bottom: 1.5rem !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .coord-chart-container {
+            position: relative !important;
+            height: 240px !important;
+            min-height: 240px !important;
+            width: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+        }
+        .coord-chart-container canvas {
+            max-width: 100% !important;
+            max-height: 240px !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .coord-chart-container .chart-print-img {
+            display: block !important;
+            max-width: 100% !important;
+            max-height: 240px !important;
+            height: auto !important;
+            object-fit: contain !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body.print-mode-statistical .coord-profs-box {
+            display: none !important;
+        }
+        .coord-signatures-grid {
+            display: grid !important;
+            grid-template-columns: repeat(3, 1fr) !important;
+            gap: 1.5rem !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .coord-sig-line {
+            border-bottom: 1px solid #94a3b8 !important;
+        }
+        @page {
+            size: A4 portrait;
+            margin: 1.2cm;
+        }
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1200px) {
+        .coord-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .coord-charts-row { grid-template-columns: 1fr; }
+        .coord-signatures-grid { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 720px) {
+        .coord-kpi-grid { grid-template-columns: 1fr; }
+        .coord-profs-grid { grid-template-columns: 1fr; }
+        .coord-hero-banner { flex-direction: column; align-items: flex-start; }
+        .coord-profs-toolbar { flex-direction: column; align-items: stretch; }
+        .coord-search-input-box { max-width: 100%; }
+        .coord-select-filter { width: 100%; }
+        .coord-signatures-grid { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main coord-dashboard" dir="rtl">
+    <div class="coord-wrapper">
+
+        <!-- ===== ترويسة الطباعة الرسمية الموحدة (تظهر فقط عند أمر الطباعة) ===== -->
+        <div class="coord-print-official-header">
+            <div class="header-col-ar">
+                <h3>دولة ليبيا</h3>
+                <p>وزارة التعليم العالي والبحث العلمي</p>
+                <p><strong>كلية طرابلس للعلوم والتقنية</strong></p>
+                <p>إدارة الدراسة والامتحانات والكنترول</p>
+            </div>
+            <div class="header-col-center">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo">
+            </div>
+            <div class="header-col-en">
+                <h3>State of Libya</h3>
+                <p>Min. of Higher Education & Scientific Research</p>
+                <p><strong>Tripoli College of Science & Tech.</strong></p>
+                <p>Study & Examinations Administration</p>
+            </div>
+        </div>
+
+        <!-- ===== 1. رأس الصفحة والترحيب ===== -->
+        <div class="coord-hero-banner">
+            <div class="coord-hero-content-wrap">
+                <div>
+                    <h1 class="coord-banner-title">
+                        <span class="material-symbols-outlined" style="font-size: 36px;">analytics</span>
+                        <span>لوحة منسق الدراسة والامتحانات</span>
+                    </h1>
+                    <p class="coord-banner-desc">مؤشرات نسب النجاح والرسوب للعام الدراسي، أداء التخصصات، ودليل أعضاء هيئة التدريس</p>
+                </div>
+            </div>
+            <div class="coord-hero-actions" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <!-- 1. زر طباعة التقرير الإحصائي والرسومات البيانية -->
+                <button type="button" onclick="printStatisticalReport()" class="coord-btn-print coord-btn-print-stat" title="طباعة اللوحة متضمنة جميع الرسوم البيانية والإحصائيات بدقة عالية">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+                    <span>طباعة التقرير الإحصائي والرسومات البيانية</span>
+                </button>
+
+                <!-- 2. زر طباعة التقرير العادي القياسي -->
+                <button type="button" onclick="printStandardReport()" class="coord-btn-print coord-btn-print-std" title="طباعة ملخص البيانات النصية والجداول القياسية بشكل منظم">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">description</span>
+                    <span>طباعة التقرير العادي</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- ===== 2. بطاقات مؤشرات منسق وموظف الدراسة والامتحانات (KPIs) ===== -->
+        <div class="coord-kpi-grid">
+            
+            <!-- مؤشر المجموعات الدراسية -->
+            <div class="coord-kpi-card" style="border-right-color: #307e92;">
+                <div class="coord-kpi-top">
+                    <div>
+                        <div class="coord-kpi-label">إجمالي المجموعات الدراسية</div>
+                        <div class="coord-kpi-value" style="color: #307e92;">{{ total_groups }}</div>
+                    </div>
+                    <div class="coord-kpi-icon" style="background: rgba(48, 126, 146, 0.12); color: #307e92;">
+                        <span class="material-symbols-outlined">diversity_3</span>
+                    </div>
+                </div>
+                <div class="coord-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #307e92;">groups</span>
+                    <span>مجموعات الشعب والتوزيع الأكاديمي</span>
+                </div>
+            </div>
+
+            <!-- مؤشر أعضاء هيئة التدريس -->
+            <div class="coord-kpi-card" style="border-right-color: #0284c7;">
+                <div class="coord-kpi-top">
+                    <div>
+                        <div class="coord-kpi-label">أعضاء هيئة التدريس (الأساتذة)</div>
+                        <div class="coord-kpi-value" style="color: #0284c7;">{{ total_professors }}</div>
+                    </div>
+                    <div class="coord-kpi-icon" style="background: rgba(2, 132, 199, 0.12); color: #0284c7;">
+                        <span class="material-symbols-outlined">badge</span>
+                    </div>
+                </div>
+                <div class="coord-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">check_circle</span>
+                    <span><strong style="color: #10b981;">{{ active_professors }}</strong> أستاذ مكلف بالتدريس</span>
+                </div>
+            </div>
+
+            <!-- مؤشر المقررات الدراسية -->
+            <div class="coord-kpi-card" style="border-right-color: #10b981;">
+                <div class="coord-kpi-top">
+                    <div>
+                        <div class="coord-kpi-label">المقررات والمواد الدراسية</div>
+                        <div class="coord-kpi-value" style="color: #10b981;">{{ total_courses }}</div>
+                    </div>
+                    <div class="coord-kpi-icon" style="background: rgba(16, 185, 129, 0.12); color: #10b981;">
+                        <span class="material-symbols-outlined">menu_book</span>
+                    </div>
+                </div>
+                <div class="coord-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #10b981;">library_books</span>
+                    <span>المقررات الفعالة في الخطة الدراسية</span>
+                </div>
+            </div>
+
+            <!-- مؤشر الطلبة وعمليات التنزيل -->
+            <div class="coord-kpi-card" style="border-right-color: #b59b66;">
+                <div class="coord-kpi-top">
+                    <div>
+                        <div class="coord-kpi-label">الطلبة وتنزيل المواد</div>
+                        <div class="coord-kpi-value" style="color: #b59b66;">{{ total_students }}</div>
+                    </div>
+                    <div class="coord-kpi-icon" style="background: rgba(181, 155, 102, 0.12); color: #b59b66;">
+                        <span class="material-symbols-outlined">school</span>
+                    </div>
+                </div>
+                <div class="coord-kpi-footer">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #307e92;">how_to_reg</span>
+                    <span><strong style="color: #307e92;">{{ total_registrations }}</strong> تسجيل مواد بالفصل</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== 3. قسم الرسوم البيانية التفاعلية (توزيع الطلاب والمجموعات والأساتذة) ===== -->
+        <div class="coord-charts-row">
+            
+            <!-- الرسم الدائري: توزيع الطلاب حسب الأقسام -->
+            <div class="coord-chart-card">
+                <div class="coord-card-header">
+                    <h2 class="coord-card-title">
+                        <span class="material-symbols-outlined" style="font-size: 24px; color: var(--coord-teal);">pie_chart</span>
+                        توزيع الطلاب حسب الأقسام الأكاديمية
+                    </h2>
+                </div>
+                <div class="coord-chart-container">
+                    <canvas id="passFailDoughnutChart"></canvas>
+                </div>
+            </div>
+
+            <!-- الرسم الشريطي: مقارنة أعداد الأساتذة والمجموعات حسب الأقسام -->
+            <div class="coord-chart-card">
+                <div class="coord-card-header">
+                    <h2 class="coord-card-title">
+                        <span class="material-symbols-outlined" style="font-size: 24px; color: #0284c7;">bar_chart</span>
+                        توزيع الأساتذة والمجموعات حسب الأقسام
+                    </h2>
+                    <span style="font-size: 0.82rem; font-weight: 800; color: var(--coord-text-muted);">انقر على القسم للتصفية</span>
+                </div>
+                <div class="coord-chart-container">
+                    <canvas id="deptPassFailBarChart"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ===== 4. بطاقات أداء وتفاصيل الأقسام والتخصصات الأكاديمية ===== -->
+        <div class="coord-panel-box">
+            <div class="coord-card-header">
+                <h2 class="coord-card-title">
+                    <span class="material-symbols-outlined" style="font-size: 24px; color: var(--coord-teal);">domain</span>
+                    تفاصيل الأقسام الأكاديمية والمجموعات والأساتذة
+                </h2>
+                <span style="font-size: 0.86rem; font-weight: 800; color: var(--coord-text-muted);">
+                    إجمالي الطلاب: <strong style="color: var(--coord-teal);">{{ total_students }} طالب</strong>
+                </span>
+            </div>
+
+            <div class="coord-depts-summary-grid">
+                {% for dept in departments_stats %}
+                <div class="coord-dept-summary-card" data-dept-id="{{ dept.id }}">
+                    <div class="coord-dept-card-top">
+                        <span class="coord-dept-title-text">{{ dept.name }}</span>
+                        <span style="font-size: 0.82rem; font-weight: 800; color: var(--coord-text-muted);">{{ dept.count }} طالب</span>
+                    </div>
+
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 0.75rem 0;">
+                        <span style="background: rgba(2, 132, 199, 0.1); color: #0284c7; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">
+                            👨‍🏫 {{ dept.prof_count }} أساتذة
+                        </span>
+                        <span style="background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">
+                            👥 {{ dept.group_count }} مجموعات
+                        </span>
+                        <span style="background: rgba(48, 126, 146, 0.1); color: #307e92; padding: 3px 8px; border-radius: 6px; font-weight: 700; font-size: 0.8rem;">
+                            📚 {{ dept.course_count }} مقررات
+                        </span>
+                    </div>
+
+                    <div class="coord-dept-card-footer">
+                        <span>عمليات التنزيل: {{ dept.reg_count }}</span>
+                        <button type="button" class="coord-btn-dept-action" onclick="window.filterByDepartment('{{ dept.id }}')">
+                            <span>عرض الأساتذة</span>
+                            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_left_alt</span>
+                        </button>
+                    </div>
+                </div>
+                {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; color: var(--coord-text-muted); padding: 2rem;">
+                    لا توجد بيانات مسجلة للأقسام حالياً.
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- ===== 5. دليل وعرض الأساتذة والمواد المسندة ===== -->
+        <div class="coord-panel-box">
+            <div class="coord-card-header" style="margin-bottom: 1.5rem;">
+                <h2 class="coord-card-title">
+                    <span class="material-symbols-outlined" style="font-size: 24px; color: var(--coord-teal);">groups</span>
+                    دليل أعضاء هيئة التدريس والمواد التي يدرسونها
+                </h2>
+                <div class="coord-badge-pill" style="background: rgba(48, 126, 146, 0.1); color: var(--coord-teal); border-color: rgba(48, 126, 146, 0.25);">
+                    <span>إجمالي النتائج: <strong id="profsCountDisplay">{{ professors_list|length }}</strong> أستاذ</span>
+                </div>
+            </div>
+
+            <!-- شريط البحث والفلترة -->
+            <div class="coord-profs-toolbar">
+                <div class="coord-search-input-box">
+                    <span class="material-symbols-outlined coord-search-icon">search</span>
+                    <input type="text" id="profSearchInput" placeholder="ابحث باسم الأستاذ، الرقم الوظيفي، أو اسم/رمز المادة..." autocomplete="off">
+                </div>
+
+                <div style="display: flex; gap: 0.85rem; align-items: center;">
+                    <select id="deptFilterSelect" class="coord-select-filter">
+                        <option value="">جميع الأقسام والتخصصات</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}">{{ dept.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button type="button" class="coord-badge-pill coord-badge-interactive" onclick="window.resetProfFilters()" style="background: transparent; color: var(--coord-text-muted); border-color: var(--coord-card-border);">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">filter_alt_off</span>
+                        <span>مسح الفلتر</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- شبكة كروت الأساتذة -->
+            <div class="coord-profs-grid" id="profsGridContainer">
+                {% for prof in professors_list %}
+                <div class="coord-prof-card" data-prof-id="{{ prof.id }}" data-dept-id="{{ prof.department_id|default:'' }}">
+                    
+                    <div>
+                        <!-- ترويسة كرت الأستاذ -->
+                        <div class="coord-prof-header">
+                            <div class="coord-prof-avatar">
+                                <span class="material-symbols-outlined">person</span>
+                            </div>
+                            <div class="coord-prof-meta">
+                                <h3 class="coord-prof-name" title="{{ prof.full_name }}">{{ prof.full_name }}</h3>
+                                <span class="coord-prof-dept-badge">{{ prof.department_name }}</span>
+                            </div>
+                        </div>
+
+                        <!-- معلومات الاتصال والرقم الوظيفي -->
+                        <div class="coord-prof-contact-box">
+                            <div class="coord-contact-line">
+                                <span class="material-symbols-outlined">badge</span>
+                                <span>الرقم الوظيفي: <strong>{{ prof.professor_id }}</strong></span>
+                            </div>
+                            <div class="coord-contact-line">
+                                <span class="material-symbols-outlined">mail</span>
+                                <span>{{ prof.email|default:"لا يوجد بريد مسجل" }}</span>
+                            </div>
+                            {% if prof.phone and prof.phone != '—' %}
+                            <div class="coord-contact-line">
+                                <span class="material-symbols-outlined">phone</span>
+                                <span>{{ prof.phone }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- قائمة المواد التي يدرسها الأستاذ -->
+                    <div class="coord-courses-assigned-container">
+                        <div class="coord-courses-title-row">
+                            <span>المواد المسندة للتدريس:</span>
+                            <span class="coord-courses-count-pill">{{ prof.courses_count }} مواد</span>
+                        </div>
+                        
+                        <div class="coord-courses-pill-grid">
+                            {% for c in prof.courses_taught %}
+                            <div class="coord-course-tag" title="{{ c.name }}">
+                                <span class="coord-course-code">{{ c.code }}</span>
+                                <span>{{ c.name }}</span>
+                                {% if c.groups %}
+                                <span style="font-size: 0.72rem; color: var(--coord-text-muted);">({{ c.groups|join:", " }})</span>
+                                {% endif %}
+                            </div>
+                            {% empty %}
+                            <div class="coord-empty-courses-alert">
+                                <span class="material-symbols-outlined" style="font-size: 15px; vertical-align: middle;">info</span>
+                                لا توجد مواد مسندة لهذا الأستاذ حالياً.
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                </div>
+                {% empty %}
+                <div style="grid-column: 1 / -1; text-align: center; color: var(--coord-text-muted); padding: 3rem;">
+                    لا يوجد أساتذة مسجلين في النظام حتى الآن.
+                </div>
+                {% endfor %}
+        <!-- ===== 6. التوقيعات والاعتماد الرسمي المعتمد ديناميكياً ===== -->
+        <div class="coord-panel-box coord-signatures-panel" style="margin-top: 2rem;">
+            <div class="coord-card-header" style="margin-bottom: 1.2rem;">
+                <h2 class="coord-card-title">
+                    <span class="material-symbols-outlined" style="font-size: 24px; color: var(--coord-teal);">verified</span>
+                    الاعتماد والتوقيعات الرسمية المعتمدة
+                </h2>
+                <span style="font-size: 0.82rem; font-weight: 700; color: var(--coord-text-muted);">
+                    مُستخرج بواسطة: <strong style="color: var(--coord-teal);">{{ signatures.current_user_name }}</strong> ({{ signatures.current_user_role }})
+                </span>
+            </div>
+
+            <div class="coord-signatures-grid">
+                <!-- توقيع 1: منسق وموظف الدراسة والامتحانات -->
+                <div class="coord-sig-card">
+                    <div class="coord-sig-title">منسق/ة الدراسة والامتحانات</div>
+                    <div class="coord-sig-name">{{ signatures.coord_name }}</div>
+                    <div class="coord-sig-role">التدقيق والإحصاء والمتابعة</div>
+                    <div class="coord-sig-line"></div>
+                </div>
+
+                <!-- توقيع 2: المسجل العام -->
+                <div class="coord-sig-card">
+                    <div class="coord-sig-title">المسجل العام للكلية</div>
+                    <div class="coord-sig-name">{{ signatures.gen_reg_name }}</div>
+                    <div class="coord-sig-role">التوثيق والمراجعة الأكاديمية</div>
+                    <div class="coord-sig-line"></div>
+                </div>
+
+                <!-- توقيع 3: عميد الكلية -->
+                <div class="coord-sig-card">
+                    <div class="coord-sig-title">عميد الكلية</div>
+                    <div class="coord-sig-name">{{ signatures.dean_name }}</div>
+                    <div class="coord-sig-role">الاعتماد النهائي والختم الرسمي</div>
+                    <div class="coord-sig-line"></div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<!-- البيانات الأولية الممررة كـ JSON -->
+<script id="professorsDataJson" type="application/json">
+{{ professors_json|safe }}
+</script>
+<script id="departmentsStatsJson" type="application/json">
+{{ departments_stats_json|safe }}
+</script>
+<script id="passFailJson" type="application/json">
+{{ pass_fail_json|safe }}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js Library -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'faculty/js/coordinator_dashboard.js' %}?v=1.1.0"></script>
+{% endblock %}

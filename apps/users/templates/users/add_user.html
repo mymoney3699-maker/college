@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إضافة مستخدم جديد - كلية طرابلس{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto">
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-header-title">إضافة مستخدم جديد</h1>
+            <p class="page-header-subtitle">إنشاء حساب مستخدم جديد وتخصيص صلاحياته مباشرة في النظام</p>
+        </div>
+    </div>
+
+    <div class="group-box">
+        <span class="group-title">إضافة مستخدم</span>
+
+        <div class="flex border-b border-gray-200 mb-6">
+            <button type="button" id="tabBtn-info" onclick="switchTab('info')" class="tab-btn active-tab">
+                <span class="material-symbols-outlined">badge</span> البيانات الأساسية
+            </button>
+            <button type="button" id="tabBtn-groups" onclick="switchTab('groups')" class="tab-btn">
+                <span class="material-symbols-outlined">group</span> المجموعات والجروبات
+            </button>
+            <button type="button" id="tabBtn-permissions" onclick="switchTab('permissions')" class="tab-btn">
+                <span class="material-symbols-outlined">rule</span> الصلاحيات المباشرة
+            </button>
+        </div>
+
+        <form id="createUserForm" class="space-y-6" onsubmit="submitCreateUser(event)">
+            
+            <div id="tab-info" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">اسم المستخدم (Username) <span class="text-red-500">*</span></label>
+                        <input type="text" id="new_username" required class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2" placeholder="مثال: ali_2026">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">البريد الإلكتروني</label>
+                        <input type="email" id="new_email" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2" placeholder="example@college.edu.ly">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">كلمة المرور (الرمز) <span class="text-red-500">*</span></label>
+                        <input type="password" id="new_password" required minlength="6" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2" placeholder="••••••••">
+                    </div>
+                    <div>
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">رقم الهاتف</label>
+                        <input type="text" id="new_phone" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2" placeholder="091XXXXXXX">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">الدور الوظيفي الأساسي <span class="text-red-500">*</span></label>
+                        <select id="new_role" required onchange="toggleDepartmentSelect()" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2">
+                            {% for code, name in role_choices %}
+                                <option value="{{ code }}" {% if code == 'student' %}selected{% endif %}>{{ name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div id="deptSelectContainer" class="hidden">
+                        <label class="block font-bold text-primary dark:text-[#4a99ad] mb-1">القسم العلمي التابع له <span class="text-red-500">*</span></label>
+                        <select id="new_department" class="w-full border border-gray-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-md p-2">
+                            <option value="">-- اختر القسم العلمي --</option>
+                            {% for dept in departments %}
+                                <option value="{{ dept.id }}">{{ dept.name }} ({{ dept.code }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-groups" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                    <p class="text-sm font-bold text-slate-400">إختر المجموعات/الأدوار المجهزة مسبقاً لإضافتها لهذا المستخدم مباشرة:</p>
+                    <button type="button" onclick="openCreateGroupModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#297373] text-white text-xs font-bold shadow-sm hover:bg-[#1f6666] transition-all self-start sm:self-auto">
+                        <span class="material-symbols-outlined text-sm">add_circle</span> + إضافة مجموعة جديدة
+                    </button>
+                </div>
+
+                <div id="emptyGroupsAlert" class="{% if all_groups %}hidden{% endif %} text-slate-400 italic text-sm p-4 border border-dashed border-slate-300 dark:border-slate-700 rounded-lg text-center">
+                    لا توجد مجموعات معرفة بالنظام حالياً. يمكنك إنشاؤها فوراً بالضغط على زر إضافة مجموعة أعلاه.
+                </div>
+
+                <div id="groupsGridContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {% for group in all_groups %}
+                    <div id="group-card-{{ group.id }}" class="group-card flex items-center justify-between p-3 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                        <label class="flex items-center gap-3 cursor-pointer flex-1 m-0">
+                            <input type="checkbox" name="new_groups" value="{{ group.name }}" id="group-checkbox-{{ group.id }}" class="w-4 h-4 text-primary rounded focus:ring-primary" style="width: auto !important; height: auto !important;">
+                            <span id="group-name-display-{{ group.id }}" class="text-sm font-bold text-slate-700 dark:text-slate-300">{{ group.name }}</span>
+                        </label>
+                        <button type="button" onclick="startInlineEditGroup('{{ group.id }}', '{{ group.name|escapejs }}', event)" title="تعديل المجموعة وصلاحياتها" class="text-slate-400 hover:text-[#297373] p-1 rounded-md hover:bg-teal-50 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 text-xs font-semibold">
+                            <span class="material-symbols-outlined text-base">edit</span> تعديل
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- لوحة التعديل المباشر للمجموعة (Inline Group Editor) دون مغادرة الصفحة أو نوافذ منبثقة -->
+                <div id="inlineGroupEditor" class="hidden mt-4 p-5 bg-teal-50/40 dark:bg-slate-900 border-2 border-[#297373]/40 rounded-xl space-y-4 shadow-inner">
+                    <div class="flex items-center justify-between border-b border-teal-200 dark:border-slate-700 pb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-[#297373] text-xl">edit_note</span>
+                            <h4 class="text-sm font-bold text-[#1d6a71] dark:text-teal-300">
+                                تعديل المجموعة: <span id="inlineEditingGroupNameTitle" class="text-slate-800 dark:text-white font-extrabold"></span>
+                            </h4>
+                        </div>
+                        <button type="button" onclick="cancelInlineEditGroup()" class="text-slate-400 hover:text-rose-500 transition-colors p-1 rounded-md">
+                            <span class="material-symbols-outlined text-lg">close</span>
+                        </button>
+                    </div>
+
+                    <input type="hidden" id="inline_group_id" value="">
+
+                    <!-- تعديل اسم المجموعة -->
+                    <div class="space-y-1">
+                        <label class="block font-bold text-xs text-slate-700 dark:text-slate-300">اسم المجموعة <span class="text-red-500">*</span></label>
+                        <input type="text" id="inline_group_name" name="inline_group_name" placeholder="أدخل اسم المجموعة..." class="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-[#297373]">
+                    </div>
+
+                    <!-- تعديل صلاحيات المجموعة -->
+                    <div class="space-y-2">
+                        <div class="flex items-center justify-between">
+                            <label class="block font-bold text-xs text-slate-700 dark:text-slate-300">صلاحيات المجموعة:</label>
+                            <span id="inlineSelectedPermsCount" class="text-xs font-semibold text-[#297373]">محدد (0)</span>
+                        </div>
+
+                        <!-- بحث تفاعلي في الصلاحيات -->
+                        <div class="relative">
+                            <input type="text" id="inlinePermSearchInput" onkeyup="filterInlineGroupPermissions()" placeholder="ابحث باسم الصلاحية أو الكود..." class="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg pr-9 pl-3 py-1.5 text-xs focus:outline-none focus:border-[#297373]">
+                            <span class="material-symbols-outlined absolute right-2.5 top-2 text-slate-400 text-base">search</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[30vh] overflow-y-auto pr-2 border border-slate-200 dark:border-slate-700 rounded-lg p-2.5 bg-white dark:bg-slate-800/80">
+                            {% for perm in all_permissions %}
+                            <label class="flex items-start gap-2.5 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg cursor-pointer hover:bg-teal-50/50 dark:hover:bg-slate-800 transition-all inline-perm-item-row" data-perm-text="{{ perm.name }} {{ perm.model_ar|default:perm.content_type.model }} {{ perm.codename }}">
+                                <input type="checkbox" name="inline_group_perms" value="{{ perm.id }}" onchange="updateInlineSelectedPermsCount()" class="mt-1 w-3.5 h-3.5 text-[#297373] rounded focus:ring-[#297373]" style="width: auto !important; height: auto !important;">
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-xs font-bold text-slate-800 dark:text-slate-100 mb-1 leading-snug">{{ perm.name }}</div>
+                                    <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200 dark:border-teal-800/50">
+                                            <span class="material-symbols-outlined text-[11px] text-teal-600 dark:text-teal-400">category</span>
+                                            <span>{{ perm.model_ar|default:perm.content_type.model }}</span>
+                                        </span>
+                                        <span class="font-mono text-[9px] text-slate-400 dark:text-slate-500" dir="ltr">
+                                            {{ perm.codename }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- أزرار الإجراء المباشر -->
+                    <div class="flex items-center justify-end gap-2 pt-2 border-t border-teal-200 dark:border-slate-700">
+                        <button type="button" onclick="cancelInlineEditGroup()" class="px-3 py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 transition-all">
+                            إلغاء
+                        </button>
+                        <button type="button" id="btnSaveInlineGroup" onclick="saveInlineEditGroup()" class="px-4 py-1.5 rounded-lg bg-[#297373] text-white text-xs font-bold hover:bg-[#1f6666] shadow-sm transition-all flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">save</span> حفظ التعديلات
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="tab-permissions" class="hidden space-y-3">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2">
+                    <p class="text-sm font-bold text-slate-400">يمكنك منح صلاحيات دقيقة منفصلة للحساب مباشرة (إضافية على صلاحيات مجموعته):</p>
+                    <span id="selectedDirectPermsCount" class="text-xs font-semibold text-indigo-600 dark:text-indigo-400">محدد (0)</span>
+                </div>
+
+                <!-- بحث تفاعلي في الصلاحيات المباشرة -->
+                <div class="relative">
+                    <input type="text" id="directPermSearchInput" onkeyup="filterDirectPermissions()" placeholder="بحث سريع في الصلاحيات المباشرة (الاسم، القسم، أو الكود)..." class="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white rounded-lg pr-10 pl-4 py-2 text-xs focus:outline-none focus:border-indigo-500">
+                    <span class="material-symbols-outlined absolute right-3 top-2.5 text-slate-400 text-base">search</span>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[45vh] overflow-y-auto pr-2" id="directPermsListContainer">
+                    {% for perm in all_permissions %}
+                    <label class="permission-card flex items-start gap-3 p-3 bg-white dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl cursor-pointer hover:border-indigo-400 dark:hover:border-indigo-500 hover:bg-indigo-50/30 dark:hover:bg-slate-800 transition-all shadow-sm direct-perm-item-row" data-perm-text="{{ perm.name }} {{ perm.model_ar|default:perm.content_type.model }} {{ perm.codename }}">
+                        <input type="checkbox" name="new_permissions" value="{{ perm.codename }}" onchange="updateDirectSelectedPermsCount()" class="mt-1 w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500 cursor-pointer" style="width: auto !important; height: auto !important;">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-extrabold text-slate-800 dark:text-slate-100 mb-1.5 leading-snug">
+                                {{ perm.name }}
+                            </div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-[11px]">
+                                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-semibold border border-indigo-200 dark:border-indigo-800/60">
+                                    <span class="material-symbols-outlined text-[12px] text-indigo-500 dark:text-indigo-400">category</span>
+                                    <span>{{ perm.model_ar|default:perm.content_type.model }}</span>
+                                </span>
+                                <span class="inline-flex items-center px-1.5 py-0.5 rounded font-mono text-[10px] text-slate-400 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-700/40" dir="ltr">
+                                    {{ perm.codename }}
+                                </span>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="buttons-row mt-6">
+                <button type="submit" class="btn-action btn-save">
+                    <span class="material-symbols-outlined">save</span> حفظ وإنشاء الحساب
+                </button>
+                <a href="{% url 'users:manage_users' %}" class="btn-action btn-exit flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined">arrow_back</span> إلغاء
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- Modal: إضافة مجموعة جديدة -->
+<div id="modalCreateGroup" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 dir-rtl" dir="rtl">
+    <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full p-6 sm:p-8 space-y-6 border border-slate-200 dark:border-slate-700 shadow-2xl">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-4">
+            <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-2xl text-[#297373]">group_add</span>
+                <h3 class="text-xl font-bold text-[#1d6a71] dark:text-white">إضافة مجموعة جديدة (Group)</h3>
+            </div>
+            <button type="button" onclick="closeCreateGroupModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors">
+                <span class="material-symbols-outlined text-2xl">close</span>
+            </button>
+        </div>
+
+        <form id="formCreateGroup" onsubmit="submitCreateGroup(event)" class="space-y-5">
+            <!-- اسم المجموعة -->
+            <div class="space-y-1.5">
+                <label class="block font-bold text-sm text-slate-700 dark:text-slate-300">اسم المجموعة <span class="text-red-500">*</span></label>
+                <input type="text" id="modal_group_name" required placeholder="مثال: مشرفو الجداول، الموظفون الماليون..." class="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#297373]">
+            </div>
+
+            <!-- الصلاحيات المتاحة + بحث تفاعلي -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="block font-bold text-sm text-slate-700 dark:text-slate-300">حدد صلاحيات المجموعة:</label>
+                    <span id="selectedPermsCount" class="text-xs font-semibold text-[#297373]">محدد (0)</span>
+                </div>
+
+                <!-- حقل البحث في الصلاحيات -->
+                <div class="relative">
+                    <input type="text" id="permSearchInput" onkeyup="filterGroupPermissions()" placeholder="ابحث باسم الصلاحية أو الكود..." class="w-full border border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-white rounded-lg pr-10 pl-4 py-2 text-xs focus:outline-none focus:border-[#297373]">
+                    <span class="material-symbols-outlined absolute right-3 top-2 text-slate-400 text-lg">search</span>
+                </div>
+
+                <!-- قائمة الصلاحيات -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-[35vh] overflow-y-auto pr-2 border border-slate-200 dark:border-slate-700 rounded-lg p-3 bg-slate-50 dark:bg-slate-900/50">
+                    {% for perm in all_permissions %}
+                    <label class="flex items-start gap-2.5 p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-all perm-item-row" data-perm-text="{{ perm.name }} {{ perm.model_ar|default:perm.content_type.model }} {{ perm.codename }}">
+                        <input type="checkbox" name="modal_group_perms" value="{{ perm.id }}" onchange="updateSelectedPermsCount()" class="mt-1 w-4 h-4 text-[#297373] rounded focus:ring-[#297373]" style="width: auto !important; height: auto !important;">
+                        <div class="flex-1 min-w-0">
+                            <div class="text-xs font-bold text-slate-800 dark:text-slate-100 mb-1">{{ perm.name }}</div>
+                            <div class="flex flex-wrap items-center gap-1.5 text-[10px]">
+                                <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 font-semibold border border-teal-200 dark:border-teal-800/50">
+                                    <span class="material-symbols-outlined text-[11px] text-teal-600 dark:text-teal-400">category</span>
+                                    <span>{{ perm.model_ar|default:perm.content_type.model }}</span>
+                                </span>
+                                <span class="font-mono text-[9px] text-slate-400 dark:text-slate-500" dir="ltr">
+                                    {{ perm.codename }}
+                                </span>
+                            </div>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- أزرار الإجراءات -->
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <button type="button" onclick="closeCreateGroupModal()" class="px-4 py-2.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold hover:bg-slate-300 transition-all">
+                    إلغاء
+                </button>
+                <button type="submit" class="px-5 py-2.5 rounded-lg bg-[#297373] text-white text-xs font-bold hover:bg-[#1f6666] shadow-sm transition-all flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base">check_circle</span> حفظ وتحديد المجموعة
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="toastNotification" class="fixed bottom-5 left-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 max-w-sm w-full bg-white dark:bg-[#1e293b] border-r-4 rounded-lg shadow-xl p-4 flex items-center gap-3">
+    <span id="toastIcon" class="material-symbols-outlined text-2xl"></span>
+    <p id="toastMessage" class="text-sm font-bold text-slate-700 dark:text-slate-200"></p>
+</div>
+
+{% block extra_js %}
+<script src="{% static 'users/js/add_user.js' %}"></script>
+{% endblock %}
+{% endblock %}

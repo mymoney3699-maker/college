@@ -1,0 +1,252 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}نتيجة الفصل الحالي - بوابة الطالب{% endblock %}
+
+{% block page_title %}نتيجة الفصل الدراسي الحالي{% endblock %}
+{% block page_subtitle %}كشف بيان درجات امتحانات الفصل الفعال{% endblock %}
+
+{% block content %}
+<div class="result-container" style="max-width: 1100px; margin: 0 auto; padding: 0.5rem 1rem;">
+
+    <!-- 1. هيدر البانر العلوي (Dark Teal Banner) -->
+    <div style="background: linear-gradient(135deg, #1A5D63 0%, #0F4C50 100%); border-radius: 16px; padding: 1.5rem 2rem; margin-bottom: 1.5rem; color: white; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 10px 25px -5px rgba(15, 76, 80, 0.25);">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <div style="background: rgba(255, 255, 255, 0.15); border-radius: 12px; width: 52px; height: 52px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px);">
+                <span class="material-symbols-outlined" style="font-size: 28px; color: white;">workspace_premium</span>
+            </div>
+            <div>
+                <h1 style="font-size: 1.4rem; font-weight: 900; margin: 0; color: white; line-height: 1.2;">نتيجة الفصل الدراسي الحالي</h1>
+                <p style="font-size: 0.9rem; color: #e0f2fe; margin: 0.25rem 0 0 0; opacity: 0.9;">
+                    {% if current_semester %}{{ current_semester.year }} - {{ current_semester.get_type_display }}{% else %}الفصل الفعال الحالي{% endif %}
+                </p>
+            </div>
+        </div>
+        <div>
+            <a href="{% url 'student:my_grades' %}" style="background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(6px); color: white; text-decoration: none; padding: 0.6rem 1.2rem; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.3); font-weight: 700; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; transition: all 0.25s ease;" onmouseover="this.style.background='rgba(255,255,255,0.25)'" onmouseout="this.style.background='rgba(255,255,255,0.15)'">
+                <span class="material-symbols-outlined" style="font-size: 20px;">analytics</span>
+                <span>السجل الأكاديمي</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2. التحقق من تفعيل الفصل الدراسي (Conditional Visibility) -->
+    {% if is_active_semester and current_semester %}
+    
+    <!-- بطاقة معلومات الطالب (مربوطة بقاعدة البيانات) -->
+    <div style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <h3 style="font-size: 1.1rem; font-weight: 800; color: #0F4C50; margin: 0 0 1rem 0; display: flex; align-items: center; gap: 8px; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+            <span class="material-symbols-outlined" style="color: #1A5D63;">badge</span>
+            <span>البيانات الأكاديمية للطالب</span>
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.25rem;">
+            <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.825rem; font-weight: 700; display: block;">اسم الطالب:</span>
+                <span style="color: #0F4C50; font-size: 1.05rem; font-weight: 800; margin-top: 0.2rem; display: block;">{{ student_name|default:user.username }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.825rem; font-weight: 700; display: block;">رقم القيد:</span>
+                <span style="color: #1A5D63; font-size: 1.05rem; font-weight: 800; margin-top: 0.2rem; display: block;">{{ student_id|default:"--" }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.825rem; font-weight: 700; display: block;">القسم العلمي:</span>
+                <span style="color: #334155; font-size: 1rem; font-weight: 800; margin-top: 0.2rem; display: block;">{{ student_major|default:"قسم تقنية المعلومات" }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 0.85rem 1rem; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.825rem; font-weight: 700; display: block;">الفصل الفعال الحالي:</span>
+                <span style="color: #0284c7; font-size: 1rem; font-weight: 800; margin-top: 0.2rem; display: block;">{{ current_semester.year }} - {{ current_semester.get_type_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- جدول بيان درجات الفصل الفعال -->
+    <div style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; border-bottom: 2px solid #f1f5f9; padding-bottom: 0.75rem;">
+            <h3 style="font-size: 1.15rem; font-weight: 800; color: #0F4C50; margin: 0; display: flex; align-items: center; gap: 8px;">
+                <span class="material-symbols-outlined" style="color: #1A5D63;">assignment</span>
+                <span>📑 كشف بيان درجات امتحانات الفصل الحالي</span>
+            </h3>
+            <span style="font-size: 0.825rem; background: #dcfce7; color: #15803d; padding: 0.35rem 0.8rem; border-radius: 20px; font-weight: 800;">
+                الفصل الفعال (مُفعل)
+            </span>
+        </div>
+
+        <!-- شريط متابعة طعون درجات الفصل الحالي -->
+        {% if student_appeals_list %}
+        <div style="margin-bottom: 1.25rem; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.75rem;">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <span class="material-icons-outlined" style="color: #0284c7; font-size: 1.5rem;">fact_check</span>
+                <div>
+                    <h4 style="margin: 0; font-weight: 800; font-size: 0.95rem; color: #0369a1;">طلبات طعون نتائج الفصل الحالي ({{ student_appeals_count }})</h4>
+                    <p style="margin: 0.15rem 0 0 0; font-size: 0.8rem; color: #0284c7;">يتم تحديث ومتابعة حالة الطعن وانعكاس الدرجة مباشرة مع قسم الكنترول والدراسة والامتحانات.</p>
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                {% for app in student_appeals_list %}
+                <span style="font-size: 0.8rem; font-weight: 800; padding: 0.3rem 0.75rem; border-radius: 20px; background: {{ app.badge_info.bg_color }}; color: {{ app.badge_info.text_color }}; border: 1px solid {{ app.badge_info.border_color }}; display: inline-flex; align-items: center; gap: 4px;">
+                    {{ app.course.name }}: {{ app.badge_info.text }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="table-responsive" style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: right; font-size: 0.92rem;">
+                <thead>
+                    <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0; color: #475569;">
+                        <th style="padding: 0.85rem; font-weight: 800;">المقرر الدراسي</th>
+                        <th style="padding: 0.85rem; font-weight: 800; text-align: center;">الكود</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">الساعات</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">أعمال الفصل (40)</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">النهائي (60)</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">المجموع (100)</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">التقدير</th>
+                        <th style="padding: 0.85rem; text-align: center; font-weight: 800;">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for grade in grades %}
+                    <tr style="border-bottom: 1px solid #f1f5f9; transition: background 0.15s ease;" onmouseover="this.style.background='#f8fafc';" onmouseout="this.style.background='transparent';">
+                        <td style="padding: 0.85rem; font-weight: 800; color: #1e293b;">
+                            {{ grade.course.name }}
+                            {% if grade.appeal and grade.appeal_badge %}
+                            <div style="margin-top: 3px;">
+                                <span style="padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 800; font-size: 0.73rem; background: {{ grade.appeal_badge.bg_color }}; color: {{ grade.appeal_badge.text_color }}; border: 1px solid {{ grade.appeal_badge.border_color }}; display: inline-flex; align-items: center; gap: 3px;" title="حالة الطعن: {{ grade.appeal_badge.text }}">
+                                    {{ grade.appeal_badge.text }}
+                                </span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 800; color: #1A5D63;">{{ grade.course.code }}</td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 600;">{{ grade.course.credits }}</td>
+                        {% if grade.is_blocked %}
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #dc2626;">--</td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #dc2626;">--</td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 900; color: #dc2626;">--</td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #dc2626;">--</td>
+                        <td style="padding: 0.85rem; text-align: center;">
+                            <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px;">
+                                <span style="padding: 0.35rem 0.85rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; display: inline-flex; align-items: center; gap: 4px;" title="{{ grade.block_reason|default:'تجاوز نسبة الغياب الورقي' }}">
+                                    ⚠️ تم حجب النتيجة
+                                </span>
+                                <span style="font-size: 0.75rem; color: #991b1b; font-weight: 700; background: #fff5f5; padding: 2px 8px; border-radius: 6px; border: 1px dashed #fca5a5;">
+                                    {{ grade.block_reason|default:"تجاوز نسبة الغياب الورقي" }}
+                                </span>
+                            </div>
+                        </td>
+                        {% else %}
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #475569;">
+                            {% if grade.is_published or grade.is_midterm_published %}{{ grade.midterm_grade|default:"--" }}{% else %}--{% endif %}
+                        </td>
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700; color: #475569;">
+                            {% if grade.is_published or grade.is_final_published %}{{ grade.final_grade|default:"--" }}{% else %}--{% endif %}
+                        </td>
+                        
+                        {% if grade.is_passed and grade.is_published %}
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 900; color: #16a34a;">
+                        {% else %}
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 900; color: #dc2626;">
+                        {% endif %}
+                            {% if grade.is_published or grade.is_final_published %}{{ grade.total_grade|default:"--" }}{% else %}--{% endif %}
+                        </td>
+
+                        <td style="padding: 0.85rem; text-align: center; font-weight: 700;">
+                            {% if grade.is_published or grade.is_final_published %}{{ grade.get_grade_letter|default:"--" }}{% else %}--{% endif %}
+                        </td>
+                        
+                        <td style="padding: 0.85rem; text-align: center;">
+                            <div style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px;">
+                                {% if grade.is_published or grade.is_final_published %}
+                                    {% if grade.is_passed %}
+                                    <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #dcfce7; color: #15803d; display: inline-flex; align-items: center; gap: 4px;">
+                                        ✔ ناجح
+                                    </span>
+                                    {% else %}
+                                    <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #fee2e2; color: #b91c1c;">
+                                        راسب
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                    <span style="padding: 0.3rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.8rem; background: #e0f2fe; color: #0284c7;">
+                                        ⏳ قيد الرصد والنشر
+                                    </span>
+                                {% endif %}
+                                
+                                {% if grade.appeal and grade.appeal_badge %}
+                                <span style="padding: 0.2rem 0.6rem; border-radius: 10px; font-weight: 800; font-size: 0.72rem; background: {{ grade.appeal_badge.bg_color }}; color: {{ grade.appeal_badge.text_color }}; border: 1px solid {{ grade.appeal_badge.border_color }}; display: inline-flex; align-items: center; gap: 3px;">
+                                    {{ grade.appeal_badge.text }}
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" style="padding: 3rem 1rem; text-align: center; color: #64748b;">
+                            <span style="font-size: 2.2rem; display: block; margin-bottom: 0.5rem;">📝</span>
+                            <p style="font-weight: 800; font-size: 1.05rem; color: #334155; margin: 0;">لم يتم رصد درجات للمواد في هذا الفصل حتى الآن</p>
+                            <p style="font-size: 0.85rem; color: #64748b; margin-top: 0.3rem;">يرجى المتابعة لاحقاً بعد انتهاء عمليات إدخال الدرجات من قبل الأقسام العلمية.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- كارت ملخص المعدل الفصلي والتراكمي -->
+    <div style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 1.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.25rem; text-align: center;">
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.85rem; font-weight: 700; display: block;">المعدل الفصلي الحالي</span>
+                <span style="color: #0284c7; font-size: 1.7rem; font-weight: 900; margin-top: 0.25rem; display: block;">{{ gpa|default:"0.00" }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.85rem; font-weight: 700; display: block;">المعدل التراكمي العام</span>
+                <span style="color: #1A5D63; font-size: 1.7rem; font-weight: 900; margin-top: 0.25rem; display: block;">{{ cgpa|default:"0.00" }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.85rem; font-weight: 700; display: block;">عدد المواد المسجلة</span>
+                <span style="color: #16a34a; font-size: 1.7rem; font-weight: 900; margin-top: 0.25rem; display: block;">{{ total_courses|default:0 }}</span>
+            </div>
+            <div style="background: #f8fafc; padding: 1rem; border-radius: 12px; border: 1px solid #e2e8f0;">
+                <span style="color: #64748b; font-size: 0.85rem; font-weight: 700; display: block;">إجمالي الساعات المسجلة</span>
+                <span style="color: #8b5cf6; font-size: 1.7rem; font-weight: 900; margin-top: 0.25rem; display: block;">{{ total_credits|default:0 }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. كارت التنبيه والمقيدة عند إغلاق النتيجة أو عدم تفعيل الفصل (Conditional Inactive Fallback) -->
+    {% else %}
+    <div style="background: white; border-radius: 16px; border: 1px solid #e2e8f0; padding: 3.5rem 2rem; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.03); margin-bottom: 2rem;">
+        <div style="width: 80px; height: 80px; background: #fef2f2; color: #dc2626; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 1.25rem auto; border: 2px solid #fecaca;">
+            <span class="material-symbols-outlined" style="font-size: 42px;">lock_clock</span>
+        </div>
+        
+        <h2 style="font-size: 1.4rem; font-weight: 900; color: #0F4C50; margin: 0 0 0.5rem 0;">نتائج الفصل الدراسي غير متاحة حالياً</h2>
+        
+        <p style="font-size: 0.95rem; color: #64748b; max-width: 580px; margin: 0 auto 1.75rem auto; line-height: 1.6;">
+            عفواً، نتائج الفصل الدراسي الحالي غير مفعّلة حالياً أو لم يتم اعتماد نشرها بعد من قبل إدارة الكلية والدراسة والامتحانات. يمكنك متابعة نتائج الفصول السابقة في كشف الدرجات الشامل.
+        </p>
+
+        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
+            <a href="{% url 'student:my_grades' %}" style="background: #1A5D63; color: white; text-decoration: none; padding: 0.75rem 1.75rem; border-radius: 10px; font-weight: 800; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 4px 12px rgba(26, 93, 99, 0.25); transition: background 0.2s ease;" onmouseover="this.style.background='#0F4C50'" onmouseout="this.style.background='#1A5D63'">
+                <span class="material-symbols-outlined">analytics</span>
+                <span>عرض السجل الأكاديمي الشامل</span>
+            </a>
+            <a href="{% url 'student:dashboard' %}" style="background: #f1f5f9; color: #334155; text-decoration: none; padding: 0.75rem 1.5rem; border-radius: 10px; font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #cbd5e1;">
+                <span>العودة للرئيسية</span>
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- تم الربط المباشر مع قاعدة البيانات دون الحاجة لبيانات وهمية JS -->
+{% endblock %}

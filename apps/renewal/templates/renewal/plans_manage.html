@@ -1,0 +1,892 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}لوحة إدارة الخطط الدراسية | الكلية الأكاديمية{% endblock %}
+
+{% block extra_css %}
+<!-- Tailwind CSS & Google Fonts -->
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet"
+    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
+
+<style>
+    body {
+        font-family: 'Cairo', sans-serif;
+        background-color: #f0f8fa;
+        color: #1e293b;
+    }
+
+    :root {
+        --primary-teal: #307e92;
+        --primary-dark: #1a5f64;
+        --deep-teal-gradient: linear-gradient(135deg, #307e92 0%, #1a5f64 100%);
+        --btn-gold-start: #b59b66;
+        --btn-gold-end: #967d4b;
+    }
+
+    /* Main Plan Container Box */
+    .plan-container-box,
+    .group-box.system-card,
+    .system-card,
+    .theme-card {
+        position: relative !important;
+        background-color: #ffffff !important;
+        border: 1px solid #d2e1ed !important;
+        border-top: 4px solid var(--primary-teal) !important;
+        border-radius: 14px !important;
+        padding: 2.2rem 1.5rem 1.5rem 1.5rem !important;
+        margin-top: 1.75rem !important;
+        margin-bottom: 1.75rem !important;
+        box-shadow: 0 4px 15px -2px rgba(0, 0, 0, 0.05) !important;
+        transition: all 0.25s ease-in-out !important;
+        display: block !important;
+        box-sizing: border-box !important;
+    }
+
+    html.dark .plan-container-box,
+    html.dark .group-box.system-card,
+    html.dark .system-card,
+    html.dark .theme-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        border-top-color: #38bdf8 !important;
+        box-shadow: none !important;
+        color: #f8fafc !important;
+    }
+
+    /* Floating Title Badge (Strict Right-alignment: right: 30px !important) */
+    .plan-container-box>.plan-title-badge,
+    .plan-container-box>.group-title,
+    .plan-container-box>.card-badge,
+    .theme-card>.plan-title-badge,
+    .plan-title-badge,
+    .group-title.card-badge,
+    .card-badge {
+        position: absolute !important;
+        top: -16px !important;
+        right: 30px !important;
+        left: auto !important;
+        transform: none !important;
+        -webkit-transform: none !important;
+        background: var(--primary-teal) !important;
+        color: #ffffff !important;
+        padding: 5px 22px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        white-space: nowrap !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+        z-index: 10 !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+    }
+
+    html.dark .plan-title-badge,
+    html.dark .group-title.card-badge,
+    html.dark .card-badge {
+        background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+        border-color: #38bdf8 !important;
+        color: #38bdf8 !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    /* Table Styling System */
+    .table-responsive-wrapper {
+        overflow-x: auto !important;
+        border-radius: 10px !important;
+        border: 1px solid #e2e8f0 !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+    }
+
+    html.dark .table-responsive-wrapper {
+        border-color: #334155 !important;
+    }
+
+    .academic-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        text-align: right !important;
+        font-size: 0.875rem !important;
+    }
+
+    .academic-table thead tr {
+        background: var(--deep-teal-gradient) !important;
+        color: #ffffff !important;
+    }
+
+    html.dark .academic-table thead tr {
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%) !important;
+        color: #38bdf8 !important;
+    }
+
+    .academic-table th {
+        padding: 0.85rem 1rem !important;
+        font-weight: 800 !important;
+        font-size: 0.825rem !important;
+        border-bottom: 2px solid #286b7c !important;
+        white-space: nowrap !important;
+    }
+
+    html.dark .academic-table th {
+        border-bottom-color: #334155 !important;
+    }
+
+    .academic-table tbody tr.plan-row {
+        border-bottom: 2px solid #cbd5e1 !important;
+        transition: background-color 0.15s ease-in-out !important;
+        background-color: #ffffff !important;
+    }
+
+    .academic-table tbody tr.plan-row:hover {
+        background-color: #f0f7f9 !important;
+    }
+
+    html.dark .academic-table tbody tr.plan-row {
+        background-color: #0f172a !important;
+        border-bottom: 2px solid #334155 !important;
+    }
+
+    html.dark .academic-table tbody tr.plan-row:hover {
+        background-color: #1e293b !important;
+    }
+
+    .academic-table td {
+        padding: 1rem 1.25rem !important;
+        vertical-align: middle !important;
+    }
+
+    /* Buttons & Form Controls */
+    .form-control-system {
+        width: 100% !important;
+        background-color: #ffffff !important;
+        border: 1.5px solid #cbd5e1 !important;
+        border-radius: 8px !important;
+        padding: 0.6rem 0.9rem !important;
+        font-size: 0.875rem !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+        outline: none !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+
+    .form-control-system:focus {
+        border-color: var(--primary-teal) !important;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.18) !important;
+    }
+
+    html.dark .form-control-system {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    .btn-teal-action {
+        background: var(--deep-teal-gradient) !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        padding: 0.55rem 1.2rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease-in-out !important;
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25) !important;
+        font-size: 0.85rem !important;
+    }
+
+    .btn-teal-action:hover {
+        opacity: 0.93 !important;
+        transform: translateY(-1px) !important;
+    }
+
+    .btn-grey-action {
+        background-color: #64748b !important;
+        color: #ffffff !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+        padding: 0.55rem 1.2rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.4rem !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease-in-out !important;
+        font-size: 0.85rem !important;
+    }
+
+    .btn-grey-action:hover {
+        background-color: #475569 !important;
+    }
+
+    .theme-modal {
+        background-color: #ffffff !important;
+        border: 1px solid #cbd5e1 !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    html.dark .theme-modal {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+
+    .page-header-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 1.25rem !important;
+        text-align: right !important;
+    }
+
+    .page-header-title {
+        font-size: 1.3rem !important;
+        font-weight: 900 !important;
+        color: var(--primary-teal, #307e92) !important;
+        line-height: 1.25 !important;
+        text-align: right !important;
+    }
+
+    html.dark .page-header-title {
+        color: #38bdf8 !important;
+    }
+
+    .page-header-subtitle {
+        font-size: 0.875rem !important;
+        font-weight: 700 !important;
+        color: #64748b !important;
+        margin-top: 0.25rem !important;
+        text-align: right !important;
+    }
+
+    html.dark .page-header-subtitle {
+        color: #cbd5e1 !important;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        bottom: 24px;
+        left: 24px;
+        z-index: 9999;
+        display: none;
+        align-items: center;
+        gap: 14px;
+        min-width: 320px;
+        max-width: 440px;
+        padding: 16px 20px;
+        border-radius: 16px;
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        box-shadow: 0 14px 40px rgba(0, 0, 0, 0.14);
+        direction: rtl;
+        text-align: right;
+        transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    #toastNotification.show {
+        display: flex;
+        transform: translateY(0);
+        opacity: 1;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+    <div class="max-w-7xl mx-auto space-y-6">
+
+        <!-- Header & Control Action -->
+        <div class="page-header-row">
+            <div>
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#eef6f8] dark:bg-slate-800 border border-[#307e92]/30 text-[#307e92] dark:text-[#38bdf8] text-xs font-extrabold mb-2">
+                    <span class="material-symbols-outlined text-sm">admin_panel_settings</span>
+                    لوحة الإدارة المركزية
+                </div>
+                <h1 class="page-header-title text-3xl sm:text-4xl">إدارة الخطط الدراسية والمناهج</h1>
+                <p class="page-header-subtitle">
+                    لوحة التحكم الشاملة لإضافة، تفعيل، وتعديل الخطط الدراسية وتعيين المقررات الدراسية حسب الأقسام
+                    والمستويات.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                {% if not request.user|has_exec_perm:'renewal.add_studyplan' and not request.user|has_exec_perm:'add_studyplan' and not request.user|has_exec_perm:'renewal.change_studyplan' and not request.user|has_exec_perm:'change_studyplan' %}
+                <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                    <span class="material-symbols-outlined text-sm">visibility</span>
+                    <span>نمط العرض فقط (Read-Only)</span>
+                </div>
+                {% endif %}
+                <a href="{% url 'renewal:plans_display' %}" class="btn-grey-action">
+                    <span class="material-symbols-outlined text-lg">visibility</span>
+                    استعراض الخطط
+                </a>
+            </div>
+        </div>
+
+        {% if request.user|has_exec_perm:'renewal.add_studyplan' or request.user|has_exec_perm:'add_studyplan' %}
+        <!-- New Plan Creation Box (Full Page Form) -->
+        <div id="createPlanSection" class="plan-container-box group-box system-card scroll-mt-6" style="position: relative !important;">
+            <span class="plan-title-badge group-title card-badge"
+                style="position: absolute !important; top: -16px !important; right: 24px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">playlist_add</span>
+                <span>إضافة وتأسيس خطة دراسية جديدة</span>
+            </span>
+
+            <form id="formCreatePlan" data-url="{% url 'renewal:plan_create' %}" class="space-y-4 pt-2 text-right" dir="rtl">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-right">
+                    <div class="space-y-1.5 text-right">
+                        <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] text-right">رمز الخطة (Plan Code):</label>
+                        <input type="text" id="newPlanCode" name="code" placeholder="مثال: PLAN-2026 أو IT-PL1" class="form-control-system text-right">
+                    </div>
+
+                    <div class="space-y-1.5 text-right">
+                        <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] text-right">اسم الخطة الدراسية <span class="text-red-500">*</span></label>
+                        <input type="text" id="newPlanName" name="name" required placeholder="مثال: الخطة الدراسية المحدثة 2026" class="form-control-system text-right">
+                    </div>
+
+                    <div class="space-y-1.5 text-right">
+                        <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] text-right">القسم العلمي المرتبط:</label>
+                        <select name="department_id" class="form-control-system text-right" dir="rtl">
+                            <option value="">-- خطة عامة / اختيار قسم لاحقاً --</option>
+                            {% for dept in departments %}
+                            <option value="{{ dept.id }}">{{ dept.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="space-y-1.5 text-right">
+                    <label class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] text-right">وصف الخطة وأهدافها:</label>
+                    <textarea name="description" rows="2" placeholder="أدخل تفاصيل أو أهداف الخطة الدراسية والمقررات المستهدفة..." class="form-control-system text-right" dir="rtl"></textarea>
+                </div>
+
+                <div class="flex items-center justify-start gap-3 pt-3 border-t border-[#e2e8f0] dark:border-slate-700">
+                    <button type="submit" class="btn-teal-action">
+                        <span class="material-symbols-outlined text-base">save</span>
+                        حفظ وإنشاء الخطة
+                    </button>
+                    <button type="reset" class="btn-grey-action">
+                        <span class="material-symbols-outlined text-base">restart_alt</span>
+                        تفريغ الحقول
+                    </button>
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- Filter Container Box -->
+        <div class="plan-container-box group-box system-card" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side (right: 30px !important) -->
+            <span class="plan-title-badge group-title card-badge"
+                style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">tune</span>
+                <span>خيارات البحث والتصفية الإدارية</span>
+            </span>
+
+            <form method="GET" action="{% url 'renewal:plans_manage' %}" id="filterForm"
+                class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+                <!-- Department Filter -->
+                <div>
+                    <label for="departmentFilter"
+                        class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] mb-1.5">تصفية حسب
+                        القسم:</label>
+                    <select name="department_id" id="departmentFilter" class="form-control-system">
+                        <option value="">-- جميع الأقسام العلمية --</option>
+                        {% for dept in departments %}
+                        <option value="{{ dept.id }}" {% if selected_dept|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
+                            {{ dept.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <label for="statusFilter"
+                        class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] mb-1.5">حالة الخطة:</label>
+                    <select name="status" id="statusFilter" class="form-control-system">
+                        <option value="">-- كل الحالات --</option>
+                        <option value="active" {% if selected_status == 'active' %}selected{% endif %}>الخطط النشطة فقط</option>
+                        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>الخطط غير النشطة</option>
+                    </select>
+                </div>
+
+                <!-- Search Filter -->
+                <div>
+                    <label for="searchInput" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8] mb-1.5">بحث بالاسم أو الرمز:</label>
+                    <div class="relative">
+                        <input type="text" name="search" id="searchInput" value="{{ search_query|default:'' }}"
+                            placeholder="اكتب اسم الخطة أو الكود..."
+                            class="form-control-system pr-9">
+                        <span
+                            class="material-symbols-outlined absolute right-3 top-2.5 text-[#64748b] text-xl">search</span>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Master Plans Table Container Box -->
+        <div class="plan-container-box group-box system-card space-y-4" style="position: relative !important;">
+            <!-- Floating Title Badge strictly anchored to top right side (right: 30px !important) -->
+            <span class="plan-title-badge group-title card-badge"
+                style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+                <span class="material-symbols-outlined text-base">table_chart</span>
+                <span>قائمة الخطط والمناهج الأكاديمية</span>
+            </span>
+
+            <div class="table-responsive-wrapper pt-2">
+                <table class="academic-table">
+                    <thead>
+                        <tr>
+                            <th scope="col" class="px-6 py-4">اسم الخطة الدراسية</th>
+                            <th scope="col" class="px-6 py-4">الأقسام العلمية التابعة</th>
+                            <th scope="col" class="px-6 py-4 text-center">إجمالي المواد</th>
+                            <th scope="col" class="px-6 py-4 text-center">إجمالي الساعات</th>
+                            <th scope="col" class="px-6 py-4 text-center">حالة الخطة</th>
+                            <th scope="col" class="px-6 py-4 text-center">الإجراءات والعمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="plansTableBody">
+                        {% if plans %}
+                        {% for plan in plans %}
+                        <tr class="plan-row" data-plan-name="{{ plan.name|lower }}">
+                            <td class="px-6 py-4 font-bold text-[#1e293b] dark:text-slate-100">
+                                <div class="flex items-center gap-3">
+                                    <span class="material-symbols-outlined text-[#307e92] dark:text-[#38bdf8]">auto_stories</span>
+                                    <div>
+                                        <div class="flex items-center gap-2 flex-wrap">
+                                            <span class="text-base font-extrabold text-slate-800 dark:text-slate-100">{{ plan.name }}</span>
+                                            {% if plan.code %}
+                                            <span class="px-2 py-0.5 rounded text-xs font-mono font-extrabold bg-[#eef6f8] dark:bg-slate-700 text-[#307e92] dark:text-[#38bdf8] border border-[#cbd5e1] dark:border-slate-600">
+                                                {{ plan.code }}
+                                            </span>
+                                            {% endif %}
+                                        </div>
+                                        {% if plan.description %}
+                                        <div class="text-xs text-[#64748b] dark:text-slate-400 font-semibold mt-0.5">{{ plan.description|truncatechars:45 }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-[#475569] dark:text-slate-300 text-xs font-semibold">
+                                {% if plan.departments_list %}
+                                <div class="flex flex-col gap-2">
+                                    {% for dept_item in plan.departments_list %}
+                                    <div class="flex items-center justify-between gap-3 px-3 py-1.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                                        <div class="flex items-center gap-1.5 font-bold text-slate-800 dark:text-slate-200">
+                                            <span class="material-symbols-outlined text-xs text-[#307e92] dark:text-[#38bdf8]">domain</span>
+                                            <span>{{ dept_item.name }}</span>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <a href="{% url 'renewal:plans_display' %}?plan_id={{ plan.id }}&department_id={{ dept_item.id }}"
+                                                class="p-1.5 rounded bg-white dark:bg-slate-700 hover:bg-[#307e92] hover:text-white dark:hover:bg-[#38bdf8] dark:hover:text-slate-900 border border-slate-200 dark:border-slate-600 text-[#307e92] dark:text-[#38bdf8] transition-all flex items-center justify-center"
+                                                title="معاينة مواد قسم {{ dept_item.name }}">
+                                                <span class="material-symbols-outlined text-xs">visibility</span>
+                                            </a>
+                                            {% if request.user|has_exec_perm:'renewal.add_course' or request.user|has_exec_perm:'add_course' %}
+                                            <a href="{% url 'renewal:plan_add_course' plan_id=plan.id %}?department_id={{ dept_item.id }}"
+                                                class="p-1.5 rounded bg-white dark:bg-slate-700 hover:bg-[#307e92] hover:text-white dark:hover:bg-[#38bdf8] dark:hover:text-slate-900 border border-slate-200 dark:border-slate-600 text-[#307e92] dark:text-[#38bdf8] transition-all flex items-center justify-center"
+                                                title="إضافة مادة لقسم {{ dept_item.name }}">
+                                                <span class="material-symbols-outlined text-xs">add</span>
+                                            </a>
+                                            {% endif %}
+                                            {% if request.user|has_exec_perm:'renewal.change_studyplan' or request.user|has_exec_perm:'change_studyplan' %}
+                                            <a href="{% url 'renewal:plan_edit' plan_id=plan.id %}"
+                                                class="p-1.5 rounded bg-white dark:bg-slate-700 hover:bg-amber-500 hover:text-white dark:hover:bg-amber-400 dark:hover:text-slate-900 border border-slate-200 dark:border-slate-600 text-amber-600 dark:text-amber-400 transition-all flex items-center justify-center"
+                                                title="تعديل بيانات الخطة">
+                                                <span class="material-symbols-outlined text-xs">edit</span>
+                                            </a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1 px-3 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200">
+                                    <span class="material-symbols-outlined text-xs text-[#307e92] dark:text-[#38bdf8]">domain</span>
+                                    {{ plan.departments }}
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center font-extrabold text-emerald-700 dark:text-emerald-400">
+                                {{ plan.total_courses }} مادة
+                            </td>
+                            <td class="px-6 py-4 text-center font-extrabold text-[#b59b66] dark:text-[#fcd34d]">
+                                {{ plan.total_credits }} وحدة
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                {% if plan.is_active %}
+                                <span
+                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                    نشطة
+                                </span>
+                                {% else %}
+                                <span
+                                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-extrabold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-300 dark:border-slate-700">
+                                    <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+                                    غير نشطة
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-center">
+                                <div class="flex items-center justify-center gap-2 flex-wrap">
+                                    {% if request.user|has_exec_perm:'renewal.change_studyplan' or request.user|has_exec_perm:'change_studyplan' %}
+                                    <a href="{% url 'renewal:plan_edit' plan_id=plan.id %}"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/60 border border-amber-200 dark:border-amber-800 transition-all"
+                                        title="تعديل الخطة الدراسية">
+                                        <span class="material-symbols-outlined text-sm">edit</span>
+                                        <span>تعديل</span>
+                                    </a>
+                                    <button type="button" data-plan-id="{{ plan.id }}"
+                                        data-is-active="{% if plan.is_active %}true{% else %}false{% endif %}"
+                                        class="btn-toggle-active inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all {% if plan.is_active %}bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-400 hover:bg-red-100 border border-red-200 dark:border-red-800{% else %}bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 border border-emerald-200 dark:border-emerald-800{% endif %}">
+                                        <span class="material-symbols-outlined text-sm">{% if plan.is_active %}power_settings_new{% else %}play_circle{% endif %}</span>
+                                        <span>{% if plan.is_active %}تعطيل{% else %}تفعيل{% endif %}</span>
+                                    </button>
+                                    {% else %}
+                                    <span class="text-xs text-slate-400 font-semibold italic">عرض فقط</span>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-12 text-[#64748b] dark:text-slate-400">
+                                <span class="material-symbols-outlined text-5xl text-[#94a3b8] mb-2">folder_off</span>
+                                <p class="text-base font-semibold">لا توجد خطط دراسية مسجلة في لوحة الإدارة حالياً.</p>
+                            </td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</main>
+
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<!-- JavaScript Logic -->
+<script>
+    // ============================================================
+    // 🔔 نظام الإشعارات العائمة الموحد (showNotification)
+    // ============================================================
+    function showNotification(type, message) {
+        const toast = document.getElementById('toastNotification');
+        const iconCircle = document.getElementById('toastIconCircle');
+        const icon = document.getElementById('toastIcon');
+        const msg = document.getElementById('toastMessage');
+        
+        if (!toast || !icon || !msg) {
+            console.warn('⚠️ Toast Notification elements not found:', type, message);
+            return;
+        }
+        
+        msg.innerText = message;
+        const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+        
+        // ضبط لون وخلفية البطاقة حسب النمط الليلي / النهاري
+        if (isDark) {
+            toast.style.background = '#1e293b';
+            toast.style.backgroundColor = '#1e293b';
+            toast.style.boxShadow = '0 14px 45px rgba(0, 0, 0, 0.7)';
+            msg.style.color = '#f8fafc';
+        } else {
+            toast.style.background = '#ffffff';
+            toast.style.backgroundColor = '#ffffff';
+            toast.style.boxShadow = '0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08)';
+            msg.style.color = '#1e293b';
+        }
+        
+        if (type === 'success') {
+            toast.style.borderRight = '4.5px solid #10b981';
+            toast.style.borderRightColor = '#10b981';
+            icon.innerText = "check_circle";
+            icon.style.color = '#10b981';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(16, 185, 129, 0.2)' : 'rgba(16, 185, 129, 0.12)';
+            }
+        } else if (type === 'warning') {
+            toast.style.borderRight = '4.5px solid #f59e0b';
+            toast.style.borderRightColor = '#f59e0b';
+            icon.innerText = "warning";
+            icon.style.color = '#f59e0b';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(245, 158, 11, 0.2)' : 'rgba(245, 158, 11, 0.12)';
+            }
+        } else if (type === 'info') {
+            toast.style.borderRight = '4.5px solid #3b82f6';
+            toast.style.borderRightColor = '#3b82f6';
+            icon.innerText = "info";
+            icon.style.color = '#3b82f6';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.12)';
+            }
+        } else {
+            toast.style.borderRight = '4.5px solid #e11d48';
+            toast.style.borderRightColor = '#e11d48';
+            icon.innerText = "error";
+            icon.style.color = '#e11d48';
+            if (iconCircle) {
+                iconCircle.style.background = isDark ? 'rgba(225, 29, 72, 0.2)' : 'rgba(225, 29, 72, 0.12)';
+            }
+        }
+        
+        toast.style.transform = 'translateY(0)';
+        toast.style.opacity = '1';
+        
+        clearTimeout(window.notificationTimeout);
+        window.notificationTimeout = setTimeout(() => {
+            toast.style.transform = 'translateY(80px)';
+            toast.style.opacity = '0';
+        }, 4000);
+    }
+    window.showNotification = showNotification;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        // Utility functions for modals
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('flex');
+                modal.classList.add('hidden');
+            }
+        }
+
+        // Global Click Listener (Event Delegation)
+        document.addEventListener('click', function (event) {
+            // Open Modal Trigger
+            const openBtn = event.target.closest('[data-modal-target]');
+            if (openBtn) {
+                const targetId = openBtn.dataset.modalTarget;
+                if (targetId) openModal(targetId);
+                return;
+            }
+
+            // Close Modal Trigger
+            const closeBtn = event.target.closest('[data-modal-close]');
+            if (closeBtn) {
+                const targetId = closeBtn.dataset.modalClose;
+                if (targetId) closeModal(targetId);
+                return;
+            }
+
+            // Toggle Active Trigger
+            const toggleBtn = event.target.closest('.btn-toggle-active');
+            if (toggleBtn) {
+                const planId = toggleBtn.dataset.planId;
+                const isActive = toggleBtn.dataset.isActive === 'true';
+                togglePlanActive(planId, !isActive);
+                return;
+            }
+        });
+
+        // Auto-submit filter selectors on change
+        const filterForm = document.getElementById('filterForm');
+        const deptSelect = document.getElementById('departmentFilter');
+        const statusSelect = document.getElementById('statusFilter');
+
+        if (deptSelect && filterForm) {
+            deptSelect.addEventListener('change', function () {
+                filterForm.submit();
+            });
+        }
+        if (statusSelect && filterForm) {
+            statusSelect.addEventListener('change', function () {
+                filterForm.submit();
+            });
+        }
+
+        // Search Input Filter
+        const searchInput = document.getElementById('manageSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', function () {
+                const query = searchInput.value.toLowerCase().trim();
+                const rows = document.querySelectorAll('.plan-row');
+                rows.forEach(function (row) {
+                    const name = (row.dataset.planName || '').toLowerCase();
+                    if (name.includes(query)) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            });
+        }
+
+        // AJAX Handlers
+        async function togglePlanActive(planId, targetActive) {
+            if (!confirm('هل أنت متأكد من تغيير حالة تفعيل مواد هذه الخطة الدراسية؟')) return;
+            try {
+                const response = await fetch('/renewal/plans/toggle-active/' + planId + '/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ is_active: targetActive })
+                });
+                const res = await response.json();
+                if (res.success || res.status === 'success') {
+                    showNotification('success', res.message || 'تم تحديث حالة تفعيل الخطة بنجاح');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    showNotification('error', res.message || res.error || 'حدث خطأ أثناء تغيير حالة الخطة');
+                }
+            } catch (e) {
+                console.error('Error toggling plan:', e);
+                showNotification('error', '❌ حدث خطأ في الاتصال بالخادم');
+            }
+        }
+
+        // Check if URL hash is #createPlanSection on load
+        if (window.location.hash === '#createPlanSection') {
+            const nameInput = document.getElementById('newPlanName');
+            if (nameInput) {
+                setTimeout(() => nameInput.focus(), 400);
+            }
+        }
+
+        // Form Create Plan
+        const formCreate = document.getElementById('formCreatePlan');
+        if (formCreate) {
+            formCreate.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                const actionUrl = formCreate.dataset.url || '';
+                const formData = new FormData(formCreate);
+                const data = Object.fromEntries(formData.entries());
+
+                const submitBtn = formCreate.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                }
+
+                try {
+                    const response = await fetch(actionUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    const res = await response.json();
+                    if (res.success || res.status === 'success') {
+                        showNotification('success', res.message || 'تمت إضافة الخطة الدراسية بنجاح');
+                        formCreate.reset();
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification('error', res.message || res.error || 'حدث خطأ أثناء إضافة الخطة');
+                    }
+                } catch (e) {
+                    console.error('Error creating plan:', e);
+                    showNotification('error', '❌ حدث خطأ أثناء التوصيل بالخادم');
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                    }
+                }
+            });
+        }
+    });
+</script>
+
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+{% endblock %}

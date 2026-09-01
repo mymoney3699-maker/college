@@ -1,0 +1,811 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إدارة الأقسام | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       🎨 1. تنسيقات الحاوية والوضع الليلي لصفحة إدارة الأقسام
+       ============================================================ */
+    .sections-page {
+        direction: rtl;
+        text-align: right;
+    }
+
+    /* Editing Banner */
+    .edit-banner {
+        background-color: #eff6ff;
+        border: 1.5px solid #93c5fd;
+        border-radius: 12px;
+        padding: 0.85rem 1.15rem;
+        margin-bottom: 1.25rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    .edit-banner-title {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        color: #1e40af;
+        font-weight: 800;
+        font-size: 0.96rem;
+    }
+    .btn-cancel-edit {
+        background: #ffffff;
+        color: #1e40af;
+        border: 1px solid #93c5fd;
+        padding: 0.4rem 0.85rem;
+        font-size: 0.82rem;
+        font-weight: 700;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    .btn-cancel-edit:hover {
+        background: #dbeafe;
+    }
+
+    /* Assigned Courses Box */
+    .assigned-courses-box {
+        background-color: #f0fdf4;
+        border: 2px solid #86efac;
+        border-radius: 14px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+    }
+    .assigned-courses-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    .assigned-courses-title {
+        font-weight: 800;
+        color: #166534;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.95rem;
+    }
+    .assigned-count-badge {
+        background-color: #16a34a;
+        color: #ffffff;
+        padding: 0.15rem 0.6rem;
+        border-radius: 50px;
+        font-size: 0.75rem;
+        font-weight: 800;
+    }
+    .assignment-item-card {
+        display: grid;
+        grid-template-columns: auto 1fr auto;
+        gap: 0.75rem;
+        align-items: center;
+        background: #ffffff;
+        padding: 0.65rem 1rem;
+        border-radius: 10px;
+        border: 1px solid #d1fae5;
+        transition: all 0.2s ease;
+    }
+    .course-code-badge {
+        background-color: #dcfce7;
+        color: #166534;
+        padding: 0.25rem 0.55rem;
+        border-radius: 6px;
+        font-size: 0.76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+    .course-name-text {
+        font-weight: 700;
+        color: #0f172a;
+        font-size: 0.9rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .pill-badge {
+        background-color: #f1f5f9;
+        color: #475569;
+        padding: 0.25rem 0.65rem;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .btn-delete-assignment {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: none;
+        border-radius: 8px;
+        padding: 0.4rem 0.6rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+    .btn-delete-assignment:hover {
+        background-color: #fecaca;
+    }
+
+    /* Course Assignment Input Box */
+    .course-assignment-box {
+        background-color: #f8fafc;
+        border: 1.5px dashed #307e92;
+        border-radius: 14px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+        transition: all 0.2s;
+    }
+    .new-subject-row {
+        display: flex;
+        flex-wrap: nowrap;
+        gap: 0.6rem;
+        align-items: center;
+        background: #ffffff;
+        padding: 0.65rem 0.85rem;
+        border-radius: 10px;
+        border: 1.5px solid #cbd5e1;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    }
+    .custom-input,
+    .custom-select {
+        width: 100%;
+        border: 1.5px solid #cbd5e1;
+        border-radius: 8px;
+        padding: 0.55rem 0.75rem;
+        background: #ffffff;
+        font-size: 0.88rem;
+        font-weight: 600;
+        color: #0f172a;
+        outline: none;
+    }
+    .btn-remove-subject {
+        background-color: #fef2f2;
+        color: #dc2626;
+        border: 1.5px solid #fecaca;
+        border-radius: 8px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        flex-shrink: 0;
+        transition: all 0.2s;
+    }
+    .btn-remove-subject:hover {
+        background-color: #fee2e2;
+    }
+
+    /* List Cards */
+    .list-card-box {
+        border-radius: 14px;
+        overflow: hidden;
+        background: #ffffff;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+    .person-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border: 1.5px solid #edf2f7;
+        border-radius: 10px;
+        padding: 0.75rem 1rem;
+        transition: background-color 0.2s;
+        background: #ffffff;
+    }
+    .btn-person-edit {
+        width: 34px;
+        height: 34px;
+        border-radius: 8px;
+        border: 1.5px solid #cbd5e1;
+        background: #ffffff;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    /* ============================================================
+       🌙 2. قواعد الوضع المظلم الشاملة (Full Dark Mode Overrides)
+       ============================================================ */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+    html.dark .sections-page,
+    html.dark .custom-main {
+        background-color: transparent !important;
+        color: #f8fafc !important;
+    }
+    html.dark .page-header-title,
+    html.dark h1, html.dark h2, html.dark h3, html.dark h4, html.dark h5, html.dark h6 {
+        color: #f8fafc !important;
+    }
+    html.dark .page-header-subtitle {
+        color: #94a3b8 !important;
+    }
+    html.dark .group-box {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        color: #f8fafc !important;
+    }
+    html.dark .group-title {
+        color: #38bdf8 !important;
+    }
+    html.dark .field-label,
+    html.dark label {
+        color: #e2e8f0 !important;
+    }
+    html.dark .custom-input,
+    html.dark .custom-select,
+    html.dark select,
+    html.dark input[type="text"],
+    html.dark input[type="email"] {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+    html.dark option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    /* Tabs in Dark Mode */
+    html.dark .tab-btn {
+        color: #94a3b8 !important;
+    }
+    html.dark .tab-btn.active-tab {
+        background-color: #307e92 !important;
+        color: #ffffff !important;
+    }
+
+    /* Editing Banner in Dark Mode */
+    html.dark .edit-banner {
+        background-color: #1e293b !important;
+        border-color: #2563eb !important;
+        box-shadow: 0 4px 14px rgba(37, 99, 235, 0.2) !important;
+    }
+    html.dark .edit-banner-title {
+        color: #93c5fd !important;
+    }
+    html.dark .btn-cancel-edit {
+        background-color: #0f172a !important;
+        color: #93c5fd !important;
+        border-color: #3b82f6 !important;
+    }
+    html.dark .btn-cancel-edit:hover {
+        background-color: #1e3a8a !important;
+        color: #ffffff !important;
+    }
+
+    /* Assigned Courses Box in Dark Mode */
+    html.dark .assigned-courses-box {
+        background-color: #1e293b !important;
+        border-color: #059669 !important;
+    }
+    html.dark .assigned-courses-title {
+        color: #6ee7b7 !important;
+    }
+    html.dark .assignment-item-card {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+    }
+    html.dark .course-name-text {
+        color: #f8fafc !important;
+    }
+    html.dark .course-code-badge {
+        background-color: rgba(16, 185, 129, 0.2) !important;
+        color: #34d399 !important;
+    }
+    html.dark .pill-badge {
+        background-color: #1e293b !important;
+        color: #cbd5e1 !important;
+        border: 1px solid #334155 !important;
+    }
+    html.dark .btn-delete-assignment {
+        background-color: rgba(225, 29, 72, 0.2) !important;
+        color: #fb7185 !important;
+        border: 1px solid rgba(225, 29, 72, 0.3) !important;
+    }
+    html.dark .btn-delete-assignment:hover {
+        background-color: rgba(225, 29, 72, 0.35) !important;
+    }
+
+    /* Course Assignment Box in Dark Mode */
+    html.dark .course-assignment-box {
+        background-color: #1e293b !important;
+        border-color: #38bdf8 !important;
+    }
+    html.dark .new-subject-row {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+    }
+    html.dark .btn-remove-subject {
+        background-color: rgba(225, 29, 72, 0.2) !important;
+        border-color: rgba(225, 29, 72, 0.3) !important;
+        color: #fb7185 !important;
+    }
+
+    /* List Cards & Person Items in Dark Mode */
+    html.dark .list-card-box {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+    }
+    html.dark .list-header-prof {
+        background-color: #0c4a6e !important;
+        border-bottom-color: #0284c7 !important;
+    }
+    html.dark .list-header-staff {
+        background-color: #4c1d95 !important;
+        border-bottom-color: #7c3aed !important;
+    }
+    html.dark .person-row {
+        background-color: #0f172a !important;
+        border-color: #334155 !important;
+    }
+    html.dark .person-row.is-head-row {
+        background-color: rgba(120, 53, 15, 0.35) !important;
+        border-color: #b45309 !important;
+    }
+    html.dark .person-name {
+        color: #f8fafc !important;
+    }
+    html.dark .person-sub {
+        color: #94a3b8 !important;
+    }
+    html.dark .btn-person-edit {
+        background-color: #334155 !important;
+        border-color: #475569 !important;
+    }
+    html.dark .btn-person-edit span {
+        color: #cbd5e1 !important;
+    }
+
+    /* Toast Dark Mode */
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- بيانات JSON الممررة من الـ View -->
+<script id="courses-data" type="application/json">{{ courses_data|safe }}</script>
+<script id="levels-data" type="application/json">{{ levels_data|safe }}</script>
+<script id="groups-data" type="application/json">{{ groups_data|safe }}</script>
+<script id="departments-data" type="application/json">{{ departments_data|safe }}</script>
+
+<main class="custom-main sections-page" x-data="departmentManager()" x-init="init()">
+    <!-- ===== الهيدر ===== -->
+    <div class="page-header-row">
+        <div>
+            <h1 class="page-header-title">إدارة الأقسام الأكاديمية</h1>
+            <p class="page-header-subtitle">تنظيم وإدارة أعضاء هيئة التدريس والموظفين بالأقسام</p>
+        </div>
+    </div>
+
+    <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+    {% if not is_add_instructor_open or not is_add_staff_open %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% else %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+    {% endif %}
+        <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+        <div style="flex: 1;">
+            <span id="jobInactiveBannerText">
+                {% if not is_add_instructor_open %}{{ add_instructor_message }}{% endif %}
+                {% if not is_add_staff_open %}{% if not is_add_instructor_open %} | {% endif %}{{ add_staff_message }}{% endif %}
+            </span>
+        </div>
+    </div>
+
+    <!-- ===== اختيار القسم ===== -->
+    <div class="group-box">
+        <span class="group-title">اختيار القسم الدراسي</span>
+        
+        <div style="max-width: 600px; margin: 0.5rem auto;">
+            <label class="field-label" style="font-weight: 800; color: #307e92; margin-bottom: 0.5rem; display: block;">القسم الفعال</label>
+            <select x-model="selectedDept" @change="onDeptChange()" class="custom-select">
+                <option value="">-- كل الأقسام --</option>
+                <template x-for="dept in departments" :key="dept.id">
+                    <option :value="dept.id" x-text="dept.name"></option>
+                </template>
+            </select>
+        </div>
+    </div>
+
+    <!-- ===== نموذج إضافة/تعديل عضو (يظهر فقط عند تفعيل قسم) ===== -->
+    <div class="group-box" x-show="selectedDept" style="display: none;">
+        <span class="group-title">
+            <span x-text="editId !== null ? 'تعديل بيانات عضو في: ' : 'إضافة عضو جديد إلى: '"></span>
+            <span x-text="departments.find(d => d.id === selectedDept)?.name" style="color: #307e92; font-weight: 800;"></span>
+        </span>
+        
+        <!-- بانر التعديل الفعال عند تعديل شخص -->
+        <div x-show="editId !== null" class="edit-banner">
+            <div class="edit-banner-title">
+                <span class="material-symbols-outlined">edit_note</span>
+                <span x-text="addType === 'professor' ? 'جاري تعديل بيانات الأستاذ: ' + newProfessor.name : 'جاري تعديل بيانات الموظف: ' + newStaff.name"></span>
+            </div>
+            <button type="button" @click="cancelEditInForm()" class="btn-cancel-edit">
+                <span class="material-symbols-outlined" style="font-size: 16px;">close</span> إلغاء التعديل
+            </button>
+        </div>
+
+        <!-- أزرار تبديل نوع الإضافة -->
+        <div class="flex border-b border-gray-200 mb-6" style="gap: 1rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem;">
+            <button type="button" class="tab-btn" :class="{ 'active-tab': addType === 'professor' }" @click="switchTab('professor')" style="outline: none !important; font-weight: 800; font-size: 1rem; padding: 0.5rem 1.25rem; border-radius: 8px 8px 0 0; transition: all 0.2s;">
+                <span class="material-symbols-outlined" style="vertical-align: middle;">school</span>
+                أستاذ جديد
+            </button>
+            <button type="button" class="tab-btn" :class="{ 'active-tab': addType === 'staff' }" @click="switchTab('staff')" style="outline: none !important; font-weight: 800; font-size: 1rem; padding: 0.5rem 1.25rem; border-radius: 8px 8px 0 0; transition: all 0.2s;">
+                <span class="material-symbols-outlined" style="vertical-align: middle;">badge</span>
+                موظف جديد
+            </button>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- نموذج أستاذ (مع دعم التعديل وعرض المواد المسندة) -->
+        <!-- ============================================================ -->
+        <div x-show="addType === 'professor'" class="space-y-4">
+            <!-- الحقول الأساسية -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+                <div>
+                    <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">الاسم الكامل للأستاذ *</label>
+                    <input type="text" x-model="newProfessor.name" placeholder="د. محمد أحمد" class="custom-input">
+                </div>
+                <div>
+                    <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">البريد الإلكتروني</label>
+                    <input type="email" x-model="newProfessor.email" placeholder="m.ahmed@tripoli.edu.ly" dir="ltr" class="custom-input">
+                </div>
+            </div>
+            
+            <!-- ============================================================ -->
+            <!-- 🔥 قسم المواد المسندة حالياً (يظهر فقط في وضع التعديل) -->
+            <!-- ============================================================ -->
+            <div x-show="editId !== null" class="assigned-courses-box">
+                <div class="assigned-courses-header">
+                    <label class="assigned-courses-title">
+                        <span class="material-symbols-outlined" style="color: #16a34a;">checklist</span>
+                        <span>المواد المسندة حالياً للأستاذ</span>
+                        <span class="assigned-count-badge" x-text="editProfessorAssignments.length"></span>
+                    </label>
+                    <span style="font-size: 0.8rem; opacity: 0.85; font-weight: 700;">(يمكنك إزالة أي مادة بالضغط على 🗑️)</span>
+                </div>
+                
+                <!-- عرض التكليفات الحالية في كروت -->
+                <div style="display: grid; grid-template-columns: 1fr; gap: 0.5rem; max-height: 300px; overflow-y: auto; padding: 0.25rem;">
+                    <template x-if="editProfessorAssignments.length === 0">
+                        <div style="text-align: center; padding: 1.5rem; opacity: 0.7; border-radius: 8px; border: 1px dashed #cbd5e1;">
+                            <span class="material-symbols-outlined" style="font-size: 2rem; display: block; margin-bottom: 0.25rem;">info</span>
+                            لا توجد مواد مسندة لهذا الأستاذ حالياً
+                        </div>
+                    </template>
+                    
+                    <template x-for="(assignment, index) in editProfessorAssignments" :key="assignment.assignment_id">
+                        <div class="assignment-item-card">
+                            <!-- معلومات المادة -->
+                            <div style="display: flex; align-items: center; gap: 0.75rem; min-width: 0;">
+                                <span class="course-code-badge" x-text="assignment.course_code || 'مادة'"></span>
+                                <span class="course-name-text" x-text="assignment.course_name"></span>
+                            </div>
+                            
+                            <!-- المستوى والمجموعة -->
+                            <div style="display: flex; gap: 0.6rem; font-size: 0.8rem; justify-content: flex-end;">
+                                <span class="pill-badge">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">layers</span>
+                                    <span x-text="assignment.level_name"></span>
+                                </span>
+                                <span class="pill-badge">
+                                    <span class="material-symbols-outlined" style="font-size: 14px;">group</span>
+                                    <span x-text="assignment.group_name"></span>
+                                </span>
+                            </div>
+                            
+                            <!-- زر الحذف -->
+                            <button type="button" class="btn-delete-assignment" @click="deleteAssignment(assignment.assignment_id, index)" title="حذف هذا التكليف">
+                                <span class="material-symbols-outlined" style="font-size: 18px;">delete</span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+            
+            <!-- ============================================================ -->
+            <!-- قسم إسناد مواد جديدة -->
+            <!-- ============================================================ -->
+            <div id="courseAssignmentBox" class="course-assignment-box">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <label style="font-weight: 800; display: flex; align-items: center; gap: 0.5rem; font-size: 0.95rem;">
+                        <span class="material-symbols-outlined" style="color: #307e92;">menu_book</span>
+                        <span x-text="editId !== null ? 'إضافة مواد جديدة للأستاذ' : 'المواد الدراسية التي يسند تدريسها للأستاذ'"></span>
+                    </label>
+                    <button type="button" id="btnAddSubject" class="btn-action btn-edit" @click="addSubject()" style="padding: 0.45rem 0.9rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; background: #307e92; color: white; border: none; transition: all 0.2s;">
+                        <span class="material-symbols-outlined" style="font-size: 18px;">add</span>
+                        <span>إضافة مادة</span>
+                    </button>
+                </div>
+                
+                <!-- صفوف المواد الجديدة -->
+                <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                    <template x-for="(subject, index) in newProfessor.subjects" :key="index">
+                        <div class="new-subject-row">
+                            <!-- القائمة 1: المادة -->
+                            <div style="flex: 2; min-width: 180px;">
+                                <select x-model="newProfessor.subjects[index].course_id" @change="onCourseSelect(index)" class="custom-select">
+                                    <option value="">-- اختر المادة --</option>
+                                    <template x-for="course in courses" :key="course.id">
+                                        <option :value="course.id" x-text="course.code + ' - ' + course.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            
+                            <!-- القائمة 2: المستوى -->
+                            <div style="flex: 1; min-width: 120px;">
+                                <select x-model="newProfessor.subjects[index].level_id" class="custom-select">
+                                    <option value="">-- المستوى --</option>
+                                    <template x-for="level in levels" :key="level.id">
+                                        <option :value="level.id" x-text="'المستوى ' + level.number"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            
+                            <!-- القائمة 3: المجموعة -->
+                            <div style="flex: 1; min-width: 120px;">
+                                <select x-model="newProfessor.subjects[index].group_id" class="custom-select">
+                                    <option value="">-- المجموعة --</option>
+                                    <template x-for="group in groups" :key="group.id">
+                                        <option :value="group.id" x-text="group.name"></option>
+                                    </template>
+                                </select>
+                            </div>
+                            
+                            <!-- زر الحذف -->
+                            <button type="button" class="btn-remove-subject" @click="removeSubject(index)" x-show="newProfessor.subjects.length > 1 || editId !== null" title="إلغاء المادة">
+                                <span class="material-symbols-outlined" style="font-size: 20px;">delete</span>
+                            </button>
+                        </div>
+                    </template>
+                </div>
+                
+                <!-- رسالة توضيحية في وضع التعديل -->
+                <div x-show="editId !== null" style="margin-top: 0.75rem; font-size: 0.8rem; opacity: 0.85; display: flex; align-items: center; gap: 0.5rem; font-weight: 600;">
+                    <span class="material-symbols-outlined" style="font-size: 18px; color: #38bdf8;">info</span>
+                    <span>المواد الجديدة المختارة أعلاه ستُضاف فور الحفظ إلى سجل التكليفات الأكاديمية للأستاذ</span>
+                </div>
+            </div>
+
+            <!-- أزرار الإجراءات -->
+            <div class="buttons-row mt-6" style="display: flex; gap: 1rem; align-items: center;">
+                <button type="button" id="btnAddProfessor" class="btn-action btn-save" @click="editId !== null ? saveEditInForm() : addProfessor()" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
+                    <span class="material-symbols-outlined" x-text="editId !== null ? 'save' : 'person_add'"></span>
+                    <span x-text="editId !== null ? 'حفظ التعديلات' : 'إضافة الأستاذ'"></span>
+                </button>
+                <button type="button" class="btn-action btn-exit" @click="cancelEditInForm()" x-show="editId !== null" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
+                    إلغاء التعديل
+                </button>
+            </div>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- نموذج موظف جديد / تعديل موظف -->
+        <!-- ============================================================ -->
+        <div x-show="addType === 'staff'" class="space-y-4" style="display: none;">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
+                <div>
+                    <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">الاسم الكامل للموظف *</label>
+                    <input type="text" x-model="newStaff.name" placeholder="أحمد علي سالم" class="custom-input">
+                </div>
+                <div>
+                    <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">البريد الإلكتروني</label>
+                    <input type="email" x-model="newStaff.email" placeholder="a.salem@tripoli.edu.ly" dir="ltr" class="custom-input">
+                </div>
+                <div>
+                    <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">المسمى الوظيفي / الدور *</label>
+                    <input type="text" x-model="newStaff.role" placeholder="مثال: أمين معمل الحاسوب / موظف تسجيل" class="custom-input">
+                </div>
+            </div>
+
+            <div class="buttons-row mt-6" style="display: flex; gap: 1rem; align-items: center;">
+                <button type="button" id="btnAddStaff" class="btn-action btn-save" @click="editId !== null ? saveEditInForm() : addStaff()" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
+                    <span class="material-symbols-outlined" x-text="editId !== null ? 'save' : 'person_add'"></span>
+                    <span x-text="editId !== null ? 'حفظ التعديلات' : 'إضافة الموظف'"></span>
+                </button>
+                <button type="button" class="btn-action btn-exit" @click="cancelEditInForm()" x-show="editId !== null" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
+                    إلغاء التعديل
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== القوائم وعرض الأعضاء ===== -->
+    <div class="group-box" x-show="selectedDept" style="display: none;">
+        <span class="group-title">أعضاء القسم الحاليين</span>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem;">
+            <!-- الأساتذة -->
+            <div class="list-card-box" style="border: 1px solid #bae6fd;">
+                <div class="list-header-prof" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: #f0f9ff; border-bottom: 1.5px solid #bae6fd;">
+                    <h3 style="font-weight: 800; color: #0369a1; margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                        <span class="material-symbols-outlined">school</span>
+                        الأساتذة
+                    </h3>
+                    <span style="background-color: #0284c7; color: white; padding: 0.25rem 0.75rem; border-radius: 50px; font-weight: 800; font-size: 0.85rem;" x-text="getActiveProfessors().length">0</span>
+                </div>
+                <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-height: 450px; overflow-y: auto;">
+                    <template x-if="!selectedDept || !departmentsData[selectedDept] || departmentsData[selectedDept].professors.length === 0">
+                        <div style="text-align: center; padding: 3rem 1rem; opacity: 0.6;">
+                            <span class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem; display: block;">school</span>
+                            لا يوجد أساتذة في هذا القسم حالياً
+                        </div>
+                    </template>
+                    <template x-for="prof in (selectedDept && departmentsData[selectedDept] ? departmentsData[selectedDept].professors : [])" :key="prof.id">
+                        <div class="person-row" :class="{ disabled: prof.disabled }">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="avatar prof" style="background-color: #0284c7; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;" x-text="getInitials(prof.name)"></div>
+                                <div>
+                                    <div class="person-name" style="font-weight: 800;" x-text="prof.name"></div>
+                                    <div class="person-sub" style="font-size: 0.8rem;" x-text="formatSubjects(prof.subjects)"></div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button class="btn-person-edit" @click="startEditInForm('professor', prof.id)" title="تعديل">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">edit</span>
+                                </button>
+                                <button @click="togglePerson('professor', prof.id)" 
+                                        style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; outline: none; margin-right: 0.25rem;"
+                                        :title="prof.disabled ? 'تفعيل' : 'تعطيل'">
+                                    <span class="material-symbols-outlined" 
+                                          :style="prof.disabled ? 'font-size: 36px; color: #cbd5e1;' : 'font-size: 36px; color: #10b981;'" 
+                                          x-text="prof.disabled ? 'toggle_off' : 'toggle_on'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <!-- الموظفين -->
+            <div class="list-card-box" style="border: 1px solid #d8b4fe;">
+                <div class="list-header-staff" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem; background-color: #f3e8ff; border-bottom: 1.5px solid #d8b4fe;">
+                    <h3 style="font-weight: 800; color: #6b21a8; margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 1.1rem;">
+                        <span class="material-symbols-outlined">badge</span>
+                        الموظفين
+                    </h3>
+                    <span style="background-color: #8b5cf6; color: white; padding: 0.25rem 0.75rem; border-radius: 50px; font-weight: 800; font-size: 0.85rem;" x-text="getActiveStaff().length">0</span>
+                </div>
+                <div style="padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; max-height: 450px; overflow-y: auto;">
+                    <template x-if="!selectedDept || !departmentsData[selectedDept] || departmentsData[selectedDept].staff.length === 0">
+                        <div style="text-align: center; padding: 3rem 1rem; opacity: 0.6;">
+                            <span class="material-symbols-outlined" style="font-size: 3rem; margin-bottom: 0.5rem; display: block;">badge</span>
+                            لا يوجد موظفين في هذا القسم حالياً
+                        </div>
+                    </template>
+                    <template x-for="staff in (selectedDept && departmentsData[selectedDept] ? departmentsData[selectedDept].staff : [])" :key="staff.id">
+                        <div class="person-row" :class="{ disabled: staff.disabled, 'is-head-row': staff.is_head }">
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <div class="avatar staff" 
+                                     :style="staff.is_head ? 'background: linear-gradient(135deg, #d97706, #f59e0b); color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; box-shadow: 0 2px 4px rgba(217, 119, 6, 0.3);' : 'background-color: #8b5cf6; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800;'" 
+                                     x-text="getInitials(staff.name)"></div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                                        <div class="person-name" style="font-weight: 800;" x-text="staff.name"></div>
+                                        <template x-if="staff.is_head">
+                                            <span style="background: linear-gradient(135deg, #f59e0b, #d97706); color: #ffffff; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.6rem; border-radius: 50px; display: inline-flex; align-items: center; gap: 0.25rem; box-shadow: 0 1px 3px rgba(217, 119, 6, 0.3);">
+                                                👑 رئيس القسم
+                                            </span>
+                                        </template>
+                                    </div>
+                                    <div class="person-sub" style="font-size: 0.8rem; font-weight: 600;" x-text="staff.role"></div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <button class="btn-person-edit" @click="startEditInForm('staff', staff.id)" title="تعديل">
+                                    <span class="material-symbols-outlined" style="font-size: 18px; color: #475569;">edit</span>
+                                </button>
+                                <button @click="togglePerson('staff', staff.id)" 
+                                        style="background: transparent; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; outline: none; margin-right: 0.25rem;"
+                                        :title="staff.disabled ? 'تفعيل' : 'تعطيل'">
+                                    <span class="material-symbols-outlined" 
+                                          :style="staff.disabled ? 'font-size: 36px; color: #cbd5e1;' : 'font-size: 36px; color: #10b981;'" 
+                                          x-text="staff.disabled ? 'toggle_off' : 'toggle_on'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== حالة عدم اختيار قسم ===== -->
+    <div class="group-box" x-show="!selectedDept">
+        <div style="text-align: center; padding: 4rem 1rem; color: #64748b;">
+            <span class="material-symbols-outlined" style="font-size: 4rem; color: #307e92; opacity: 0.5; margin-bottom: 1rem; display: block;">pan_tool_alt</span>
+            <p style="font-size: 1.2rem; font-weight: 800; color: #0f172a;">الرجاء اختيار قسم دراسي من القائمة أعلاه</p>
+            <p style="font-size: 0.9rem; opacity: 0.7; margin-top: 0.25rem;">ستظهر لك تفاصيل وموظفي وأساتذة القسم بمجرد اختياره</p>
+        </div>
+    </div>
+
+    <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+    <div id="toastNotification">
+        <div id="toastIconCircle" class="toast-icon-circle">
+            <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+            <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+        </div>
+    </div>
+
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const isInstructorOpen = "{{ is_add_instructor_open|yesno:'true,false' }}" === "true";
+    window.is_add_instructor_open = isInstructorOpen;
+    window.IS_ADD_INSTRUCTOR_OPEN = isInstructorOpen;
+    window.ADD_INSTRUCTOR_MESSAGE = "{{ add_instructor_message|escapejs }}";
+
+    const isStaffOpen = "{{ is_add_staff_open|yesno:'true,false' }}" === "true";
+    window.is_add_staff_open = isStaffOpen;
+    window.IS_ADD_STAFF_OPEN = isStaffOpen;
+    window.ADD_STAFF_MESSAGE = "{{ add_staff_message|escapejs }}";
+</script>
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<script src="{% static 'faculty/js/Sections.js' %}?v=2.2.0"></script>
+{% endblock %}

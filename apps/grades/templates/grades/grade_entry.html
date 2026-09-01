@@ -1,0 +1,361 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}تسجيل درجات الطلاب - منظومة كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'grades/css/grade_entry.css' %}">
+{% endblock %}
+
+{% block content %}
+<main class="custom-main grade-entry-main">
+    <div class="grade-entry-container">
+        
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">تسجيل درجات الطلاب</h1>
+                <p class="page-header-subtitle">فصل فترات الرصد، حماية البيانات، ونشر النتائج الفوري لحسابات الطلاب</p>
+            </div>
+            {% if not request.user|has_exec_perm:'grades.change_grade' and not request.user|has_exec_perm:'grades.add_grade' and not request.user|has_exec_perm:'change_grade' and not request.user|has_exec_perm:'add_grade' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه خدمة إرسال الكشوفات للأستاذ (Job 1: send_grade_sheets) -->
+        {% if not is_send_sheets_job_open %}
+        <div id="sendSheetsJobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="sendSheetsJobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="sendSheetsJobInactiveBannerText">{% if not is_send_sheets_job_open %}{{ send_sheets_job_message|default:"خدمة 'إرسال الكشوفات للأستاذ' غير مفعلة حالياً" }}{% endif %}</span>
+            </div>
+        </div>
+
+        <!-- ⚠️ تنبيه خدمة رصد الدرجات (Job 2: grade_entry_monitoring) -->
+        {% if not is_grade_entry_job_open %}
+        <div id="gradeEntryJobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="gradeEntryJobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="gradeEntryJobInactiveBannerText">{% if not is_grade_entry_job_open %}{{ grade_entry_job_message|default:"خدمة 'رصد الدرجات' غير مفعلة حالياً" }}{% endif %}</span>
+            </div>
+        </div>
+
+    <!-- بطاقة الفلاتر (القروب بوكس الأول) -->
+    <div class="group-box filter-card">
+        <span class="group-title filter-card-title">
+            <span class="material-symbols-outlined header-icon" style="font-size: 16px !important; vertical-align: middle; margin-left: 5px;">tune</span>
+            خيارات تصفية الكشف
+        </span>
+        
+        <div class="filter-grid">
+            <div class="filter-group">
+                <label class="filter-label">نوع التقييم</label>
+                <select id="period-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="midterm">درجات النصفي</option>
+                    <option value="final">الدرجات النهائية</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">التخصص</label>
+                <select id="specialty-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">المستوى</label>
+                 <select id="level-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="">كل المستويات</option>
+                 </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">الفصل الدراسي</label>
+                <select id="semester-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">المادة</label>
+                <select id="course-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">المجموعة</label>
+                <select id="group-select" onchange="handleFilterChange()" class="filter-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">اسم الأستاذ</label>
+                <select id="professor-select" onchange="handleProfessorChange()" class="filter-select">
+                    <option value="">جاري التحميل...</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">البريد الإلكتروني للأستاذ</label>
+                <input type="email" id="professor-email-display" class="filter-select" readonly style="background-color: var(--bg-card-hover, #f1f5f9); cursor: not-allowed; border: 1px solid var(--border-color, #cbd5e1);" placeholder="البريد الإلكتروني للتحقق">
+            </div>
+            <div class="filter-group">
+                <label class="filter-label" style="visibility: hidden;">تصفية</label>
+                <button onclick="loadStudentsFromDatabase()" class="btn btn-primary btn-load" style="padding: 0.55rem 1.5rem; display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 0.6rem; height: 38.5px; margin-top: 0;">
+                    <span class="material-symbols-outlined btn-icon-animate" style="font-size: 20px;">search</span> موافق
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- بطاقة الجدول (القروب بوكس الثاني) -->
+    <div id="table-container" class="group-box table-card hidden">
+        <span class="group-title table-card-title">
+            <span class="material-symbols-outlined header-icon" style="font-size: 16px !important; vertical-align: middle; margin-left: 5px;">analytics</span>
+            كشف درجات الطلاب والعمليات
+        </span>
+        
+
+
+        <!-- شريط الحالة -->
+        <div class="status-bar">
+            <span id="status-badge" class="status-badge">
+                <span class="material-symbols-outlined status-bar-icon">info</span>
+                <span>اختر ملف CSV / Excel واضغط "رفع واستيراد الدرجات"</span>
+            </span>
+        </div>
+
+        <!-- قسم الاستيراد الرئيسي (CSV Upload - مقترن بـ Job 2: grade_entry_monitoring) -->
+        {% if request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'grades.add_grade' or request.user|has_exec_perm:'change_grade' or request.user|has_exec_perm:'add_grade' %}
+        <div class="import-section">
+            <div class="import-label">
+                <span class="material-symbols-outlined import-icon">upload_file</span>
+                رفع ملف CSV / Excel لإدخال وتحديث الدرجات تلقائياً:
+            </div>
+            <div class="import-controls">
+                <!-- اختيار الملف -->
+                <label for="excel-file-input" class="custom-file-upload {% if not is_grade_entry_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}">
+                    <span class="material-symbols-outlined">cloud_upload</span>
+                    <span id="file-name-display">اختر ملف الكشف (CSV / Excel)...</span>
+                </label>
+                <input type="file" id="excel-file-input" accept=".csv, .xlsx, .xls" class="file-input-hidden" onchange="updateSelectedFileName(this)" {% if not is_grade_entry_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important;" title="{{ grade_entry_job_message|default:'خدمة رصد الدرجات غير مفعلة حالياً' }}"{% endif %}/>
+                
+                <!-- زر الاستيراد والتعبئة -->
+                <button type="button" id="btnUploadImportGrades" onclick="uploadExcelGrades()" class="btn btn-primary btn-import {% if not is_grade_entry_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" {% if not is_grade_entry_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ grade_entry_job_message|default:'خدمة رصد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                    <span class="material-symbols-outlined">sync_saved_locally</span> رفع واستيراد الدرجات
+                </button>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- الجدول -->
+        <div class="table-wrapper">
+            <table class="grades-table">
+                <thead>
+                    <tr>
+                        <th class="th-index">#</th>
+                        <th class="th-id">رقم القيد</th>
+                        <th class="th-name">اسم الطالب</th>
+                        <th class="th-course">المادة</th>
+                        <th class="th-midterm">درجة النصفي (40)</th>
+                        <th class="th-final">درجة النهائي (60)</th>
+                        <th class="th-total">المجموع (100)</th>
+                        <th class="th-grade">التقدير</th>
+                        <th class="th-status">الحالة</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+        </div>
+          
+        <!-- أزرار الإجراءات -->
+        <div class="actions-bar">
+            <div class="actions-left">
+                <!-- زر رصد وحفظ الدرجات -->
+                {% if request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'grades.add_grade' or request.user|has_exec_perm:'change_grade' or request.user|has_exec_perm:'add_grade' %}
+                <button id="btn-approve-lock" onclick="openLockConfirmModal()" class="btn btn-lock {% if not is_grade_entry_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" {% if not is_grade_entry_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ grade_entry_job_message|default:'خدمة رصد الدرجات غير مفعلة حالياً' }}"{% endif %}>
+                    <span class="material-symbols-outlined btn-icon-animate">edit_document</span>
+                    <span id="btn-lock-text">رصد</span>
+                </button>
+                {% endif %}
+                <!-- تصدير وإرسال الكشف للأستاذ (مقترن بـ Job 1: send_grade_sheets) -->
+                <button id="btnExportSendSheet" onclick="openExportModal()" class="btn btn-export {% if not is_send_sheets_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" {% if not is_send_sheets_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ send_sheets_job_message|default:'خدمة إرسال الكشوفات للأستاذ غير مفعلة حالياً' }}"{% endif %}>
+                    <span class="material-symbols-outlined btn-icon-animate">forward_to_inbox</span> تصدير وإرسال الكشف للأستاذ
+                </button>
+            </div>
+
+            <div class="actions-right" style="display: none;">
+                <!-- تم إخفاء زر الترحيل والنشر حسب التوجيهات -->
+                <button id="btn-publish-student" style="display: none !important;" disabled></button>
+            </div>
+        </div>
+    </div>
+    </div> <!-- close .grade-entry-container -->
+</main>
+
+<!-- ===== مودال تأكيد الاعتماد والقفل ===== -->
+<div id="lockConfirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content modal-confirm">
+        <div class="modal-icon">
+            <span class="material-symbols-outlined">edit_document</span>
+        </div>
+        <h3 class="modal-title" id="lock-modal-title">تأكيد رصد وحفظ النتائج</h3>
+        <p class="modal-text" id="lock-modal-text">
+            هل أنت متأكد من رصد وحفظ درجات الكشف نهائياً؟<br/>
+            <span class="modal-warning">⚠️ بعد الرصد لن تتمكن من تعديل أو استيراد الدرجات لهذه الفترة مرة أخرى.</span>
+        </p>
+        <div class="modal-actions">
+            <button onclick="closeLockConfirmModal()" class="btn btn-cancel">
+                <span class="material-symbols-outlined">close</span> رجوع
+            </button>
+            <button onclick="submitLockToBackend()" class="btn btn-confirm-lock">
+                <span class="material-symbols-outlined">check_circle</span> نعم، تأكيد الرصد
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== مودال نجاح الرصد ===== -->
+<div id="lockSuccessModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content modal-success">
+        <div class="modal-icon success-icon">
+            <span class="material-symbols-outlined">check_circle</span>
+        </div>
+        <h3 class="modal-title success-title">تم رصد الدرجات بنجاح! ✅</h3>
+        <p class="modal-text">
+            تم رصد وحفظ درجات الكشف في المنظومة وقفلها بنجاح.<br/>
+            الدرجات الآن محمية ومحفوظة.
+        </p>
+        <button onclick="closeLockSuccessModal()" class="btn btn-success-close">
+            حسناً، فهمت
+        </button>
+    </div>
+</div>
+
+<!-- ===== مودال تصدير وإرسال الكشف ===== -->
+<div id="exportModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content modal-export">
+        <h3 class="modal-title">
+            <span class="material-symbols-outlined modal-header-icon" style="vertical-align: middle; margin-left: 8px; color: var(--primary);">forward_to_inbox</span>تصدير وإرسال كشف رصد الدرجات
+        </h3>
+        <p class="modal-text">
+            سيقوم النظام بتوليد نموذج Excel وإرساله تلقائياً إلى البريد الإلكتروني الخاص بأستاذ المادة:
+        </p>
+        <div class="email-input-wrapper">
+            <input type="email" id="professor-email-input" class="email-input" placeholder="ali.ahmed@tripoli.edu.ly">
+        </div>
+        <div class="modal-actions">
+            <button onclick="closeExportModal()" class="btn btn-cancel">
+                <span class="material-symbols-outlined">close</span> تراجع
+            </button>
+            <button id="btnSendEmailConfirm" onclick="sendExcelToProfessorEmail()" class="btn btn-send {% if not is_send_sheets_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" {% if not is_send_sheets_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;" title="{{ send_sheets_job_message|default:'خدمة إرسال الكشوفات للأستاذ غير مفعلة حالياً' }}"{% endif %}>
+                <span class="material-symbols-outlined">send</span> تأكيد وإرسال للإيميل
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== مودال واجهة الطالب قيد التجهيز ===== -->
+<div id="underConstructionModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content modal-construction">
+        <div class="modal-icon construction-icon">
+            <span class="material-symbols-outlined">construction</span>
+        </div>
+        <h3 class="modal-title construction-title">واجهة الطالب قيد التجهيز 🚧</h3>
+        <p class="modal-text">
+            تم اعتماد الدرجات وحفظها بنجاح في المنظومة.<br/>
+            واجهة عرض النتائج للطلاب قيد التطوير وستكون متاحة قريباً.
+        </p>
+        <div class="construction-notice">
+            <p class="construction-notice-text">✅ الدرجات محفوظة ومعتمدة في قاعدة البيانات</p>
+        </div>
+        <button onclick="closeUnderConstructionModal()" class="btn btn-primary btn-construction-close">
+            حسناً، فهمت
+        </button>
+    </div>
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.IS_SEND_SHEETS_JOB_OPEN = "{{ is_send_sheets_job_open|yesno:'true,false' }}" === "true";
+    window.SEND_SHEETS_JOB_MESSAGE = "{{ send_sheets_job_message|escapejs }}";
+    window.IS_GRADE_ENTRY_JOB_OPEN = "{{ is_grade_entry_job_open|yesno:'true,false' }}" === "true";
+    window.GRADE_ENTRY_JOB_MESSAGE = "{{ grade_entry_job_message|escapejs }}";
+
+    // دالة تحديث اسم الملف المختار في الواجهة
+    function updateSelectedFileName(input) {
+        const nameDisplay = document.getElementById('file-name-display');
+        if (input.files && input.files[0]) {
+            nameDisplay.innerText = input.files[0].name;
+        } else {
+            nameDisplay.innerText = 'اختر ملف الكشف (Excel)...';
+        }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="{% static 'grades/js/grade_entry.js' %}?v=1.1.0"></script>
+{% endblock %}

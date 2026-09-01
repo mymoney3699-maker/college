@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}بحث عن طالب | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* تحسين وضوح وقراءة النصوص للحقول الموقوفة عن التعديل (Read Only / Disabled) في الوضع النهاري */
+    html:not(.dark) .search-student-page input:disabled, 
+    html:not(.dark) .search-student-page select:disabled, 
+    html:not(.dark) .search-student-page textarea:disabled,
+    html:not(.dark) .search-student-page .custom-select-trigger:disabled,
+    html:not(.dark) .search-student-page .read-only-field {
+        background-color: #ffffff !important;
+        color: #1e293b !important;
+        border-color: #cbd5e1 !important;
+        opacity: 1 !important;
+        cursor: default !important;
+        -webkit-text-fill-color: #1e293b !important;
+    }
+
+    /* تحسين وضوح وقراءة جميع الحقول والنصوص في الوضع الليلي (Dark Mode) */
+    html.dark .search-student-page input, 
+    html.dark .search-student-page select, 
+    html.dark .search-student-page textarea,
+    html.dark .search-student-page input:disabled, 
+    html.dark .search-student-page select:disabled, 
+    html.dark .search-student-page textarea:disabled,
+    html.dark .search-student-page .custom-select-trigger:disabled,
+    html.dark .search-student-page .read-only-field {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #f8fafc !important;
+        border: 1px solid #334155 !important;
+        border-color: #334155 !important;
+        opacity: 1 !important;
+        -webkit-text-fill-color: #f8fafc !important;
+    }
+
+    html.dark .search-student-page input:focus,
+    html.dark .search-student-page select:focus {
+        background-color: #0f172a !important;
+        border-color: #38bdf8 !important;
+        color: #ffffff !important;
+    }
+
+    html.dark .search-student-page .field-label,
+    html.dark .search-student-page label {
+        color: #cbd5e1 !important;
+        font-weight: 700 !important;
+    }
+
+    html.dark .search-student-page option {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .search-student-page input::placeholder {
+        color: #64748b !important;
+    }
+
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main search-student-page">
+    <div class="search-student-container">
+
+        <!-- حاوية البحث والنتائج -->
+        <div id="searchContainer">
+            <div class="page-header-row">
+                <div>
+                    <h1 class="page-header-title">بحث عن طالب</h1>
+                    <p class="page-header-subtitle">ابحث برقم القيد أو اسم الطالب (نتائج فورية)</p>
+                </div>
+            </div>
+
+            <div class="group-box">
+                <span class="group-title">بحث عن طالب</span>
+
+                <div class="filters-grid-2col">
+                    <div>
+                        <label for="searchRegNum">رقم القيد</label>
+                        <input type="text" id="searchRegNum" placeholder="أدخل رقم القيد" onkeyup="liveSearch()"
+                            onchange="liveSearch()" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="searchName">اسم الطالب</label>
+                        <input type="text" id="searchName" placeholder="أدخل اسم الطالب" onkeyup="liveSearch()"
+                            onchange="liveSearch()" autocomplete="off">
+                    </div>
+                </div>
+
+                <!-- قائمة الاقتراحات (SearchResults) -->
+                <div id="searchResults" class="search-results-list hidden mt-4 mb-4"></div>
+
+                <div class="buttons-row">
+                    <button class="btn-action btn-reset" onclick="clearSearch()">
+                        <span class="material-symbols-outlined">cleaning_services</span> تفريغ
+                    </button>
+                    <button class="btn-action btn-exit" onclick="goBack()">
+                        <span class="material-symbols-outlined">arrow_back</span> رجوع
+                    </button>
+                </div>
+
+                <div id="loadingIndicator" class="loading-indicator text-center text-primary hidden mt-4">
+                    <span class="material-symbols-outlined animate-spin">refresh</span> جاري البحث...
+                </div>
+
+                <!-- حاوية عرض ملف الطالب (Profile Viewer) داخل نفس الجروب بوكس -->
+                <div id="studentProfileViewer" class="mt-6">
+                    <div class="student-data-layout">
+                        <!-- العمود الأيمن: الصورة والـ QR -->
+                        <div class="student-avatar-column">
+                            <div class="group-box text-center">
+                                <span class="group-title">صورة الطالب</span>
+                                <div class="student-avatar-placeholder" style="overflow: hidden; position: relative; display: flex; align-items: center; justify-content: center;">
+                                    <span class="material-symbols-outlined" id="view_avatar_icon"
+                                        style="font-size: 64px; color: #307e92;">account_circle</span>
+                                    <img id="student_photo_preview" src="" alt="صورة الطالب" style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                </div>
+
+                                <div class="qr-container">
+                                    <div class="qr-title">
+                                        <span class="material-symbols-outlined">qr_code</span>
+                                        كود QR لبيانات الطالب
+                                    </div>
+                                    <div id="view_qrcode" style="min-height: 130px; display: flex; align-items: center; justify-content: center; background: #ffffff; border-radius: 10px; padding: 8px; margin: 8px auto; width: 130px; height: 130px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                                        <img id="view_qr_image" src="" alt="كود QR" style="width: 100%; height: 100%; object-fit: contain; display: none;" />
+                                        <span id="view_qr_placeholder" class="text-xs font-bold" style="text-align: center; color: #64748b;">اختر طالباً لعرض الـ QR</span>
+                                    </div>
+                                    <button type="button" class="qr-btn" id="btnCopyQR" onclick="copyQRCodeLink()" style="margin-top: 8px;">
+                                        <span class="material-symbols-outlined">content_copy</span> <span id="btnCopyQRText">نسخ الرابط</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- العمود الأيسر: الحقول والبيانات -->
+                        <div class="student-form-column">
+
+                            <!-- Group Box 1: البيانات الشخصية للطالب -->
+                            <div class="group-box">
+                                <span class="group-title">بيانات الطالب</span>
+
+                                <div class="filters-grid-4col">
+                                    <div>
+                                        <label class="field-label">رقم القيد</label>
+                                        <input type="text" id="view_student_id" placeholder="رقم القيد">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">اسم الطالب</label>
+                                        <input type="text" id="view_name">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">اسم الأب</label>
+                                        <input type="text" id="view_father_name">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">اسم الجد</label>
+                                        <input type="text" id="view_grandfather_name">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">اللقب</label>
+                                        <input type="text" id="view_last_name">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">تاريخ الميلاد</label>
+                                        <input type="date" id="view_birth_date">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">مكان الميلاد</label>
+                                        <select id="view_birth_place">
+                                            <option value="">-- اختر مكان الميلاد --</option>
+                                            {% for place in birth_places %}
+                                            <option value="{{ place.id }}">{{ place.city }} - {{ place.country }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">الجنسية</label>
+                                        <select id="view_nationality">
+                                            <option value="">-- اختر الجنسية --</option>
+                                            {% for n in nationalities %}
+                                            <option value="{{ n.id }}">{{ n.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">فصيلة الدم</label>
+                                        <select id="view_blood_type" disabled>
+                                            <option value="">-- اختر فصيلة الدم --</option>
+                                            <option value="A+">A+</option>
+                                            <option value="A-">A-</option>
+                                            <option value="B+">B+</option>
+                                            <option value="B-">B-</option>
+                                            <option value="AB+">AB+</option>
+                                            <option value="AB-">AB-</option>
+                                            <option value="O+">O+</option>
+                                            <option value="O-">O-</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">الجنس</label>
+                                        <select id="view_gender">
+                                            <option value="">-- اختر الجنس --</option>
+                                            {% for g in genders %}
+                                            <option value="{{ g.id }}">{{ g.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">الحالة الاجتماعية</label>
+                                        <select id="view_marital_status">
+                                            <option value="">-- اختر الحالة --</option>
+                                            {% for ms in marital_statuses %}
+                                            <option value="{{ ms.id }}">{{ ms.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">الرقم الوطني</label>
+                                        <input type="text" id="view_national_id">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">رقم الهاتف</label>
+                                        <input type="text" id="view_phone">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">البريد الإلكتروني</label>
+                                        <input type="email" id="view_email">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">عنوان السكن</label>
+                                        <input type="text" id="view_current_address" placeholder="الشارع، المدينة">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">القسم (التخصص)</label>
+                                        <select id="view_department">
+                                            <option value="">-- اختر التخصص --</option>
+                                            {% for d in departments %}
+                                            <option value="{{ d.id }}">{{ d.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">الخطة الدراسية</label>
+                                        <select id="view_study_plan">
+                                            <option value="">-- اختر الخطة --</option>
+                                            {% for sp in study_plans %}
+                                            <option value="{{ sp.id }}">{{ sp.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">المجموعة</label>
+                                        <select id="view_group">
+                                            <option value="">-- اختر المجموعة --</option>
+                                            {% for g in groups %}
+                                            <option value="{{ g.id }}">{{ g.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div> 
+                                        <label class="field-label">المستوى الدراسي</label>
+                                        <select id="view_level">
+                                            <option value="">-- اختر المستوى --</option>
+                                            {% for lvl in levels %}
+                                            <option value="{{ lvl.id }}">{{ lvl.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">حالة الطالب</label>
+                                        <select id="view_student_status">
+                                            <option value="">-- اختر الحالة --</option>
+                                            {% for ss in student_statuses %}
+                                            <option value="{{ ss.id }}">{{ ss.name }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">نوع الفصل الدراسي</label>
+                                        <select id="view_semester_type">
+                                            <option value="">-- اختر النوع --</option>
+                                            <option value="spring">ربيع</option>
+                                            <option value="fall">خريف</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="field-label">سنة التسجيل</label>
+                                        <input type="text" id="view_semester_year" placeholder="مثال: 2026">
+                                    </div>
+                                    <div>
+                                        <label class="field-label">تاريخ الإلحاق</label>
+                                        <input type="date" id="view_enrollment_date">
+                                    </div>
+                                    <div class="col-span-4">
+                                        <label class="field-label">ملاحظات</label>
+                                        <textarea id="view_notes" rows="2"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- شبكة الجداول الفرعية (ولي الأمر والمؤهل العلمي) -->
+                            <div class="student-subtables-grid">
+
+                                <!-- Group Box 2: بيانات ولي الأمر -->
+                                <div class="group-box">
+                                    <span class="group-title">بيانات ولي الأمر</span>
+                                    <div class="form-vertical-layout">
+                                        <div>
+                                            <label class="field-label">اسم ولي الأمر</label>
+                                            <input type="text" id="view_guardian_name">
+                                        </div>
+                                        <div>
+                                            <label class="field-label">رقم هاتف ولي الأمر</label>
+                                            <input type="text" id="view_guardian_phone">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Group Box 3: بيانات المؤهل العلمي -->
+                                <div class="group-box">
+                                    <span class="group-title">بيانات المؤهل العلمي</span>
+                                    <div class="filters-grid-2col">
+                                        <div class="col-span-2">
+                                            <label class="field-label">نوع المؤهل</label>
+                                            <select id="view_qualification">
+                                                <option value="">-- اختر نوع المؤهل --</option>
+                                                {% for q in qualifications %}
+                                                <option value="{{ q.id }}">{{ q.name }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="field-label">مكان الحصول عليها</label>
+                                            <input type="text" id="view_qualification_place" placeholder="مكان الحصول">
+                                        </div>
+                                        <div>
+                                            <label class="field-label">تاريخ الحصول عليها</label>
+                                            <input type="date" id="view_qualification_date">
+                                        </div>
+                                        <div>
+                                            <label class="field-label">التقدير</label>
+                                            <input type="text" id="view_qualification_grade" placeholder="التقدير">
+                                        </div>
+                                        <div>
+                                            <label class="field-label">التخصص</label>
+                                            <input type="text" id="view_qualification_major" placeholder="التخصص">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="field-label">النسبة المئوية %</label>
+                                            <input type="text" id="view_qualification_percentage"
+                                                placeholder="النسبة المئوية">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div id="searchResult" class="search-result mt-6">
+                    <div id="studentInfo" class="student-info-message text-center text-gray-500"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+        <div id="toastNotification">
+            <div id="toastIconCircle" class="toast-icon-circle">
+                <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+                <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/search_student.js' %}?v=2.0.0"></script>
+{% endblock %}

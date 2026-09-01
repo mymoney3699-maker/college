@@ -1,0 +1,469 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}إدارة طعون النتائج وتعديل الدرجات - منظومة الكلية{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'grades/css/grade_appeals.css' %}">
+<style>
+/* =========================================================
+   PRINT — نموذج الطعن الفردي + كشف الحصر
+   ========================================================= */
+#printAppealFormContainer,
+#printSummaryReportContainer { display: none !important; }
+
+@media print {
+    @page { size: A4 portrait; margin: 8mm 8mm; }
+
+    body > *:not(#printAppealFormContainer):not(#printSummaryReportContainer) {
+        display: none !important;
+        visibility: hidden !important;
+        height: 0 !important;
+        overflow: hidden !important;
+    }
+
+    #printAppealFormContainer,
+    #printSummaryReportContainer {
+        display: block !important;
+        visibility: visible !important;
+        position: absolute !important;
+        top: 0; left: 0; right: 0;
+        width: 100% !important;
+        margin: 0 !important;
+        padding: 4px !important;
+        background: #fff !important;
+        color: #000 !important;
+        direction: rtl !important;
+        z-index: 9999999 !important;
+        box-sizing: border-box !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    #printAppealFormContainer *,
+    #printSummaryReportContainer * { visibility: visible !important; }
+
+    /* ── إطار الصفحة ── */
+    .ap-page {
+        border: 2px solid #000;
+        padding: 18px 22px;
+        min-height: 270mm;
+        display: flex;
+        flex-direction: column;
+        font-family: 'Segoe UI', Tahoma, sans-serif;
+        direction: rtl;
+        color: #000;
+        box-sizing: border-box;
+        page-break-after: always;
+    }
+    .ap-page:last-child { page-break-after: auto; }
+
+    /* ── الترويسة ── */
+    .ap-header { text-align: center; margin-bottom: 10px; }
+    .ap-logo   { max-height: 70px; display: block; margin: 0 auto 5px; }
+    .ap-gov    { font-size: 13px; font-weight: bold; margin-bottom: 1px; }
+    .ap-college{ font-size: 16px; font-weight: 900; margin-bottom: 5px; }
+    .ap-hr     { width: 70%; margin: 6px auto 10px; border-top: 1.5px solid #000; }
+    .ap-title  { font-size: 17px; font-weight: 900; text-align: center; margin: 4px 0 12px; }
+
+    /* ── بيانات الطالب ── */
+    .ap-student-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px 30px;
+        font-size: 13px;
+        margin-bottom: 12px;
+        border: 1px solid #000;
+        padding: 10px 14px;
+        border-radius: 4px;
+    }
+    .ap-field { display: flex; align-items: baseline; gap: 5px; margin-bottom: 4px; }
+    .ap-lbl   { font-weight: bold; white-space: nowrap; }
+    .ap-val   { border-bottom: 1px dashed #555; flex: 1; min-height: 1.3em; font-weight: 600; }
+
+    /* ── نص تعريفي ── */
+    .ap-intro { font-size: 12.5px; margin-bottom: 10px; line-height: 1.8; }
+
+    /* ── جدول المواد ── */
+    .ap-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-bottom: 14px; }
+    .ap-table th, .ap-table td {
+        border: 1px solid #000;
+        padding: 7px 6px;
+        text-align: center;
+    }
+    .ap-table th { font-weight: bold; background: #fff; }
+    .ap-table td.subject-name { text-align: right; font-weight: 600; }
+    .ap-table td.reason-cell  { text-align: right; }
+    .ap-table td.after-grade  { background: #f9f9f9; }
+    /* الصفوف الفارغة للطعن الثاني */
+    .ap-table tr.empty-row td { height: 36px; }
+
+    /* ── إقرار وتوقيع الطالب ── */
+    .ap-student-sig {
+        border: 1px solid #000;
+        border-radius: 4px;
+        padding: 10px 14px;
+        font-size: 12.5px;
+        margin-bottom: 16px;
+    }
+    .ap-student-sig-line { margin-top: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
+    .ap-sig-block { text-align: center; }
+    .ap-sig-line-dots { border-bottom: 1px solid #000; width: 140px; margin: 22px auto 4px; }
+
+    /* ── قسم الأستاذ (يوم الطعن) ── */
+    .ap-prof-section { border: 1.5px dashed #444; border-radius: 4px; padding: 10px 14px; margin-bottom: 14px; font-size: 12.5px; }
+    .ap-prof-title   { font-weight: bold; font-size: 13px; margin-bottom: 8px; color: #000; }
+    .ap-prof-row     { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 8px; flex-wrap: wrap; }
+    .ap-prof-field   { flex: 1; min-width: 120px; }
+
+    /* ── ختم اللجنة ── */
+    .ap-committee { border: 2px solid #000; border-radius: 4px; padding: 8px 14px; font-size: 12px; text-align: center; margin-bottom: 10px; }
+
+    /* ── كشف الحصر ── */
+    .sr-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+    .sr-table th, .sr-table td { border: 1px solid #000; padding: 7px 5px; text-align: center; }
+    .sr-table th { font-weight: bold; }
+    .sr-table td.name-cell { text-align: right; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
+  <div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Page Header & Action Buttons -->
+    <div class="page-header-row">
+      <div>
+        <h1 class="page-header-title text-3xl sm:text-4xl">إدارة طعون النتائج وتعديل الدرجات (الطعون)</h1>
+        <p class="page-header-subtitle">
+          إثبات وتوثيق الطعونات الورقية في الكنترول، متابعة إجراءات المراجعة، ورصد التعديلات في كشف الطالب.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        {% if not request.user|has_exec_perm:'grades.change_gradeappeal' and not request.user|has_exec_perm:'grades.change_grade' and not request.user|has_exec_perm:'change_gradeappeal' and not request.user|has_exec_perm:'change_grade' %}
+        <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+            <span class="material-symbols-outlined text-sm">visibility</span>
+            <span>نمط العرض فقط (Read-Only)</span>
+        </div>
+        {% endif %}
+        <!-- ✅ زر طباعة كشف الحصر -->
+        <button type="button" class="btn-grey-action" id="btn-print-summary"
+                onclick="printSummaryReport()">
+          <span class="material-symbols-outlined text-lg">print</span>
+          طباعة كشف الحصر
+        </button>
+        {% if request.user|has_exec_perm:'grades.change_gradeappeal' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'change_gradeappeal' or request.user|has_exec_perm:'change_grade' %}
+        <button type="button" class="btn-teal-action {% if not is_grade_appeals_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+                id="btn-open-create-modal"
+                {% if not is_grade_appeals_job_open %}disabled style="opacity:0.5!important;cursor:not-allowed!important;pointer-events:none!important;filter:grayscale(80%)!important;" title="{{ grade_appeals_job_message|default:'خدمة الطعون غير مفعلة حالياً' }}"{% endif %}>
+          <span class="material-symbols-outlined text-lg">add_task</span>
+          تسجيل طعن ورقي جديد
+        </button>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- تنبيه الوظيفة الموقوفة -->
+    {% if not is_grade_appeals_job_open %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display:flex;margin-bottom:1.25rem;padding:0.9rem 1.25rem;background:linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%);border:1.5px solid #f43f5e;border-radius:12px;color:#9f1239;font-weight:700;font-size:0.92rem;align-items:center;gap:0.75rem;box-shadow:0 4px 14px rgba(244,63,94,0.12);">
+    {% else %}
+    <div id="jobInactiveBanner" class="job-inactive-banner" style="display:none;margin-bottom:1.25rem;padding:0.9rem 1.25rem;background:linear-gradient(135deg,#fff1f2 0%,#ffe4e6 100%);border:1.5px solid #f43f5e;border-radius:12px;color:#9f1239;font-weight:700;font-size:0.92rem;align-items:center;gap:0.75rem;box-shadow:0 4px 14px rgba(244,63,94,0.12);">
+    {% endif %}
+      <span class="material-symbols-outlined" style="font-size:24px;color:#e11d48;flex-shrink:0;">lock_clock</span>
+      <div style="flex:1;">
+        <span id="jobInactiveBannerText">{% if not is_grade_appeals_job_open %}{{ grade_appeals_job_message|default:"خدمة 'الطعون' غير مفعلة حالياً" }}{% endif %}</span>
+      </div>
+    </div>
+
+    <!-- Quick Stats Cards Container -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+      <div class="stat-card-compact">
+        <div class="flex flex-col justify-center">
+          <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">إجمالي طلبات الطعون</span>
+          <span class="text-2xl font-black text-slate-800 dark:text-slate-100 leading-tight" id="stat-total-appeals">0</span>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-[#307e92]/10 dark:bg-[#38bdf8]/10 text-[#307e92] dark:text-[#38bdf8] flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-xl">article</span>
+        </div>
+      </div>
+
+      <div class="stat-card-compact">
+        <div class="flex flex-col justify-center">
+          <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">جاري المراجعة والتعديل</span>
+          <span class="text-2xl font-black text-amber-600 dark:text-amber-400 leading-tight" id="stat-review-appeals">0</span>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-xl">pending</span>
+        </div>
+      </div>
+
+      <div class="stat-card-compact">
+        <div class="flex flex-col justify-center">
+          <span class="block text-[12px] font-bold text-[#64748b] dark:text-slate-400 mb-1">تم تعديل ورصد النتيجة</span>
+          <span class="text-2xl font-black text-emerald-600 dark:text-emerald-400 leading-tight" id="stat-completed-appeals">0</span>
+        </div>
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center flex-shrink-0">
+          <span class="material-symbols-outlined text-xl">check_circle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Master Filter & Search Box Container -->
+    <div class="plan-container-box group-box system-card space-y-5" style="position: relative !important;">
+      <!-- Floating Title Badge strictly anchored to top right side -->
+      <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+        <span class="material-symbols-outlined text-base">tune</span>
+        <span>معايير التصفية والبحث عن الطعون</span>
+      </span>
+      
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-5 pt-2">
+        <!-- Department Filter -->
+        <div class="space-y-1.5">
+          <label for="department-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">التخصص العلمي:</label>
+          <select id="department-select" class="form-control-system {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <option value="">-- كافة التخصصات --</option>
+            {% for dep in departments %}
+            <option value="{{ dep.id }}">{{ dep.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Semester Filter -->
+        <div class="space-y-1.5">
+          <label for="semester-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">الموسم الدراسي:</label>
+          <select id="semester-select" class="form-control-system {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <option value="" selected>-- كافة المواسم --</option>
+            {% for sem in semesters %}
+            <option value="{{ sem.id }}">{{ sem.get_type_display }} {{ sem.year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Level Filter -->
+        <div class="space-y-1.5">
+          <label for="level-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">المستوى الدراسي:</label>
+          <select id="level-select" class="form-control-system {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <option value="">-- كافة المستويات --</option>
+            {% for lvl in levels %}
+            <option value="{{ lvl.id }}">المستوى {{ lvl.number }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Course Filter -->
+        <div class="space-y-1.5">
+          <label for="course-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">المادة الدراسية:</label>
+          <select id="course-select" class="form-control-system {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <option value="">-- كافة المواد --</option>
+            {% for crs in courses %}
+            <option value="{{ crs.id }}">{{ crs.code }} - {{ crs.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Status Filter -->
+        <div class="space-y-1.5">
+          <label for="status-select" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">حالة الطعن:</label>
+          <select id="status-select" class="form-control-system highlight-status {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <option value="">-- كافة الحالات --</option>
+            <option value="pending">قيد الانتظار</option>
+            <option value="under_review">جاري المراجعة والتعديل ⏳</option>
+            <option value="completed">تم تعديل ورصد 🟢</option>
+            <option value="rejected">مرفوض</option>
+          </select>
+        </div>
+
+        <!-- Quick Search Input -->
+        <div class="space-y-1.5 md:col-span-3 lg:col-span-5">
+          <label for="search-input" class="block text-xs font-bold text-[#475569] dark:text-[#38bdf8]">بحث برقم القيد أو اسم الطالب:</label>
+          <div class="relative">
+            <input type="text" id="search-input" class="form-control-system pr-10 {% if not is_grade_appeals_job_open %}opacity-50 cursor-not-allowed{% endif %}"
+                   placeholder="ابحث برقم القيد، اسم الطالب، أو كود المادة لتصفية كشف الطعون..." autocomplete="off"
+                   {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+            <span class="material-symbols-outlined absolute right-3 top-2.5 text-[#64748b] text-xl">search</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+        <button type="button" class="btn-grey-action" id="btn-reset-filters">
+          <span class="material-symbols-outlined text-lg">restart_alt</span>
+          إعادة ضبط
+        </button>
+        <button type="button" class="btn-teal-action {% if not is_grade_appeals_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="btn-fetch-appeals" {% if not is_grade_appeals_job_open %}disabled{% endif %}>
+          <span class="material-symbols-outlined text-lg">filter_list</span>
+          تحديث كشف الطعون
+        </button>
+      </div>
+    </div>
+
+    <!-- Master Results Table Container Box -->
+    <div class="plan-container-box group-box system-card space-y-4" style="position: relative !important;">
+      <!-- Floating Title Badge strictly anchored to top right side -->
+      <span class="plan-title-badge group-title card-badge" style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
+        <span class="material-symbols-outlined text-base">table_chart</span>
+        <span>جدول طعونات الكنترول والإجراءات (<span id="table-count-badge">0 طعن</span>)</span>
+      </span>
+
+      <div class="table-responsive-wrapper pt-2">
+        <table class="academic-table" id="appeals-table">
+          <thead>
+            <tr>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:45px;">#</th>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:110px;">رقم القيد</th>
+              <th scope="col" class="px-6 py-3.5">اسم الطالب</th>
+              <th scope="col" class="px-6 py-3.5">التخصص / المستوى</th>
+              <th scope="col" class="px-6 py-3.5">المادة الدراسية</th>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:110px;">نوع الطعن</th>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:110px;">الدرجة الحالية</th>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:140px;">حالة الطعن</th>
+              <th scope="col" class="px-4 py-3.5 text-center" style="width:70px;">نموذج</th>
+              <th scope="col" class="px-6 py-3.5 text-center" style="width:230px;">إجراءات الكنترول</th>
+            </tr>
+          </thead>
+          <tbody id="appeals-table-body">
+            <tr>
+              <td colspan="10" class="text-center py-12 text-[#64748b] dark:text-slate-400">
+                <span class="material-symbols-outlined text-5xl text-[#94a3b8] mb-2">rule</span>
+                <p class="text-base font-semibold">اضغط على "تحديث كشف الطعون" للعرض أو قم بتسجيل طعن ورقي جديد</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div><!-- end container -->
+</main>
+
+<!-- ============================================================
+     Modal 1: تسجيل طعن ورقي جديد
+     ============================================================ -->
+<div id="create-appeal-modal" class="modal-backdrop hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="material-symbols-outlined modal-icon text-primary">add_task</span>
+      <h3 class="modal-title">تسجيل طعن ورقي حضوري جديد</h3>
+    </div>
+    <div class="modal-body">
+      <div class="modal-form-group">
+        <label class="modal-form-label">رقم قيد الطالب أو اسمه:</label>
+        <input type="text" id="modal-student-query" class="modal-input" placeholder="أدخل رقم القيد أو اسم الطالب..." autocomplete="off">
+      </div>
+      <div class="modal-form-grid">
+        <div class="modal-form-group">
+          <label class="modal-form-label">المادة الدراسية:</label>
+          <select id="modal-course-select" class="modal-select">
+            <option value="">-- اختر المادة --</option>
+            {% for crs in courses %}
+            <option value="{{ crs.id }}">{{ crs.code }} - {{ crs.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-form-group">
+          <label class="modal-form-label">الموسم الدراسي:</label>
+          <select id="modal-semester-select" class="modal-select">
+            <option value="">-- اختر الموسم --</option>
+            {% for sem in semesters %}
+            <option value="{{ sem.id }}">{{ sem.get_type_display }} {{ sem.year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="modal-form-group">
+        <label class="modal-form-label">نوع الطعن المقدم:</label>
+        <select id="modal-type-select" class="modal-select">
+          <option value="midterm" selected>امتحان نصفي (Midterm)</option>
+          <option value="final">امتحان نهائي (Final)</option>
+        </select>
+      </div>
+      <div class="modal-form-group">
+        <label class="modal-form-label">سبب / ملاحظات الطعن الورقي:</label>
+        <textarea id="modal-notes-input" class="modal-textarea" rows="3" placeholder="ملاحظات الطعن والمستندات المرفقة..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-modal-cancel" onclick="closeCreateModal()">إلغاء</button>
+      <button type="button" class="btn-modal-confirm {% if not is_grade_appeals_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+              id="btn-save-create-appeal" {% if not is_grade_appeals_job_open %}disabled{% endif %}>تسجيل الطعن 📝</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     Modal 2: تعديل ورصد الدرجة
+     ============================================================ -->
+<div id="edit-grade-modal" class="modal-backdrop hidden">
+  <div class="modal-card">
+    <div class="modal-header">
+      <span class="material-symbols-outlined modal-icon text-green">edit_square</span>
+      <h3 class="modal-title">تعديل الدرجة ورصدها في الكنترول</h3>
+    </div>
+    <div class="modal-body">
+      <div class="modal-info-card">
+        <div><strong>الطالب:</strong> <span id="edit-student-name">-</span></div>
+        <div><strong>المادة:</strong> <span id="edit-course-name">-</span></div>
+      </div>
+      <div class="modal-form-grid" style="margin-top:1rem;">
+        <div class="modal-form-group">
+          <label class="modal-form-label">درجة النصفي الجديدة (من 40):</label>
+          <input type="number" step="0.5" id="edit-midterm-grade" class="modal-input" placeholder="درجة النصفي الجديدة">
+          <small class="text-muted">الدرجة السابقة: <span id="edit-prev-midterm">--</span></small>
+        </div>
+        <div class="modal-form-group">
+          <label class="modal-form-label">درجة النهائي الجديدة (من 60):</label>
+          <input type="number" step="0.5" id="edit-final-grade" class="modal-input" placeholder="درجة النهائي الجديدة">
+          <small class="text-muted">الدرجة السابقة: <span id="edit-prev-final">--</span></small>
+        </div>
+      </div>
+      <div class="modal-form-group" style="margin-top:0.75rem;">
+        <label class="modal-form-label">ملاحظات التعديل / القرار:</label>
+        <textarea id="edit-notes-input" class="modal-textarea" rows="2" placeholder="أدخل سبب وتفاصيل قرار اللجنة..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn-modal-cancel" onclick="closeEditModal()">إلغاء</button>
+      <button type="button" class="btn-modal-confirm {% if not is_grade_appeals_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
+              id="btn-save-edit-grade" {% if not is_grade_appeals_job_open %}disabled{% endif %}>تم تعديل ورصد 🟢</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     🖨️ حاوية نموذج الطعن الفردي (مخصصة للطباعة فقط)
+     ============================================================ -->
+<div id="printAppealFormContainer"></div>
+
+<!-- ============================================================
+     🖨️ حاوية كشف الحصر (مخصصة للطباعة فقط)
+     ============================================================ -->
+<div id="printSummaryReportContainer"></div>
+
+<div id="toast-container" class="toast-container"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script id="appeals-job-data" type="application/json">
+{
+    "isOpen": {% if is_grade_appeals_job_open %}true{% else %}false{% endif %},
+    "message": "{{ grade_appeals_job_message|default:''|escapejs }}"
+}
+</script>
+<script>
+try {
+    const _ad = JSON.parse(document.getElementById('appeals-job-data').textContent);
+    window.IS_GRADE_APPEALS_JOB_OPEN = _ad.isOpen;
+    window.GRADE_APPEALS_JOB_MESSAGE = _ad.message;
+} catch(e) {
+    window.IS_GRADE_APPEALS_JOB_OPEN = true;
+    window.GRADE_APPEALS_JOB_MESSAGE = '';
+}
+// مسار الشعار للطباعة
+window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+window.CAN_EDIT_APPEALS = {% if request.user|has_exec_perm:'grades.change_gradeappeal' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'change_gradeappeal' or request.user|has_exec_perm:'change_grade' %}true{% else %}false{% endif %};
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'grades/js/grade_appeals.js' %}?v=1.0.3"></script>
+{% endblock %}

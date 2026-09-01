@@ -1,0 +1,125 @@
+{% extends 'auth_base.html' %}
+{% load static %}
+
+{% block title %}التحقق من رمز الأمان - منظومة الكلية{% endblock %}
+
+{% block content %}
+<div class="text-center mb-6">
+    <div class="w-16 h-16 rounded-2xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center text-[#1A5D63] dark:text-sky-400 mx-auto mb-4 shadow-sm">
+        <span class="material-symbols-outlined text-3xl">verified_user</span>
+    </div>
+    <h2 class="text-2xl font-black text-slate-900 dark:text-slate-100 mb-2">رمز التحقق (OTP)</h2>
+    <p class="text-sm text-slate-500 dark:text-slate-400 leading-relaxed">
+        تم إرسال رمز أمان مكون من 6 أرقام إلى بريدك الإلكتروني. يرجى إدخاله للمتابعة.
+    </p>
+</div>
+
+{% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for message in messages %}
+            <div class="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-xl text-sm font-bold text-center">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<form method="post" class="space-y-5">
+    {% csrf_token %}
+    <div>
+        <input type="text" 
+               name="otp" 
+               class="w-full bg-slate-50 dark:bg-slate-900/80 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-3 text-slate-900 dark:text-slate-100 text-center font-bold tracking-[6px] text-2xl placeholder-slate-300 focus:outline-none focus:ring-2 focus:ring-[#1A5D63] focus:border-transparent transition" 
+               placeholder="000000" 
+               maxlength="6" 
+               required 
+               autofocus>
+    </div>
+
+    <button type="submit" 
+            class="w-full py-3.5 px-5 rounded-xl font-black text-white bg-gradient-to-r from-[#1A5D63] to-[#0F4C50] hover:opacity-95 shadow-lg shadow-[#1A5D63]/25 active:scale-[0.99] transition duration-200 flex items-center justify-center gap-2 text-base">
+        <span class="material-symbols-outlined text-xl">login</span>
+        <span>تأكيد والدخول</span>
+    </button>
+</form>
+
+<div class="mt-6 pt-5 border-t border-slate-100 dark:border-slate-700/60 text-center">
+    <div class="flex items-center justify-center gap-2 mb-3 text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-semibold">
+        <span>⏳ صلاحية الرمز:</span>
+        <span id="countdownTimer" class="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-[#1A5D63] dark:text-sky-400 font-mono font-bold">05:00</span>
+    </div>
+    
+    <div id="expiryWarning" class="p-2.5 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700 rounded-xl text-xs font-bold mb-3 hidden">
+        ⚠️ انتهت صلاحية الرمز، يرجى طلب رمز جديد للمتابعة.
+    </div>
+
+    <div class="flex items-center justify-between text-xs sm:text-sm font-bold pt-1">
+        <a href="{% url 'users:resend_otp' %}" id="resendOtpBtn" class="text-[#1A5D63] dark:text-sky-400 hover:underline flex items-center gap-1">
+            <span class="material-symbols-outlined text-base">refresh</span>
+            <span>إعادة إرسال الرمز</span>
+        </a>
+        <a href="{% url 'users:login' %}" class="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200">
+            العودة لتسجيل الدخول
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const TOTAL_SECONDS = 5 * 60; // 5 دقائق
+    const timerDisplay = document.getElementById('countdownTimer');
+    const expiryWarning = document.getElementById('expiryWarning');
+    const resendBtn = document.getElementById('resendOtpBtn');
+    
+    const now = Math.floor(Date.now() / 1000);
+    let otpStartTime = sessionStorage.getItem('otp_timer_start');
+    
+    if (!otpStartTime || (now - parseInt(otpStartTime)) > TOTAL_SECONDS) {
+        otpStartTime = now;
+        sessionStorage.setItem('otp_timer_start', otpStartTime);
+    } else {
+        otpStartTime = parseInt(otpStartTime);
+    }
+    
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    
+    function updateTimer() {
+        const currentTime = Math.floor(Date.now() / 1000);
+        const elapsed = currentTime - otpStartTime;
+        const remaining = Math.max(0, TOTAL_SECONDS - elapsed);
+        
+        if (timerDisplay) {
+            timerDisplay.textContent = formatTime(remaining);
+            
+            if (remaining <= 60 && remaining > 0) {
+                timerDisplay.classList.add('text-red-500', 'animate-pulse');
+            } else if (remaining === 0) {
+                timerDisplay.classList.add('text-red-500');
+            }
+        }
+        
+        if (remaining <= 0) {
+            clearInterval(timerInterval);
+            if (expiryWarning) {
+                expiryWarning.classList.remove('hidden');
+            }
+        }
+    }
+    
+    updateTimer();
+    const timerInterval = setInterval(updateTimer, 1000);
+    
+    if (resendBtn) {
+        resendBtn.addEventListener('click', function() {
+            sessionStorage.removeItem('otp_timer_start');
+        });
+    }
+});
+</script>
+{% endblock %}

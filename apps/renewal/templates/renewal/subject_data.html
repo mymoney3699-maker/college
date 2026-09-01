@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}بيانات المواد الدراسية | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+
+
+<main class="custom-main subject-page">
+    <div id="mainInterface" class="subject-container">
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إدارة بيانات المواد الدراسية</h1>
+                <p class="page-header-subtitle">توصيف وإدارة المواد الدراسية للتخصصات</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_course' and not request.user|has_exec_perm:'renewal.change_course' and not request.user|has_exec_perm:'add_course' and not request.user|has_exec_perm:'change_course' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="group-box">
+            <span class="group-title">توصيف مادة دراسية</span>
+            
+            <!-- حقل البحث الذكي (Autocomplete) للتعديل السريع -->
+            <div style="margin-bottom: 1.5rem; position: relative;">
+                <label class="field-label" style="color: #307e92; font-weight: 800; margin-bottom: 0.5rem; display: block;">البحث السريع عن مادة للتعديل</label>
+                <div class="search-input-wrapper">
+                    <span class="material-symbols-outlined" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 20px;">search</span>
+                    <input type="text" id="searchSubject" placeholder="اكتب اسم المادة أو رمزها هنا للبحث والتعديل التلقائي..." autocomplete="off" style="padding-right: 40px; width: 100%; border: 1.5px solid #307e92; border-radius: 8px;">
+                </div>
+                <div id="autocompleteResults" class="autocomplete-dropdown hidden"></div>
+            </div>
+
+            <!-- بطاقة تفاصيل المادة الدراسية المختارة (تبدأ مخفية وتظهر عند الاختيار في منتصف الصفحة) -->
+            <div id="selectedSubjectCardContainer">
+                <div id="selectedSubjectCard" class="subject-detail-card-layout">
+                    <!-- يتم التعبئة ديناميكياً من JavaScript -->
+                </div>
+            </div>
+
+            <!-- 🔥 تم تعديل الصف الأول: إزالة نوع الفصل والسنة وإضافة المستوى بجانب التخصص -->
+            <div class="filters-grid-4col-button align-end">
+                <div>
+                    <label class="field-label">اسم المادة</label>
+                    <input type="text" id="subjectName" placeholder="اسم المادة">
+                </div>
+                <div>
+                    <label class="field-label">التخصص (متعدد الاختيارات)</label>
+                    <div class="custom-multiselect-container" style="position: relative;">
+                        <button type="button" id="majorSelectDropdownBtn" onclick="toggleDepartmentDropdown(event)" style="width: 100%; min-height: 40px; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; text-align: right; display: flex; align-items: center; justify-content: space-between; font-size: 0.85rem; color: #1e293b; cursor: pointer; transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <span id="majorSelectLabel" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 85%; color: #64748b;">-- اختر التخصصات --</span>
+                            <span class="material-symbols-outlined" style="font-size: 20px; color: #64748b;">expand_more</span>
+                        </button>
+                        <div id="majorSelectDropdownMenu" class="hidden" style="position: absolute; top: calc(100% + 4px); right: 0; left: 0; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15); z-index: 1000; max-height: 220px; overflow-y: auto; padding: 6px;">
+                            <div style="padding: 4px 8px 6px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.75rem; font-weight: 700; color: #307e92;">تحديد التخصصات</span>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" onclick="selectAllDepartments(true, event)" style="font-size: 0.7rem; color: #2563eb; background: none; border: none; cursor: pointer; font-weight: 700;">الكل</button>
+                                    <button type="button" onclick="selectAllDepartments(false, event)" style="font-size: 0.7rem; color: #ef4444; background: none; border: none; cursor: pointer; font-weight: 700;">مسح</button>
+                                </div>
+                            </div>
+                            <div id="majorCheckboxesList" style="padding-top: 4px;">
+                                {% for d in departments %}
+                                <label style="display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; color: #334155; transition: background 0.15s; margin-bottom: 2px;" class="dept-checkbox-label hover:bg-slate-100">
+                                    <input type="checkbox" name="department_checkbox" value="{{ d.id }}" data-name="{{ d.name }}" onchange="updateDepartmentSelection()" style="width: 16px; height: 16px; accent-color: #307e92; cursor: pointer;">
+                                    <span>{{ d.name }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <select id="majorSelect" multiple class="hidden">
+                            {% for d in departments %}
+                            <option value="{{ d.id }}">{{ d.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label">المستوى الدراسي</label>
+                    <select id="subjectLevelSelect">
+                        <option value="">-- اختر المستوى --</option>
+                        {% for lvl in levels %}
+                        <option value="{{ lvl.id }}">المستوى {{ lvl.number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">&nbsp;</label>
+                    <button class="btn-action btn-approve" onclick="window.showDescription()">
+                       <span class="material-symbols-outlined">done_all</span> موافق
+                    </button>
+                </div>
+            </div>
+
+            <!-- شبكة التوصيف التفصيلية -->
+            <div id="descArea" class="hidden desc-container desc-grid-6col">
+                <div>
+                    <label class="field-label">الأسبقية (المتطلب السابق)</label>
+                    <!-- 🔥 تحويل حقل الأسبقية إلى Autocomplete -->
+                    <div style="position: relative;">
+                        <input type="text" id="prerequisite" placeholder="ابحث عن مادة..." autocomplete="off" style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 8px 12px;">
+                        <div id="prerequisiteResults" class="autocomplete-dropdown hidden" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); max-height: 200px; overflow-y: auto; z-index: 1000;"></div>
+                    </div>
+                </div>
+                <div>
+                    <label class="field-label">عدد الساعات</label>
+                    <select id="creditHours">
+                        <option value="">-- اختر --</option>
+                        <option value="1">1 ساعة</option>
+                        <option value="2">2 ساعات</option>
+                        <option value="3">3 ساعات</option>
+                        <option value="4">4 ساعات</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">حالة المادة</label>
+                    <select id="subjectStatus">
+                        <option value="">-- اختر --</option>
+                        <option value="active">فعالة</option>
+                        <option value="inactive">متوقفة</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">نوع المادة</label>
+                    <select id="subjectType">
+                        <option value="">-- اختر --</option>
+                        <option value="mandatory">إجبارية</option>
+                        <option value="elective">اختيارية</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="field-label">رمز المادة</label>
+                    <input type="text" id="subjectCode" placeholder="رمز المادة">
+                </div>
+                <div>
+                    <label class="field-label">الخطة الدراسية</label>
+                    <div style="display: flex; gap: 12px; align-items: center; min-height: 38px; justify-content: flex-start; padding-right: 5px; flex-wrap: wrap;">
+                        {% for plan in study_plans %}
+                        <label style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; cursor: pointer; color: #475569; font-size: 0.85rem;" class="plan-checkbox-label">
+                            <input type="checkbox" name="study_plan_checkbox" value="{{ plan.id }}" class="plan-checkbox" style="width: 16px; height: 16px; cursor: pointer; margin: 0; accent-color: #307e92;"> {{ plan.name }}
+                        </label>
+                        {% empty %}
+                        <label style="display: inline-flex; align-items: center; gap: 6px; margin: 0; font-weight: 700; cursor: pointer; color: #475569; font-size: 0.85rem;">
+                            <input type="checkbox" name="study_plan_checkbox" value="1" class="plan-checkbox" style="width: 16px; height: 16px; cursor: pointer; margin: 0;"> خطة 1
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+<style>
+/* ============================================================ */
+/* 🌙 تنسيقات الوضع الليلي الكاملة (Dark Mode) لصفحة المواد الدراسية */
+/* ============================================================ */
+html.dark .subject-page,
+html.dark .subject-container {
+    background-color: #0f172a !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark .page-header-title {
+    color: #f8fafc !important;
+}
+
+html.dark .page-header-subtitle {
+    color: #94a3b8 !important;
+}
+
+html.dark .group-box {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .group-title {
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border-color: #334155 !important;
+}
+
+html.dark .field-label {
+    color: #cbd5e1 !important;
+}
+
+html.dark input[type="text"],
+html.dark select,
+html.dark .custom-multiselect-container button {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html.dark input[type="text"]::placeholder {
+    color: #64748b !important;
+}
+
+html.dark #searchSubject {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #0ea5e9 !important;
+}
+
+html.dark .autocomplete-dropdown {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .autocomplete-item {
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .autocomplete-item:hover {
+    background-color: #334155 !important;
+}
+
+html.dark #majorSelectDropdownMenu {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark #majorSelectDropdownMenu span {
+    color: #e2e8f0 !important;
+}
+
+html.dark .dept-checkbox-label:hover {
+    background-color: #334155 !important;
+}
+
+html.dark .desc-container {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+}
+
+html.dark .subject-detail-card-layout {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .subject-detail-title {
+    color: #38bdf8 !important;
+}
+
+html.dark .subject-detail-item {
+    color: #cbd5e1 !important;
+}
+
+html.dark .subject-detail-item strong {
+    color: #94a3b8 !important;
+}
+
+html.dark .plan-page-container {
+    background-color: transparent !important;
+}
+
+html.dark .plan-title {
+    color: #f8fafc !important;
+}
+
+html.dark .semester-card {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark .semester-card:hover {
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 8px 25px rgba(14, 165, 233, 0.15) !important;
+}
+
+html.dark .semester-card-header {
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%) !important;
+    color: #38bdf8 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .semester-table th {
+    background-color: #0f172a !important;
+    color: #94a3b8 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .semester-table td {
+    color: #e2e8f0 !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .semester-table tbody tr:hover {
+    background-color: #334155 !important;
+}
+
+/* أزرار الخطط التفاعلية */
+.btn-plan-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 18px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1.5px solid transparent;
+}
+
+.btn-plan-toggle.active {
+    background: linear-gradient(135deg, #307e92 0%, #1a5665 100%) !important;
+    color: #ffffff !important;
+    border-color: #38bdf8 !important;
+    box-shadow: 0 4px 12px rgba(48, 126, 146, 0.35) !important;
+    transform: translateY(-1px);
+}
+
+.btn-plan-toggle:not(.active) {
+    background-color: #e2e8f0;
+    color: #475569;
+    border-color: #cbd5e1;
+}
+
+html.dark .btn-plan-toggle:not(.active) {
+    background-color: #1e293b;
+    color: #94a3b8;
+    border-color: #334155;
+}
+
+.btn-plan-toggle:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+</style>
+
+        <!-- كتلة أزرار العمليات والخطط الدراسية موحدة في الأسفل -->
+        <div class="buttons-row mt-6" style="margin-bottom: 2rem;">
+            {% if request.user|has_exec_perm:'renewal.add_course' or request.user|has_exec_perm:'renewal.change_course' or request.user|has_exec_perm:'add_course' or request.user|has_exec_perm:'change_course' %}
+            <button type="button" id="btnSaveSubject" class="btn-action btn-save" onclick="window.saveSubjectData()">
+                <span class="material-symbols-outlined">save</span> حفظ
+            </button>
+            <button type="button" id="btnNewSubject" class="btn-action btn-new" onclick="window.clearSubjectForm()">
+                <span class="material-symbols-outlined">add_circle</span> جديد
+            </button>
+            <button type="button" id="btnEditSubject" class="btn-action btn-edit" onclick="window.editSubjectData()">
+                <span class="material-symbols-outlined">edit_note</span> تعديل
+            </button>
+            {% endif %}
+            {% for plan in study_plans %}
+            <a href="{% url 'renewal:plans_display' %}?plan_id={{ plan.id }}" class="btn-action btn-plan" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;" title="عرض {{ plan.name }}">
+                <span class="material-symbols-outlined">account_tree</span> {{ plan.name }}
+            </a>
+            {% empty %}
+            <a href="{% url 'renewal:plans_display' %}" class="btn-action btn-plan" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+                <span class="material-symbols-outlined">account_tree</span> الخطط الدراسية
+            </a>
+            {% endfor %}
+            <button type="button" id="btnExitSubject" class="btn-action btn-exit" onclick="window.goBack()">
+                <span class="material-symbols-outlined">arrow_back</span> خروج
+            </button>
+        </div>
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script id="levels-data" type="application/json">
+    [
+        {% for lvl in levels %}
+        {"id": {{ lvl.id }}, "number": {{ lvl.number }}, "name": "{{ lvl.name }}"}{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+</script>
+<script src="{% static 'renewal/js/subject_data.js' %}?v=1.0.2"></script>
+{% endblock %}

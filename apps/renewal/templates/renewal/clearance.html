@@ -1,0 +1,792 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}إخلاء طرف طالبة | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .clearance-page {
+        --clearance-primary: #307e92;
+        --clearance-primary-hover: #256b7c;
+        --clearance-accent: #b59b66;
+        --clearance-text: #334155;
+        --clearance-muted: #64748b;
+        direction: rtl;
+    }
+
+    .clearance-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 1rem;
+    }
+
+    .clearance-heading {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding-right: 1rem;
+        border-right: 4px solid var(--clearance-accent);
+    }
+
+    .clearance-heading h1 {
+        color: var(--clearance-primary);
+        font-size: clamp(1.6rem, 2.5vw, 2rem);
+        font-weight: 900;
+        line-height: 1.3;
+        margin: 0;
+    }
+
+    .group-box {
+        background: #f4f8fb;
+        border: 1px solid #d2e1ed;
+        border-radius: 1rem;
+        padding: 1.5rem 1.75rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .group-title {
+        display: block;
+        font-weight: 900;
+        font-size: 1.1rem;
+        color: var(--clearance-primary);
+        margin-bottom: 1.25rem;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid rgba(48, 126, 146, 0.2);
+    }
+
+    .clearance-form-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1rem;
+    }
+
+    .clearance-field--wide {
+        grid-column: span 2;
+    }
+
+    .clearance-form-grid label {
+        display: block;
+        font-weight: 800;
+        font-size: 0.85rem;
+        color: var(--clearance-text);
+        margin-bottom: 0.3rem;
+    }
+
+    .clearance-form-grid input,
+    .clearance-form-grid select,
+    .clearance-form-grid textarea {
+        width: 100%;
+        padding: 0.6rem 0.75rem;
+        border: 2px solid #dce7f0;
+        border-radius: 0.6rem;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: #fff;
+        transition: border 0.2s, box-shadow 0.2s;
+        box-sizing: border-box;
+    }
+
+    .clearance-form-grid input:focus,
+    .clearance-form-grid select:focus,
+    .clearance-form-grid textarea:focus {
+        border-color: var(--clearance-primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
+    }
+
+    .clearance-form-grid textarea {
+        min-height: 42px;
+        resize: vertical;
+    }
+
+    .clearance-actions {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1.5rem;
+    }
+
+    .btn-action {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.4rem;
+        border: none;
+        border-radius: 0.6rem;
+        font-weight: 900;
+        font-size: 0.9rem;
+        font-family: inherit;
+        cursor: pointer;
+        transition: all 0.2s;
+        color: #fff;
+        text-decoration: none;
+    }
+
+    .btn-action .material-symbols-outlined {
+        font-size: 1.3rem;
+    }
+
+    .btn-new {
+        background: var(--clearance-primary);
+    }
+
+    .btn-new:hover {
+        background: var(--clearance-primary-hover);
+        transform: translateY(-1px);
+    }
+
+    .btn-reset {
+        background: #94a3b8;
+    }
+
+    .btn-reset:hover {
+        background: #64748b;
+        transform: translateY(-1px);
+    }
+
+    .btn-print {
+        background: var(--clearance-accent);
+    }
+
+    .btn-print:hover {
+        background: #a68b55;
+        transform: translateY(-1px);
+    }
+
+    .btn-search {
+        background: var(--clearance-primary, #307e92);
+    }
+
+    .btn-search:hover {
+        background: var(--clearance-primary-hover, #256b7c);
+        transform: translateY(-1px);
+    }
+
+    .clearance-alert {
+        display: none;
+        margin-bottom: 1rem;
+        padding: 0.85rem 1rem;
+        border-radius: 0.75rem;
+        border: 1px solid transparent;
+        font-weight: 800;
+        font-size: 0.9rem;
+    }
+
+    .clearance-alert.show {
+        display: block;
+    }
+
+    .clearance-alert--success {
+        color: #065f46;
+        background: #d1fae5;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+
+    .clearance-alert--info {
+        color: #1e3a8a;
+        background: #dbeafe;
+        border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    .clearance-alert--danger {
+        color: #991b1b;
+        background: #fee2e2;
+        border-color: rgba(220, 38, 38, 0.35);
+    }
+
+    .clearance-search-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-bottom: 1rem;
+    }
+
+    .clearance-search {
+        position: relative;
+        width: min(100%, 280px);
+    }
+
+    .clearance-search span {
+        position: absolute;
+        top: 50%;
+        right: 0.85rem;
+        transform: translateY(-50%);
+        color: var(--clearance-primary);
+        font-size: 1.25rem;
+    }
+
+    .clearance-search input {
+        width: 100%;
+        padding: 0.6rem 2.7rem 0.6rem 0.85rem;
+        border: 2px solid #dce7f0;
+        border-radius: 0.6rem;
+        font-size: 0.95rem;
+        font-family: inherit;
+        background: #fff;
+        box-sizing: border-box;
+        transition: border 0.2s, box-shadow 0.2s;
+    }
+
+    .clearance-search input:focus {
+        border-color: var(--clearance-primary);
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
+    }
+
+    .clearance-counter {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: var(--clearance-muted);
+        font-weight: 800;
+        font-size: 0.85rem;
+    }
+
+    .clearance-counter strong {
+        color: var(--clearance-primary);
+        font-size: 1rem;
+    }
+
+    .overflow-x-auto {
+        overflow-x: auto;
+    }
+
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        table-layout: fixed;
+    }
+
+    .data-table thead {
+        background: #f8fbfd;
+        border-bottom: 3px solid var(--clearance-primary);
+    }
+
+    .data-table th {
+        padding: 14px 10px;
+        text-align: center;
+        font-weight: 900;
+        color: var(--clearance-primary);
+        font-size: 15px;
+    }
+
+    .data-table td {
+        padding: 12px 10px;
+        text-align: center;
+        border-bottom: 1px solid #e7eef5;
+        color: #475569;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .data-table tbody tr:hover {
+        background: #f5fbff;
+    }
+
+    .is-hidden {
+        display: none !important;
+    }
+
+    /* =========================================================
+       PRINT STYLES — نموذج إخلاء طرف رسمـي مطبق 100%
+       ========================================================= */
+    #printClearanceTemplate {
+        display: none !important;
+    }
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 6mm 6mm;
+        }
+
+        body>*:not(#printClearanceTemplate) {
+            display: none !important;
+            visibility: hidden !important;
+            height: 0 !important;
+            overflow: hidden !important;
+        }
+
+        #printClearanceTemplate {
+            display: block !important;
+            visibility: visible !important;
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            right: 0;
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 4px !important;
+            background: #fff !important;
+            color: #000 !important;
+            direction: rtl !important;
+            z-index: 9999999 !important;
+            box-sizing: border-box !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+
+        #printClearanceTemplate * {
+            visibility: visible !important;
+        }
+
+        .print-page-frame {
+            border: 2px solid #000 !important;
+            padding: 20px 28px !important;
+            min-height: 275mm !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: flex-start !important;
+            font-family: 'Segoe UI', Tahoma, Geneva, sans-serif !important;
+            direction: rtl !important;
+            color: #000 !important;
+            box-sizing: border-box !important;
+        }
+    }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 1024px) {
+        .clearance-form-grid {
+            grid-template-columns: repeat(2, 1fr);
+        }
+    }
+
+    @media (max-width: 640px) {
+        .clearance-heading {
+            align-items: flex-start;
+            flex-direction: column-reverse;
+        }
+
+        .clearance-form-grid {
+            grid-template-columns: 1fr !important;
+        }
+
+        .clearance-field--wide {
+            grid-column: span 1;
+        }
+
+        .clearance-actions .btn-action {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .clearance-search {
+            width: 100%;
+        }
+
+        .clearance-search-row {
+            flex-direction: column;
+            align-items: stretch;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main clearance-page" dir="rtl">
+    <div class="clearance-container"
+        style="max-width: 1280px; margin: 0 auto; width: 100%; display: block; box-sizing: border-box;">
+
+        <div class="page-header-row">
+            <div>
+                <h1 class="page-header-title">إخلاء طرف طالبة</h1>
+                <p class="page-header-subtitle">إدارة ومتابعة طلبات إخلاء الطرف واعتماد تخرج الطالبات</p>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_graduationclearance' and not request.user|has_exec_perm:'renewal.change_graduationclearance' and not request.user|has_exec_perm:'add_graduationclearance' and not request.user|has_exec_perm:'change_graduationclearance' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_clearance_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner"
+            style="display: flex; margin-top: 1rem; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+            {% else %}
+            <div id="jobInactiveBanner" class="job-inactive-banner"
+                style="display: none; margin-top: 1rem; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+                {% endif %}
+                <span class="material-symbols-outlined"
+                    style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+                <div style="flex: 1;">
+                    <span id="jobInactiveBannerText">{% if not is_clearance_job_open %}{{
+                        clearance_job_message|default:"خدمة 'إخلاء الطرف' غير مفعلة حالياً" }}{% endif %}</span>
+                </div>
+            </div>
+
+            <div id="clearanceAlert" class="clearance-alert" role="status" aria-live="polite"></div>
+
+            <div class="group-box">
+                <span class="group-title">البحث والتحقق من استحقاق إخلاء الطرف</span>
+                <form id="clearanceForm" autocomplete="off">
+                    <div class="clearance-form-grid">
+                        <div>
+                            <label for="registrationNumber">رقم القيد / الاسم</label>
+                            <div style="display: flex; gap: 8px;">
+                                <input id="registrationNumber" type="text" placeholder="مثال: 20231001" required
+                                    style="flex: 1;">
+                                <button class="btn-action btn-search" type="button" id="checkEligibilityBtn"
+                                    style="padding: 0 16px;">
+                                    <span class="material-symbols-outlined">search</span>
+                                    فحص
+                                </button>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="studentName">اسم الطالبة المعاينة</label>
+                            <input id="studentName" type="text" placeholder="سيتم جلبه تلقائياً..." readonly
+                                style="background-color: #f8fafc;">
+                        </div>
+                        <div>
+                            <label for="semester">المستوى الدراسي</label>
+                            <input id="semester" type="text" placeholder="المستوى الحالي..." readonly
+                                style="background-color: #f8fafc;">
+                        </div>
+                        <div>
+                            <label for="clearanceDate">تاريخ الإخلاء (تلقائي)</label>
+                            <input id="clearanceDate" type="text" value="{{ today_date }}" readonly
+                                style="background-color: #f1f5f9; font-weight: bold; color: #307e92; cursor: not-allowed;"
+                                title="تاريخ الإخلاء يتم تحديده أوتوماتيكياً من خادم المنظومة">
+                        </div>
+                        <div class="clearance-field--wide">
+                            <div id="eligibilityPanel"
+                                style="display: none; padding: 14px; border-radius: 10px; background: #f8fafc; border: 1px solid #cbd5e1; margin-bottom: 10px;">
+                                <div style="font-weight: bold; margin-bottom: 8px; color: #1e293b;"
+                                    id="eligibilityHeader">نتيجة الفحص الآلي للاستحقاق:</div>
+                                <ul id="eligibilityList"
+                                    style="margin: 0; padding-right: 20px; font-size: 0.9rem; color: #334155; line-height: 1.6;">
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="clearance-field--wide">
+                            <label for="clearanceReason">سبب الإخلاء / ملاحظات التخرج</label>
+                            <textarea id="clearanceReason" placeholder="أدخل الملاحظات والتفاصيل..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="clearance-actions">
+                        {% if request.user|has_exec_perm:'renewal.add_graduationclearance' or request.user|has_exec_perm:'renewal.change_graduationclearance' or request.user|has_exec_perm:'add_graduationclearance' or request.user|has_exec_perm:'change_graduationclearance' %}
+                        <button class="btn-action btn-new" type="submit" id="submitClearanceBtn" disabled
+                            style="opacity: 0.6; cursor: not-allowed;">
+                            <span class="material-symbols-outlined">verified</span>
+                            اعتماد إخلاء الطرف وتخرجها
+                        </button>
+                        {% endif %}
+                        <button class="btn-action btn-reset" type="button" id="clearFormBtn">
+                            <span class="material-symbols-outlined">backspace</span>
+                            إلغاء
+                        </button>
+                        <button class="btn-action btn-print" type="button" id="printFormBtn">
+                            <span class="material-symbols-outlined">print</span>
+                            طباعة النموذج
+                        </button>
+                        <button class="btn-action btn-search" type="button" id="toggleListBtn" aria-expanded="false"
+                            aria-controls="clearanceListCard">
+                            <span class="material-symbols-outlined">table_view</span>
+                            <span data-toggle-list-text>عرض القائمة</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="clearanceListCard" class="group-box is-hidden">
+                <span class="group-title">قائمة الطالبات المخلّى طرفهن</span>
+                <div class="clearance-search-row">
+                    <div class="clearance-search">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        <input type="text" id="smartSearch" placeholder="ابحث بالاسم أو رقم القيد..." />
+                    </div>
+                    <div class="clearance-counter">
+                        إجمالي السجلات: <strong id="totalClearances">0</strong>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>رقم القيد</th>
+                                <th>الاسم</th>
+                                <th>القسم</th>
+                                <th>الفصل</th>
+                                <th>تاريخ الإخلاء</th>
+                                <th>ملاحظات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clearanceTableBody">
+                            <tr>
+                                <td class="clearance-empty-cell" colspan="7">لا توجد بيانات مسجلة.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+</main>
+
+<!-- ==========================================
+     PRINT TEMPLATE - نموذج إخلاء طرف رسمـي
+     محتوي على جدول الإخلاء والدرجات والاعتماد في الضلع العلوي
+     ========================================== -->
+<div id="printClearanceTemplate">
+    <div class="print-page-frame" style="direction: rtl; font-family: 'Cairo', 'Tahoma', Arial, sans-serif;">
+
+        <!-- الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section"
+            style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box"
+                style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" class="print-college-logo"
+                    style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;"
+                    onerror="this.style.display='none'">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en"
+                style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND
+                    TECHNOLOGY</div>
+            </div>
+        </div>
+        <div class="print-header-line" style="width:100%;margin:6px 0 10px;border-top:1.5px solid #000;"></div>
+        <div style="font-size: 18px; font-weight: 900; text-align: center; margin: 4px 0 10px 0;">نـمـوذج إخـلاء طـرف
+        </div>
+
+        <div
+            style="display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 900; border-bottom: 1px solid #000; padding: 0 18px 5px 18px; margin-bottom: 12px;">
+            <div>الإشاري: <span
+                    style="display: inline-block; width: 155px; border-bottom: 1px dotted #000; margin-right: 5px;"></span>
+            </div>
+            <div>التاريخ: <span
+                    style="display: inline-block; width: 85px; text-align: center; border-bottom: 1px dotted #000; margin-right: 5px;"
+                    data-print="date">{{ today_date }}</span></div>
+        </div>
+
+        <!-- شبكة بيانات الطالبة 2×2 -->
+        <div
+            style="display: grid; grid-template-columns: 1fr 1fr; column-gap: 22px; row-gap: 8px; margin: 0 18px 20px 18px; font-size: 12.5px; font-weight: 900;">
+            <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="min-width: 48px; white-space: nowrap;">الاسـم:</span>
+                <div style="flex: 1; height: 26px; border: 1px solid #000; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-weight: 900;"
+                    data-print="name">................................................</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="min-width: 48px; white-space: nowrap;">القسـم:</span>
+                <div style="flex: 1; height: 26px; border: 1px solid #000; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-weight: 900;"
+                    data-print="department">................................................</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="min-width: 48px; white-space: nowrap;">رقم القيد:</span>
+                <div style="flex: 1; height: 26px; border: 1px solid #000; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-weight: 900;"
+                    data-print="registration">................................................</div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 7px;">
+                <span style="min-width: 48px; white-space: nowrap;">التاريخ:</span>
+                <div style="flex: 1; height: 26px; border: 1px solid #000; border-radius: 2px; display: flex; align-items: center; justify-content: center; padding: 0 8px; font-weight: 900;"
+                    data-print="date_box">{{ today_date }}</div>
+            </div>
+        </div>
+
+        <!-- جدول الإخلاء المعتمد -->
+        <table
+            style="width: calc(100% - 36px); margin: 0 18px 20px 18px; border-collapse: collapse; table-layout: fixed; border: 1.5px solid #000; direction: rtl;">
+            <thead>
+                <tr>
+                    <th
+                        style="width: 27%; height: 30px; border: 1px solid #000; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 900; padding: 3px; background: #fff;">
+                        القسـم</th>
+                    <th
+                        style="width: 46%; height: 30px; border: 1px solid #000; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 900; padding: 3px; background: #fff;">
+                        التوقـيع</th>
+                    <th
+                        style="width: 27%; height: 30px; border: 1px solid #000; text-align: center; vertical-align: middle; font-size: 13px; font-weight: 900; padding: 3px; background: #fff;">
+                        الخـتـم</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td
+                        style="height: 55px; border: 1px solid #000; text-align: center; vertical-align: middle; font-size: 15px; font-weight: 900; padding: 5px;">
+                        المكـتـبـة</td>
+                    <td style="height: 55px; border: 1px solid #000;"></td>
+                    <td style="height: 55px; border: 1px solid #000;"></td>
+                </tr>
+                <tr>
+                    <td
+                        style="height: 55px; border: 1px solid #000; text-align: center; vertical-align: middle; font-size: 15px; font-weight: 900; line-height: 1.5; padding: 5px;">
+                        القسم<br>المختص</td>
+                    <td style="height: 55px; border: 1px solid #000;"></td>
+                    <td style="height: 55px; border: 1px solid #000;"></td>
+                </tr>
+
+                <!-- الصف الأخير — المستطيل المطلوب: عبارات الاعتماد ملصقة فوق في الضلع العلوي، والنقاط بالأسفل -->
+                <tr>
+                    <td colspan="3" style="height: 110px; padding: 0; border: 1px solid #000; vertical-align: top;">
+                        <div
+                            style="width: 100%; height: 110px; display: flex; align-items: stretch; justify-content: space-between; direction: rtl; box-sizing: border-box; padding: 4px 8px;">
+
+                            <!-- 1️⃣ أقصى اليمين: درجة التدريب الميداني والدرجة تحته -->
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 11.5px; font-weight: 900; line-height: 1.4; width: 22%;">
+                                <div>درجة التدريب الميداني</div>
+                                <div style="display: flex; align-items: center; gap: 4px; margin-top: 6px;">
+                                    <div style="width: 50px; height: 28px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; background: #fff;"
+                                        data-print="field_grade"></div>
+                                    <span style="font-size: 11px;">%</span>
+                                </div>
+                            </div>
+
+                            <!-- 2️⃣ بجانبه: اعتماد قسم التدريب الميداني (الجملة ملصقة فوق والنقاط تحتها للختم) -->
+                            <div
+                                style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; font-size: 11px; font-weight: 900; width: 25%; padding-top: 2px; padding-bottom: 6px;">
+                                <div style="font-weight: 900; width: 100%;">اعتماد قسم<br>التدريب الميداني</div>
+                                <div
+                                    style="font-size: 11px; font-weight: 900; color: #000; margin-bottom: 2px; width: 100%;">
+                                    ........................................</div>
+                            </div>
+
+                            <!-- 3️⃣ درجة مشروع التخرج والدرجة تحته -->
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; font-size: 11.5px; font-weight: 900; line-height: 1.4; width: 22%;">
+                                <div>درجة مشروع التخرج</div>
+                                <div style="display: flex; align-items: center; gap: 4px; margin-top: 6px;">
+                                    <div style="width: 50px; height: 28px; border: 1px solid #000; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 900; background: #fff;"
+                                        data-print="project_grade"></div>
+                                    <span style="font-size: 11px;">%</span>
+                                </div>
+                            </div>
+
+                            <!-- 4️⃣ أقصى اليسار: اعتماد رئيس القسم المختص (الجملة ملصقة فوق والنقاط تحتها للختم) -->
+                            <div
+                                style="display: flex; flex-direction: column; justify-content: space-between; align-items: center; text-align: center; font-size: 11px; font-weight: 900; width: 25%; padding-top: 2px; padding-bottom: 6px;">
+                                <div style="font-weight: 900; width: 100%;">اعتماد رئيس<br>القسم المختص</div>
+                                <div
+                                    style="font-size: 11px; font-weight: 900; color: #000; margin-bottom: 2px; width: 100%;">
+                                    ........................................</div>
+                            </div>
+
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- اعتماد المسجل العام في أقصى اليسار وتحته النقاط مباشرة -->
+        <div style="margin-top: 15px; margin-left: 18px; margin-right: auto; display: flex; flex-direction: column; align-items: flex-start; width: 280px;"
+            data-official="general_registrar">
+            <div class="off-name" style="font-size: 13.5px; font-weight: 900; min-height: 18px; margin-bottom: 2px;">
+            </div>
+            <div class="off-pos" style="font-size: 14px; font-weight: 900; margin-bottom: 8px;">اعتماد المسجل العام
+                بالكلية</div>
+            <div style="display: flex; gap: 14px; align-items: center; font-size: 12.5px; font-weight: 900;">
+                <div>التوقيع: <span
+                        style="display: inline-block; width: 95px; border-bottom: 1.5px dotted #000; vertical-align: bottom;"></span>
+                </div>
+                <div>الختم: <span
+                        style="display: inline-block; width: 75px; border-bottom: 1.5px dotted #000; vertical-align: bottom;"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined"
+            style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage"
+            style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;">
+        </p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.IS_CLEARANCE_JOB_OPEN = "{{ is_clearance_job_open|yesno:'true,false' }}" === "true";
+    window.CLEARANCE_JOB_MESSAGE = "{{ clearance_job_message|escapejs }}";
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/clearance.js' %}?v=2.8.0"></script>
+{% endblock %}

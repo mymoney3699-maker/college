@@ -1,0 +1,78 @@
+{% extends 'student_base.html' %}
+{% load static %}
+
+{% block title %}عرض النتائج - كلية طرابلس{% endblock %}
+
+{% block page_title %}النتيجة{% endblock %}
+{% block page_subtitle %}عرض نتائج الطلاب حسب التخصص والموسم{% endblock %}
+
+{% block content %}
+<main class="results-main">
+    <div class="results-container">
+
+        <!-- بطاقة البحث والتصفية -->
+        <div class="group-box filter-card">
+            <span class="group-title">بيانات الاستعلام</span>
+
+            <div class="filter-grid">
+                <div class="filter-group">
+                    <label class="filter-label">التخصص</label>
+                    <select id="majorSelect" class="filter-select">
+                        <option value="">كل التخصصات</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">الموسم الدراسي</label>
+                    <select id="seasonSelect" class="filter-select">
+                        <option value="">اختر الموسم</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="filter-actions">
+                <div class="search-wrapper">
+                    <span class="search-label">بحث:</span>
+                    <input type="text" id="searchInput" placeholder="رقم القيد" class="filter-input">
+                </div>
+                <div class="action-buttons">
+                    <button class="btn-action btn-search">بحث</button>
+                    <button class="btn-action btn-exit">رجوع</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- بطاقة الجدول -->
+        <div class="group-box table-card">
+            <span class="group-title">نتائج البحث</span>
+            <div class="table-wrapper">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>رقم القيد</th>
+                            <th>المادة</th>
+                            <th>السنة</th>
+                            <th>الفصل الدراسي</th>
+                            <th>الدرجة</th>
+                            <th>المعدل</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <tr>
+                            <td colspan="6" class="empty-message">لا توجد بيانات</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="pagination-wrapper">
+                <button class="page-btn">السابق</button>
+                <button class="page-btn">التالي</button>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'student/js/show_results.js' %}?v=1.0.0"></script>
+{% endblock %}

@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}سجل الأحداث والتدقيق الموحد - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main activity-log-page">
+    <div class="activity-log-container" style="max-width: 1350px; margin: 0 auto; direction: rtl;">
+        
+        <!-- Header Section -->
+        <div class="page-header-row no-print mb-5">
+            <div>
+                <h1 class="page-header-title flex items-center gap-2">
+                    <span class="material-symbols-outlined text-3xl text-primary">manage_history</span>
+                    سجل الأحداث والتدقيق الموحد
+                </h1>
+                <p class="page-header-subtitle">جدول شامـل ومترتب زمنياً لمتابعة كافة حركات التشغيل وأرشيف التعديلات والمحذوفات</p>
+            </div>
+            <div class="text-left">
+                <span class="inline-flex items-center px-3 py-1 bg-primary-50 text-primary border border-primary-200 rounded-full text-xs font-bold">
+                    إجمالي السجلات: {{ logs_count|default:"0" }}
+                </span>
+            </div>
+        </div>
+
+        <!-- 🔍 نموذج الفلترة الموحد والمركز (Single Unified Filter Form) -->
+        <div class="group-box no-print mb-6">
+            <span class="group-title">🔍 البحث وتصفية السجلات</span>
+            <form method="GET" action="{% url 'users:activity_log' %}" id="unifiedFilterForm">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 items-end">
+                    <div>
+                        <label class="field-label">نوع الإجراء</label>
+                        <select name="act_action" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                            <option value="">-- جميع الإجراءات --</option>
+                            <option value="renew" {% if act_action == 'renew' %}selected{% endif %}>تجديد قيد</option>
+                            <option value="course_reg" {% if act_action == 'course_reg' %}selected{% endif %}>تنزيل مواد</option>
+                            <option value="withdraw" {% if act_action == 'withdraw' %}selected{% endif %}>سحب ملف</option>
+                            <option value="clearance" {% if act_action == 'clearance' %}selected{% endif %}>إخلاء طرف</option>
+                            <option value="grades" {% if act_action == 'grades' or act_action == 'grade' %}selected{% endif %}>رصد/تعديل درجات</option>
+                            <option value="block_result" {% if act_action == 'block_result' %}selected{% endif %}>حجب نتيجة</option>
+                            <option value="unblock_result" {% if act_action == 'unblock_result' %}selected{% endif %}>فك حجب نتيجة</option>
+                            <option value="approve" {% if act_action == 'approve' %}selected{% endif %}>اعتماد</option>
+                            <option value="create" {% if act_action == 'create' %}selected{% endif %}>إضافة</option>
+                            <option value="update" {% if act_action == 'update' %}selected{% endif %}>تعديل بيانات</option>
+                            <option value="delete" {% if act_action == 'delete' %}selected{% endif %}>حذف</option>
+                            <option value="login" {% if act_action == 'login' %}selected{% endif %}>تسجيل دخول</option>
+                            <option value="logout" {% if act_action == 'logout' %}selected{% endif %}>تسجيل خروج</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="field-label">اسم الجدول / الكيان</label>
+                        <input type="text" name="model_name" placeholder="مثال: Student" value="{{ model_name|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="field-label">المستخدم</label>
+                        <input type="text" name="act_user" placeholder="اسم المستخدم" autocomplete="off" value="{{ act_user|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="field-label">من تاريخ</label>
+                        <input type="date" name="date_from" value="{{ date_from|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="field-label">إلى تاريخ</label>
+                        <input type="date" name="date_to" value="{{ date_to|default:'' }}" class="w-full border border-gray-300 rounded-md p-2 text-sm">
+                    </div>
+                </div>
+
+                <div class="flex gap-2 justify-end mt-4 pt-3 border-t border-gray-100">
+                    <button type="submit" class="btn-action btn-edit text-sm py-2 px-6">
+                        <span class="material-symbols-outlined text-sm align-middle">search</span> تصفية وبحث
+                    </button>
+                    <a href="{% url 'users:activity_log' %}" class="btn-action btn-reset text-sm py-2 px-4">
+                        <span class="material-symbols-outlined text-sm align-middle">cleaning_services</span> مسح الفلاتر
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- 📊 الجدول الرئيسي الموحد (Single Unified Table) -->
+        <div class="group-box">
+            <span class="group-title">📋 سجل حركات النظام وتدقيق التغييرات الموحد</span>
+            <div class="overflow-x-auto">
+                <table class="data-table w-full">
+                    <thead>
+                        <tr>
+                            <th class="w-12">#</th>
+                            <th>المستخدم</th>
+                            <th>نوع الإجراء</th>
+                            <th>الكيان / الكائن</th>
+                            <th>التاريخ والوقت</th>
+                            <th class="no-print">التفاصيل والتدقيق</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong class="text-gray-900 font-bold">{{ log.user.username|default:"غير معروف" }}</strong></td>
+                            <td>
+                                <span class="px-2.5 py-1 rounded-full text-xs font-bold border inline-flex items-center gap-1
+                                    {% if log.action == 'login' %}bg-teal-100 text-teal-800 border-teal-200
+                                    {% elif log.action == 'logout' %}bg-slate-100 text-slate-700 border-slate-200
+                                    {% elif log.action == 'renew' %}bg-emerald-100 text-emerald-800 border-emerald-200
+                                    {% elif log.action == 'course_reg' or log.action == 'download' %}bg-indigo-100 text-indigo-800 border-indigo-200
+                                    {% elif log.action == 'withdraw' %}bg-red-100 text-red-800 border-red-200
+                                    {% elif log.action == 'clearance' %}bg-purple-100 text-purple-800 border-purple-200
+                                    {% elif log.action == 'grades' or log.action == 'grade' %}bg-amber-100 text-amber-800 border-amber-200
+                                    {% elif log.action == 'block_result' %}bg-rose-200 text-rose-900 border-rose-300
+                                    {% elif log.action == 'unblock_result' %}bg-green-100 text-green-800 border-green-200
+                                    {% elif log.action == 'approve' %}bg-green-100 text-green-800 border-green-200
+                                    {% elif log.action == 'create' %}bg-blue-100 text-blue-800 border-blue-200
+                                    {% elif log.action == 'update' %}bg-amber-100 text-amber-800 border-amber-200
+                                    {% elif log.action == 'delete' %}bg-red-200 text-red-900 border-red-300
+                                    {% else %}bg-gray-100 text-gray-800 border-gray-200{% endif %}">
+                                    {% if log.action == 'login' %}تسجيل دخول
+                                    {% elif log.action == 'logout' %}تسجيل خروج
+                                    {% elif log.action == 'renew' %}تجديد قيد
+                                    {% elif log.action == 'course_reg' or log.action == 'download' %}تنزيل مواد
+                                    {% elif log.action == 'withdraw' %}سحب ملف
+                                    {% elif log.action == 'clearance' %}إخلاء طرف
+                                    {% elif log.action == 'grades' or log.action == 'grade' %}رصد/تعديل درجات
+                                    {% elif log.action == 'block_result' %}حجب نتيجة
+                                    {% elif log.action == 'unblock_result' %}فك حجب نتيجة
+                                    {% elif log.action == 'approve' %}اعتماد
+                                    {% elif log.action == 'create' %}إضافة
+                                    {% elif log.action == 'update' %}تعديل بيانات
+                                    {% elif log.action == 'delete' %}حذف
+                                    {% else %}{{ log.action }}{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if log.object_name and log.object_name != '-' %}
+                                    <strong class="text-slate-900 dark:text-white font-bold text-xs block">{{ log.object_name }}</strong>
+                                    {% if log.model_ar or log.model_name %}
+                                        <span class="text-[10px] text-slate-400 dark:text-slate-500 font-mono">({{ log.model_ar|default:log.model_name }})</span>
+                                    {% endif %}
+                                {% elif log.model_ar or log.model_name %}
+                                    <strong class="text-slate-900 dark:text-white font-bold text-xs block">{{ log.model_ar|default:log.model_name }}</strong>
+                                {% else %}
+                                    <span class="text-xs text-slate-400 dark:text-slate-500 font-mono">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-xs dir-ltr text-right font-mono text-gray-700">{{ log.created_at|date:"Y-m-d H:i:s" }}</td>
+                            <td class="no-print">
+                                <!-- أزرار التفاعل الذكية حسب طبيعة الحدث بتصميم مستطيل موحد ولون أخضر -->
+                                {% if log.audit_match and log.audit_match.filtered_changed_fields %}
+                                    <button type="button" onclick="toggleLogDetails('log-details-{{ log.id }}')" class="btn-action text-xs py-1.5 px-3 inline-flex items-center gap-1" style="background-color: #16a34a; color: #ffffff; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <span>عرض الفروقات</span> 👁️
+                                    </button>
+                                {% elif log.audit_match and log.audit_match.changed_fields %}
+                                    <button type="button" onclick="toggleLogDetails('log-details-{{ log.id }}')" class="btn-action text-xs py-1.5 px-3 inline-flex items-center gap-1" style="background-color: #16a34a; color: #ffffff; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <span>عرض الفروقات</span> 👁️
+                                    </button>
+                                {% elif log.audit_match and log.audit_match.deleted_data %}
+                                    <button type="button" onclick="toggleLogDetails('log-details-{{ log.id }}')" class="btn-action text-xs py-1.5 px-3 inline-flex items-center gap-1" style="background-color: #16a34a; color: #ffffff; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <span>البيانات المحذوفة</span> 🗑️
+                                    </button>
+                                {% else %}
+                                    <button type="button" onclick="toggleLogDetails('log-details-{{ log.id }}')" class="btn-action text-xs py-1.5 px-3 inline-flex items-center gap-1" style="background-color: #16a34a; color: #ffffff; border-radius: 6px; font-weight: 700; border: none; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <span>التفاصيل</span> 📋
+                                    </button>
+                                {% endif %}
+
+                                <!-- 🔍 كارت التفاصيل والتدقيق التفاعلي (Diff Viewer) -->
+                                <div id="log-details-{{ log.id }}" class="hidden mt-3 p-4 bg-slate-50/90 dark:bg-slate-900/90 border border-slate-200 dark:border-slate-700/70 rounded-xl text-xs text-right space-y-3 shadow-sm transition-all">
+                                    
+                                    <!-- 0. بطاقة بيانات الطلاب المجدد قيدهم وأرقام القيد -->
+                                    {% if log.renewed_students and log.renewed_students|length > 1 %}
+                                        <div class="p-3.5 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200/90 dark:border-indigo-800/50 rounded-xl shadow-2xs space-y-2.5">
+                                            <div class="flex items-center justify-between border-b border-indigo-200/60 dark:border-indigo-800/50 pb-2">
+                                                <span class="font-bold text-slate-800 dark:text-slate-100 text-xs flex items-center gap-1.5">
+                                                    <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-lg">how_to_reg</span>
+                                                    أرقام قيد وأسماء الطلاب المجدد قيدهم:
+                                                </span>
+                                                <span class="text-[11px] bg-indigo-100 dark:bg-indigo-900/60 text-indigo-800 dark:text-indigo-300 px-2.5 py-0.5 rounded-full font-bold border border-indigo-200 dark:border-indigo-800/40">
+                                                    عدد ({{ log.renewed_students|length }}) طالب
+                                                </span>
+                                            </div>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                                                {% for st in log.renewed_students %}
+                                                    <div class="flex items-center justify-between p-2 bg-white dark:bg-slate-800/90 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs">
+                                                        <span class="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{{ st.name }}</span>
+                                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-mono font-extrabold text-xs border border-indigo-200 dark:border-indigo-800" dir="ltr" title="رقم القيد">
+                                                            <span class="material-symbols-outlined text-[12px]">badge</span>
+                                                            {{ st.student_id }}
+                                                        </span>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% elif log.student_enrollment or log.student_full_name %}
+                                        <div class="flex flex-wrap items-center justify-between gap-2 p-3 bg-indigo-50/90 dark:bg-indigo-950/40 border border-indigo-200/90 dark:border-indigo-800/50 rounded-xl shadow-2xs">
+                                            <div class="flex items-center gap-2">
+                                                <span class="material-symbols-outlined text-indigo-600 dark:text-indigo-400 text-lg">school</span>
+                                                <span class="font-bold text-slate-700 dark:text-slate-300 text-xs">الطالب / الطالبة:</span>
+                                                {% if log.student_full_name %}
+                                                    <strong class="text-indigo-950 dark:text-indigo-100 font-extrabold text-xs">{{ log.student_full_name }}</strong>
+                                                {% endif %}
+                                            </div>
+                                            {% if log.student_enrollment %}
+                                                <div class="flex items-center gap-1.5">
+                                                    <span class="text-slate-500 dark:text-slate-400 text-[11px] font-semibold">رقم القيد:</span>
+                                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 font-mono font-extrabold text-xs border border-indigo-300 dark:border-indigo-700 shadow-xs" dir="ltr">
+                                                        <span class="material-symbols-outlined text-[13px]">badge</span>
+                                                        <span>{{ log.student_enrollment }}</span>
+                                                    </span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- 1. عارض الفروقات التعديلية الراقية (Old Value ➔ New Value Diff) -->
+                                    {% if log.audit_match and log.audit_match.filtered_changed_fields %}
+                                        <div class="bg-gradient-to-br from-teal-900/5 via-slate-50 to-amber-900/5 dark:from-slate-800 dark:to-slate-900/80 border border-teal-800/20 dark:border-teal-700/30 p-3.5 rounded-xl">
+                                            <div class="flex items-center justify-between border-b border-teal-800/15 dark:border-teal-700/20 pb-2 mb-3">
+                                                <span class="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-1.5 text-xs sm:text-sm">
+                                                    <span class="material-symbols-outlined text-teal-600 dark:text-teal-400 text-lg">fact_check</span>
+                                                    أرشيف الفروقات والتغييرات التفصيلية
+                                                </span>
+                                                <span class="text-xs bg-teal-100/80 dark:bg-teal-900/50 text-teal-800 dark:text-teal-300 px-2.5 py-0.5 rounded-full font-semibold border border-teal-200/50">
+                                                    {{ log.audit_match.filtered_changed_fields|length }} حقول معدلة
+                                                </span>
+                                            </div>
+                                            
+                                            <div class="space-y-2.5">
+                                                {% for field, values in log.audit_match.filtered_changed_fields.items %}
+                                                    <div class="bg-white dark:bg-slate-800/90 p-3 rounded-lg border border-slate-200/80 dark:border-slate-700/60 shadow-2xs transition-all hover:border-teal-500/30">
+                                                        <div class="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-1.5 text-xs">
+                                                            <span class="w-2 h-2 rounded-full bg-teal-500 inline-block"></span>
+                                                            <span>📌 {{ field }}</span>
+                                                        </div>
+                                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 items-center">
+                                                            <!-- القيمة السابقة (قبل) -->
+                                                            <div class="bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/60 p-2 px-3 rounded-md">
+                                                                <span class="text-[10px] font-semibold text-slate-400 dark:text-slate-400 block mb-0.5">القيمة السابقة (قبل)</span>
+                                                                <span class="font-mono text-slate-700 dark:text-slate-300 line-through opacity-80 break-words">{{ values.old }}</span>
+                                                            </div>
+                                                            <!-- القيمة المعتمدة (بعد) -->
+                                                            <div class="bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200/70 dark:border-teal-800/50 p-2 px-3 rounded-md">
+                                                                <span class="text-[10px] font-semibold text-teal-700 dark:text-teal-400 block mb-0.5">القيمة المعتمدة (بعد)</span>
+                                                                <span class="font-mono font-bold text-teal-900 dark:text-teal-100 break-words">{{ values.new }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                    {% elif log.audit_match and log.audit_match.deleted_data %}
+                                        <div class="bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 p-3 rounded-xl dir-ltr text-left">
+                                            <strong class="text-slate-800 dark:text-slate-200 block text-right dir-rtl mb-2 font-bold flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-red-500">delete_sweep</span>
+                                                لقطة بيانات الكائن المحذوف الكاملة (Snapshot):
+                                            </strong>
+                                            <pre class="text-xs overflow-x-auto font-mono text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">{{ log.audit_match.deleted_data|pprint }}</pre>
+                                        </div>
+                                    {% endif %}
+
+                                    <!-- 2. بيانات السجل التقنية الأساسية -->
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 pt-2 border-t border-slate-200 dark:border-slate-700/60 text-slate-600 dark:text-slate-300 text-xs">
+                                        <div class="md:col-span-2"><strong class="text-slate-800 dark:text-slate-200">الوصف الصريح والتفاصيل:</strong> {{ log.enriched_details|default:log.details|default:"لا توجد تفاصيل إضافية" }}</div>
+                                        <div><strong class="text-slate-800 dark:text-slate-200">عنوان IP الجهاز:</strong> <span class="font-mono text-slate-700 dark:text-slate-300 bg-slate-200 dark:bg-slate-800 px-1.5 py-0.5 rounded border border-slate-300 dark:border-slate-700">{{ log.ip_address|default:"غير معروف" }}</span></div>
+                                        <div><strong class="text-slate-800 dark:text-slate-200">معرف السجل (ID):</strong> #{{ log.id }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-12 text-gray-500">
+                                <span class="material-symbols-outlined text-5xl block mb-2 text-gray-400">history</span>
+                                لا توجد سجلات مسجلة مطابقة للفلاتر المحددة
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- الترقيم الموحد -->
+            {% if logs.has_other_pages %}
+            <div class="flex justify-center gap-2 mt-5 no-print">
+                {% if logs.has_previous %}
+                    <a href="?page={{ logs.previous_page_number }}{% if act_action %}&act_action={{ act_action }}{% endif %}{% if model_name %}&model_name={{ model_name }}{% endif %}{% if act_user %}&act_user={{ act_user }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-4">← السابق</a>
+                {% endif %}
+                <span class="px-4 py-1.5 bg-gray-200 rounded text-xs flex items-center font-bold text-gray-700">صفحة {{ logs.number }} من {{ logs.paginator.num_pages }}</span>
+                {% if logs.has_next %}
+                    <a href="?page={{ logs.next_page_number }}{% if act_action %}&act_action={{ act_action }}{% endif %}{% if model_name %}&model_name={{ model_name }}{% endif %}{% if act_user %}&act_user={{ act_user }}{% endif %}{% if date_from %}&date_from={{ date_from }}{% endif %}{% if date_to %}&date_to={{ date_to }}{% endif %}" class="btn-action btn-edit text-sm py-1 px-4">التالي →</a>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</main>
+
+<script>
+function toggleLogDetails(detailsId) {
+    const detailsDiv = document.getElementById(detailsId);
+    if (!detailsDiv) return;
+    
+    if (detailsDiv.classList.contains('hidden')) {
+        detailsDiv.classList.remove('hidden');
+    } else {
+        detailsDiv.classList.add('hidden');
+    }
+}
+</script>
+{% endblock %}

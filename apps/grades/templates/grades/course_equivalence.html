@@ -1,0 +1,806 @@
+{% extends "base.html" %}
+{% load static %}
+{% load permissions_tags %}
+
+{% block title %}معادلة المواد وتغيير المسار | نظام كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main equivalence-page" dir="rtl">
+    <div class="equivalence-container">
+
+        <!-- 🖨️ ترويسة الطباعة الرسمية للتقرير (Printable Official Header) -->
+        <div class="print-only-header print-only">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 15px;">
+                <div style="text-align: right; line-height: 1.4;">
+                    <div style="font-weight: 800; font-size: 13pt;">دولة ليبيا</div>
+                    <div style="font-weight: 700; font-size: 11.5pt;">وزارة التعليم العالي والبحث العلمي</div>
+                    <div style="font-weight: 700; font-size: 11.5pt;">كلية العلوم والتقنية</div>
+                    <div style="font-weight: 600; font-size: 10.5pt; color: #334155;">إدارة الشؤون العلمية / مكتب الدراسة والامتحانات</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" style="height: 75px; width: auto; object-fit: contain;" />
+                </div>
+                <div style="text-align: left; font-size: 10pt; line-height: 1.6;">
+                    <div><strong>تاريخ التقرير:</strong> {% now "Y/m/d" %}</div>
+                    <div><strong>الفصل الدراسي:</strong> {{ active_semester|default:"الفصل الحالي" }}</div>
+                    <div><strong>رقم القيد:</strong> {% if student %}{{ student.student_id|default:student.id }}{% else %}---{% endif %}</div>
+                </div>
+            </div>
+            <div style="text-align: center; margin: 15px 0 12px 0;">
+                <h2 style="font-size: 15pt; font-weight: 900; margin: 0; text-decoration: underline;">تقرير اعتماد معادلة المواد وتغيير المسار الأكاديمي</h2>
+            </div>
+        </div>
+
+        <!-- الهيدر العلوي -->
+        <div class="page-header-row">
+            <div class="header-icon-wrapper">
+                <div>
+                    <h1 class="page-header-title">معادلة المواد وتغيير المسار الأكاديمي</h1>
+                    <p class="page-header-subtitle">البحث عن الطالب واحتساب مواد المعافاة وتحديث التخصص آلياً</p>
+                </div>
+            </div>
+            {% if not request.user|has_exec_perm:'renewal.add_courseequivalence' and not request.user|has_exec_perm:'renewal.change_courseequivalence' and not request.user|has_exec_perm:'add_courseequivalence' and not request.user|has_exec_perm:'change_courseequivalence' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm">
+                <span class="material-symbols-outlined text-sm">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
+        {% if not is_equivalence_job_open %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% else %}
+        <div id="jobInactiveBanner" class="job-inactive-banner" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
+        {% endif %}
+            <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
+            <div style="flex: 1;">
+                <span id="jobInactiveBannerText">{% if not is_equivalence_job_open %}{{ equivalence_job_message|default:"خدمة 'معادلة المواد وتغيير المسار' غير مفعلة حالياً" }}{% endif %}</span>
+            </div>
+        </div>
+
+        {% if messages %}
+        <div class="messages-container my-4">
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags|default:'info' }}" style="padding: 0.85rem 1.25rem; border-radius: 8px; margin-bottom: 0.75rem; background: rgba(16, 185, 129, 0.12); color: #065f46; font-weight: 700; border: 1px solid #10b981;">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- شريط البحث عن الطالب -->
+        <div class="group-box no-print mb-6">
+            <span class="group-title">البحث والتحقق الأكاديمي للطالب</span>
+
+            <form method="GET" action="{% url 'grades:course_equivalence' %}" class="search-form" style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem;">
+                <div style="flex: 1; position: relative;">
+                    <input type="text" id="searchEquivalenceInput" name="search" value="{{ search_query }}" placeholder="أدخل رقم القيد أو اسم الطالب للبحث..." required class="filter-input {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 600;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %} />
+                </div>
+                {% if selected_new_dept %}
+                <input type="hidden" name="new_department" value="{{ selected_new_dept.id }}" />
+                {% endif %}
+                <button type="submit" id="btnSearchEquivalence" class="btn-action btn-print {% if not is_equivalence_job_open %}job-disabled-btn{% endif %}" style="padding: 0.65rem 1.75rem; background: #307e92; color: #fff; border-radius: 8px; font-weight: 700;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %}>
+                    <span class="material-symbols-outlined">search</span>
+                    بحث عن الطالب
+                </button>
+            </form>
+        </div>
+
+        {% if student %}
+        <!-- بطاقة البيانات الأساسية والتحقق الأكاديمي -->
+        <div class="group-box mb-6" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
+            <span class="group-title">الملف الأكاديمي الحالي للطالب</span>
+
+            <div class="student-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
+                <div>
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">اسم الطالب:</span>
+                    <strong style="color: #1e293b; font-size: 1.05rem;">{{ student.name }} {{ student.father_name|default:'' }} {{ student.last_name|default:'' }}</strong>
+                </div>
+                <div>
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">رقم القيد:</span>
+                    <strong style="color: #1e293b; font-size: 1.05rem; font-family: monospace;">{{ student.student_id|default:student.id }}</strong>
+                </div>
+                <div>
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">{% if has_already_changed %}التخصص السابق:{% else %}التخصص الحالي:{% endif %}</span>
+                    <strong style="color: #0284c7; font-size: 1.05rem;">{{ previous_dept_name|default:"عام" }}</strong>
+                </div>
+                <div>
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">المستوى / الفصل الحالي:</span>
+                    <strong style="color: #1e293b; font-size: 1.05rem;">{% if student.level %}{{ student.level.name }}{% else %}المستوى الأول{% endif %}</strong>
+                </div>
+                <div>
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">الحالة الأكاديمية:</span>
+                    {% if student_eligibility.is_allowed %}
+                    <strong style="color: #16a34a; font-size: 1.05rem;">{{ student.student_status.name|default:'منتظم' }}</strong>
+                    {% else %}
+                    <strong style="color: #dc2626; font-size: 1.05rem;">{{ student.student_status.name|default:'منتظم' }}</strong>
+                    {% endif %}
+                </div>
+                <div class="print-only">
+                    <span style="color: #64748b; font-size: 0.85rem; display: block;">التخصص المعتمد (الجديد):</span>
+                    <strong style="color: #15803d; font-size: 1.05rem;">{{ target_dept_name|default:student.department.name|default:"عام" }}</strong>
+                </div>
+            </div>
+
+            <!-- شارة التحقق الأكاديمي وقيد تكرار تغيير المسار -->
+            <div class="verification-badge mt-4" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem;">
+                {% if not student_eligibility.is_allowed %}
+                <div style="display: inline-flex; align-items: center; gap: 0.75rem; background: #fef2f2; color: #991b1b; border: 2px solid #ef4444; padding: 0.85rem 1.25rem; border-radius: 8px; font-weight: 800; font-size: 1rem; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);">
+                    <span class="material-symbols-outlined" style="font-size: 26px; color: #dc2626;">block</span>
+                    <span>{{ student_eligibility.error_message }}</span>
+                </div>
+                {% elif has_already_changed %}
+                <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(220, 38, 38, 0.15); color: #991b1b; border: 1.5px solid #dc2626; padding: 0.6rem 1.25rem; border-radius: 8px; font-weight: 800; font-size: 0.95rem;">
+                    <span class="material-symbols-outlined" style="font-size: 22px;">block</span>
+                    ⚠️ تنبيه: الطالب استنفد الحد المسموح به لتغيير المسار (مسموح بمرة واحدة فقط طوال فترة الدراسة)
+                </div>
+                {% else %}
+                    {% if can_auto_transfer %}
+                    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(22, 163, 74, 0.12); color: #15803d; border: 1px solid #16a34a; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">check_circle</span>
+                        مسموح بتغيير المسار أوتوماتيكياً (الطالب في الفصل الدراسي 1 أو 2)
+                    </div>
+                    {% else %}
+                    <div style="display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(220, 38, 38, 0.12); color: #b91c1c; border: 1px solid #ef4444; padding: 0.5rem 1rem; border-radius: 20px; font-weight: 700; font-size: 0.9rem;">
+                        <span class="material-symbols-outlined" style="font-size: 20px;">warning</span>
+                        {{ level_warning }}
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- اختيار التخصص الجديد -->
+        <div class="group-box mb-6">
+            <span class="group-title">اختيار التخصص المراد التحويل إليه</span>
+
+            <form method="GET" action="{% url 'grades:course_equivalence' %}" style="margin-top: 0.5rem;">
+                <input type="hidden" name="search" value="{{ search_query }}" />
+                <div style="display: flex; gap: 1rem; align-items: center;">
+                    <div style="flex: 1;">
+                        <select id="newDepartmentSelect" name="new_department" onchange="this.form.submit()" class="filter-select {% if not is_equivalence_job_open or not student_eligibility.is_allowed %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 700; font-size: 0.95rem;" {% if not is_equivalence_job_open or not student_eligibility.is_allowed %}disabled title="{% if not student_eligibility.is_allowed %}{{ student_eligibility.error_message }}{% else %}{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}{% endif %}"{% endif %}>
+                            <option value="">-- حدد القسم / التخصص الجديد --</option>
+                            {% for dept in departments %}
+                            {% if student.department and dept.id == student.department.id %}
+                            <option value="{{ dept.id }}" disabled style="color: #94a3b8;">{{ dept.name }} (القسم الحالي)</option>
+                            {% else %}
+                            <option value="{{ dept.id }}" {% if selected_new_dept and selected_new_dept.id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                            {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        {% if selected_new_dept %}
+        <!-- نتائج احتساب المعادلة الآلية -->
+        <div class="equivalence-results-grid" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+
+            <!-- قائمة المواد المعفاة / المعادلة -->
+            <div class="group-box" style="border: 1px solid #10b981; border-top: 4px solid #10b981;">
+                <span class="group-title" style="color: #047857;">🟢 المواد المعفاة / المعادلة في القسم الجديد (العدد: {{ equivalenced_courses|length }})</span>
+
+                <div class="table-responsive" style="margin-top: 0.75rem;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; background: #fff;">
+                        <thead>
+                            <tr style="background: #f0fdf4; color: #166534; text-align: right;">
+                                <th style="padding: 0.75rem 1rem; width: 50px; text-align: center;">#</th>
+                                <th style="padding: 0.75rem 1rem;">المادة الأصلية الناجح فيها</th>
+                                <th style="padding: 0.75rem 1rem; text-align: center; width: 50px;">⬅️</th>
+                                <th style="padding: 0.75rem 1rem;">المادة المعفاة والمعادلة بالقسم الجديد</th>
+                                <th style="padding: 0.75rem 1rem;">الحالة</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eq in equivalenced_courses %}
+                            <tr style="border-bottom: 1px solid #e2e8f0; background: #f7fee7;">
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <strong style="color: #1e293b;">{{ eq.source_course.name }}</strong>
+                                    <div style="font-size: 0.8rem; color: #64748b; font-family: monospace;">رمز: {{ eq.source_course.code }}</div>
+                                </td>
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-size: 1.1rem;">➡️</td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <strong style="color: #15803d;">{{ eq.target_course.name }}</strong>
+                                    <div style="font-size: 0.8rem; color: #64748b; font-family: monospace;">رمز: {{ eq.target_course.code }}</div>
+                                </td>
+                                <td style="padding: 0.75rem 1rem;">
+                                    <span class="badge" style="background: #dcfce7; color: #15803d; padding: 0.3rem 0.6rem; border-radius: 4px; font-weight: 700; font-size: 0.8rem;">مادة معفاة / معادلة</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="padding: 1.5rem; text-align: center; color: #64748b;">
+                                    لا توجد مواد سابقة مسجلة لها قاعدة معادلة مع هذا التخصص.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- قائمة المواد المطلوبة والملزم بدراستها -->
+            <div class="group-box" style="border: 1px solid #cbd5e1; border-top: 4px solid #307e92;">
+                <span class="group-title" style="color: #1e293b;">📘 المواد المطلوبة والملزم بدراستها في التخصص الجديد (العدد: {{ remaining_courses|length }})</span>
+
+                <div class="table-responsive" style="margin-top: 0.75rem;">
+                    <table class="data-table" style="width: 100%; border-collapse: collapse; background: #fff;">
+                        <thead>
+                            <tr style="background: #f8fafc; color: #334155; text-align: right;">
+                                <th style="padding: 0.75rem 1rem; width: 50px; text-align: center;">#</th>
+                                <th style="padding: 0.75rem 1rem;">رمز المادة</th>
+                                <th style="padding: 0.75rem 1rem;">اسم المادة الدراسية</th>
+                                <th style="padding: 0.75rem 1rem;">القسم الدراسي</th>
+                                <th style="padding: 0.75rem 1rem; text-align: center;">الساعات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for crs in remaining_courses %}
+                            <tr style="border-bottom: 1px solid #e2e8f0;">
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
+                                <td style="padding: 0.75rem 1rem; font-family: monospace; font-weight: 700; color: #0284c7;">{{ crs.code }}</td>
+                                <td style="padding: 0.75rem 1rem; font-weight: 600;">{{ crs.name }}</td>
+                                <td style="padding: 0.75rem 1rem; color: #64748b;">{% if crs.department.all %}{% for d in crs.department.all %}{{ d.name }}{% if not forloop.last %} ، {% endif %}{% endfor %}{% elif selected_new_dept %}{{ selected_new_dept.name }}{% else %}عام{% endif %}</td>
+                                <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700;">{{ crs.credits|default:3 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="padding: 1.5rem; text-align: center; color: #64748b;">
+                                    لا توجد مواد متبقية.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- زر اعتماد تغيير المسار وتنزيل المعافاة -->
+        {% if not student_eligibility.is_allowed %}
+        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <strong style="color: #991b1b; font-size: 1.05rem; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="color: #dc2626; font-size: 22px;">block</span>
+                        اعتماد تغيير المسار والتخصص التلقائي
+                    </strong>
+                    <p style="color: #b91c1c; font-size: 0.9rem; margin: 0.25rem 0 0 0; font-weight: 700;">
+                        🛑 {{ student_eligibility.error_message }}
+                    </p>
+                </div>
+
+                <button type="button" disabled class="btn-confirm-transfer-prominent disabled-locked-btn" style="opacity: 0.45; cursor: not-allowed; pointer-events: none; filter: grayscale(35%); box-shadow: none;" title="{{ student_eligibility.error_message }}">
+                    <span class="material-symbols-outlined">block</span>
+                    <span>الاعتماد محظور (الحالة غير مستمرة)</span>
+                </button>
+            </div>
+        </div>
+        {% elif has_already_changed %}
+        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px solid #86efac; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+                <div>
+                    <strong style="color: #15803d; font-size: 1.1rem; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="color: #16a34a; font-size: 22px;">verified</span>
+                        تم اعتماد تغيير المسار ومعادلة المواد للطالب بنجاح
+                    </strong>
+                    <p style="color: #166534; font-size: 0.9rem; margin: 0.35rem 0 0 0; line-height: 1.5;">
+                        تم تسجيل الطالب رسمياً في قسم <strong>[{{ student.department.name|default:'الجديد' }}]</strong> (استنفد الحد المسموح به لتغيير المسار). يمكنك الآن طباعة التقرير الرسمي.
+                    </p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+                    <button type="button" disabled class="btn-confirm-transfer-prominent disabled-locked-btn" style="opacity: 0.45; cursor: not-allowed; pointer-events: none; filter: grayscale(35%); box-shadow: none;" title="🛑 لا يمكن إتمام العملية: تم استنفاد الحد المسموح به لتغيير المسار مسبقاً (مسموح بمرة واحدة فقط).">
+                        <span class="material-symbols-outlined">lock</span>
+                        <span>اعتماد وتنزيل المعادلة (مقفل)</span>
+                    </button>
+
+                    <button type="button" onclick="printEquivalenceReport();" class="btn-print-prominent" title="طباعة تقرير تغيير المسار والمعادلة المعتمد">
+                        <i class="fas fa-print" style="font-size: 1.1rem;"></i>
+                        <span>طباعة التقرير</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; transition: all 0.3s ease;">
+            <form id="equivalenceTransferForm" method="POST" action="{% url 'grades:course_equivalence' %}?search={{ search_query }}&new_department={{ selected_new_dept.id }}" data-student-name="{{ student.name|default:'التونسي' }}" data-department-name="{{ selected_new_dept.name|default:'إدارة أعمال' }}">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="confirm_transfer" />
+                <input type="hidden" name="target_department" value="{{ selected_new_dept.id }}" />
+
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+                    <div>
+                        <strong style="color: #15803d; font-size: 1.1rem; display: flex; align-items: center; gap: 6px;">
+                            <span class="material-symbols-outlined" style="color: #16a34a; font-size: 22px;">verified_user</span>
+                            اعتماد تغيير المسار والتخصص التلقائي
+                        </strong>
+                        <p style="color: #166534; font-size: 0.9rem; margin: 0.35rem 0 0 0; line-height: 1.5;">
+                            سيتم تحويل مسار الطالب إلى تخصص <strong>[{{ selected_new_dept.name }}]</strong> واحتساب وتنزيل المواد المعادلة المعتمدة.
+                        </p>
+                    </div>
+
+                    {% if request.user|has_exec_perm:'renewal.add_courseequivalence' or request.user|has_exec_perm:'renewal.change_courseequivalence' or request.user|has_exec_perm:'add_courseequivalence' or request.user|has_exec_perm:'change_courseequivalence' %}
+                    <button type="button" id="btnConfirmTransfer" class="btn-confirm-transfer-prominent {% if not is_equivalence_job_open %}job-disabled-btn{% endif %}" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %}>
+                        <span class="material-symbols-outlined">published_with_changes</span>
+                        <span>اعتماد وتنزيل المعادلة</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+        {% endif %}
+
+        <!-- 🖨️ تواقيع الاعتماد الرسمية للطباعة (Printable Official Signatures) -->
+        <div class="print-only print-signatures-footer" style="margin-top: 35px; page-break-inside: avoid;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center;">
+                <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
+                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">رئيس قسم التسجيل والقبول</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ admission_head_name|default:"أ. محمد علي عمر" }}</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                </div>
+                <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
+                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">الشؤون العلمية والدراسة والامتحانات</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ exams_head_name|default:"...................................." }}</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                </div>
+                <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
+                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">المسجل العام بالكلية</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ general_registrar_name|default:"أ. أحمد محمد علي محمود" }}</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                </div>
+            </div>
+            <div style="text-align: center; margin-top: 14px; font-size: 8.5pt; color: #475569; border-top: 1px dashed #94a3b8; padding-top: 6px;">
+                ملاحظة: يعتبر هذا التقرير وثيقة رسمية معتمدة لمعادلة المواد وتغيير المسار ولا يعتد به دون التواقيع والأختام الرسمية المعتمدة.
+            </div>
+        </div>
+        {% endif %}
+        {% endif %}
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<style>
+    .job-disabled-input {
+        opacity: 0.6 !important;
+        cursor: not-allowed !important;
+    }
+    .job-disabled-btn {
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        filter: grayscale(80%) !important;
+    }
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+
+    /* 🌟 زر الاعتماد العصري والبارز (Prominent Action Button) */
+    .btn-confirm-transfer-prominent {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 0.85rem 2.25rem;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff !important;
+        font-size: 1rem;
+        font-weight: 800;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.3px;
+        overflow: hidden;
+    }
+    .btn-confirm-transfer-prominent:hover:not(:disabled) {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .btn-confirm-transfer-prominent:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+    }
+    .btn-confirm-transfer-prominent .material-symbols-outlined {
+        font-size: 1.35rem;
+        transition: transform 0.3s ease;
+    }
+    .btn-confirm-transfer-prominent:hover:not(:disabled) .material-symbols-outlined {
+        transform: rotate(45deg);
+    }
+
+    .btn-confirm-transfer-prominent:disabled,
+    .btn-confirm-transfer-prominent.disabled-locked-btn {
+        opacity: 0.45 !important;
+        cursor: not-allowed !important;
+        pointer-events: none !important;
+        transform: none !important;
+        box-shadow: none !important;
+        filter: grayscale(35%) !important;
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    }
+    .btn-confirm-transfer-prominent:disabled .material-symbols-outlined,
+    .btn-confirm-transfer-prominent.disabled-locked-btn .material-symbols-outlined {
+        transform: none !important;
+    }
+
+    /* أنماط الوضع الليلي (Dark Mode) */
+    html.dark .btn-confirm-transfer-prominent {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow: 0 4px 20px rgba(5, 150, 105, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(52, 211, 153, 0.3);
+    }
+    html.dark .btn-confirm-transfer-prominent:hover:not(:disabled) {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        box-shadow: 0 8px 28px rgba(16, 185, 129, 0.7);
+    }
+    html.dark .btn-confirm-transfer-prominent:disabled,
+    html.dark .btn-confirm-transfer-prominent.disabled-locked-btn {
+        opacity: 0.4 !important;
+        box-shadow: none !important;
+        border-color: rgba(52, 211, 153, 0.15) !important;
+    }
+
+    /* 🌟 مظهر مودال SweetAlert2 المخصص المتناسق */
+    .swal2-popup.swal-custom-theme {
+        border-radius: 20px !important;
+        padding: 2rem 1.75rem !important;
+        font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
+        box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35) !important;
+        direction: rtl !important;
+    }
+    .swal2-popup.swal-custom-theme .swal2-title {
+        font-size: 1.35rem !important;
+        font-weight: 900 !important;
+        padding: 0 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    .swal2-popup.swal-custom-theme .swal2-html-container {
+        font-size: 1.05rem !important;
+        line-height: 1.65 !important;
+        margin: 0.75rem 0 1.5rem !important;
+        font-weight: 600 !important;
+    }
+    .swal2-popup.swal-custom-theme .swal2-actions {
+        gap: 0.85rem !important;
+        margin-top: 1rem !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    .swal2-popup.swal-custom-theme button.swal2-confirm {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+        color: #ffffff !important;
+        font-size: 0.98rem !important;
+        font-weight: 800 !important;
+        padding: 0.75rem 1.75rem !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4) !important;
+        border: none !important;
+        transition: all 0.2s ease !important;
+    }
+    .swal2-popup.swal-custom-theme button.swal2-confirm:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.55) !important;
+    }
+    .swal2-popup.swal-custom-theme button.swal2-cancel {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+        color: #ffffff !important;
+        font-size: 0.98rem !important;
+        font-weight: 800 !important;
+        padding: 0.75rem 1.75rem !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
+        border: none !important;
+        transition: all 0.2s ease !important;
+    }
+    .swal2-popup.swal-custom-theme button.swal2-cancel:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5) !important;
+    }
+    html.dark .swal2-popup.swal-custom-theme {
+        background: #1e293b !important;
+        color: #f8fafc !important;
+        border: 1px solid #334155 !important;
+        box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85) !important;
+    }
+    html.dark .swal2-popup.swal-custom-theme .swal2-title {
+        color: #f8fafc !important;
+    }
+    html.dark .swal2-popup.swal-custom-theme .swal2-html-container {
+        color: #cbd5e1 !important;
+    }
+
+    /* 🖨️ زر طباعة التقرير العصري (Print Button) */
+    .btn-print-prominent {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.65rem;
+        padding: 0.85rem 2.25rem;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: #ffffff !important;
+        font-size: 1rem;
+        font-weight: 800;
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(37, 99, 235, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        cursor: pointer;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.3px;
+        overflow: hidden;
+    }
+    .btn-print-prominent:hover {
+        background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .btn-print-prominent:active {
+        transform: translateY(0);
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
+    }
+    html.dark .btn-print-prominent {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 20px rgba(37, 99, 235, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    /* ============================================================ */
+    /* 🖨️ أنماط الطباعة المتقدمة (Print Media Styles) */
+    /* ============================================================ */
+    .print-only {
+        display: none !important;
+    }
+
+    @media print {
+        @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 15mm 15mm;
+        }
+
+        body, html, .main-body {
+            background: #ffffff !important;
+            color: #000000 !important;
+            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif !important;
+            font-size: 10pt !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            overflow: visible !important;
+            width: 100% !important;
+        }
+
+        .app-shell, .app-content, .custom-main, .equivalence-page, .equivalence-container {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: transparent !important;
+        }
+
+        /* إخفاء كافة العناصر غير الأساسية للتقرير */
+        .sidebar, .sidebar-container, .app-sidebar,
+        .app-footer, footer, header, nav,
+        .page-header-row, .job-inactive-banner, .messages-container,
+        .no-print, #toastNotification, .btn-action,
+        .btn-confirm-transfer-prominent, .btn-print-prominent,
+        .search-form, #btnSearchEquivalence, #searchEquivalenceInput,
+        #newDepartmentSelect, form[method="GET"],
+        .verification-badge {
+            display: none !important;
+        }
+
+        .print-only {
+            display: block !important;
+        }
+
+        .group-box {
+            border: 1px solid #94a3b8 !important;
+            background: #ffffff !important;
+            color: #000000 !important;
+            box-shadow: none !important;
+            padding: 10px 14px !important;
+            margin-bottom: 15px !important;
+            page-break-inside: avoid !important;
+            border-radius: 6px !important;
+        }
+
+        .group-title {
+            color: #000000 !important;
+            font-weight: 800 !important;
+            font-size: 11pt !important;
+        }
+
+        .student-info-grid strong, .student-info-grid span {
+            color: #000000 !important;
+        }
+
+        table.data-table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+            font-size: 9.5pt !important;
+        }
+
+        table.data-table tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+        }
+
+        table.data-table th, table.data-table td {
+            border: 1px solid #333333 !important;
+            padding: 6px 8px !important;
+            color: #000000 !important;
+            background: #ffffff !important;
+        }
+
+        table.data-table th {
+            background-color: #f1f5f9 !important;
+            font-weight: 800 !important;
+        }
+
+        .badge {
+            border: 1px solid #16a34a !important;
+            color: #15803d !important;
+            background: transparent !important;
+            font-weight: 700 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% if student %}
+<script id="equivalence-report-data" type="application/json">
+{
+    "student_name": "{{ student.name|escapejs }} {{ student.father_name|default:''|escapejs }} {{ student.last_name|default:''|escapejs }}",
+    "student_id": "{{ student.student_id|default:student.id|escapejs }}",
+    "old_dept": "{{ previous_dept_name|default:'عام'|escapejs }}",
+    "new_dept": "{{ target_dept_name|default:student.department.name|default:'عام'|escapejs }}",
+    "level": "{% if student.level %}{{ student.level.name|escapejs }}{% else %}المستوى الأول{% endif %}",
+    "status": "{{ student.student_status.name|default:'منتظم'|escapejs }}",
+    "semester": "{{ active_semester|default:'الفصل الحالي'|escapejs }}",
+    "equivalenced_courses": [
+        {% for eq in equivalenced_courses %}
+        {
+            "index": {{ forloop.counter }},
+            "source_code": "{{ eq.source_course.code|escapejs }}",
+            "source_name": "{{ eq.source_course.name|escapejs }}",
+            "target_code": "{{ eq.target_course.code|escapejs }}",
+            "target_name": "{{ eq.target_course.name|escapejs }}",
+            "notes": "{{ eq.notes|default:'مادة معفاة / معادلة'|escapejs }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "remaining_courses": [
+        {% for crs in remaining_courses %}
+        {
+            "index": {{ forloop.counter }},
+            "code": "{{ crs.code|escapejs }}",
+            "name": "{{ crs.name|escapejs }}",
+            "department": "{% if crs.department.all %}{% for d in crs.department.all %}{{ d.name|escapejs }}{% if not forloop.last %} ، {% endif %}{% endfor %}{% elif selected_new_dept %}{{ selected_new_dept.name|escapejs }}{% else %}عام{% endif %}",
+            "credits": "{{ crs.credits|default:3 }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
+{% endif %}
+<script>
+    const isEquivalenceJobOpen = "{{ is_equivalence_job_open|yesno:'true,false' }}" === "true";
+    window.is_equivalence_job_open = isEquivalenceJobOpen;
+    window.IS_EQUIVALENCE_JOB_OPEN = isEquivalenceJobOpen;
+    window.EQUIVALENCE_JOB_MESSAGE = "{{ equivalence_job_message|escapejs }}";
+    window.OFFICIAL_ADMISSION_HEAD = "{{ admission_head_name|escapejs }}";
+    window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
+    window.OFFICIAL_EXAMS_HEAD = "{{ exams_head_name|escapejs }}";
+    window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
+
+    (function() {
+        const reportDataEl = document.getElementById('equivalence-report-data');
+        if (reportDataEl) {
+            try {
+                const data = JSON.parse(reportDataEl.textContent);
+                if (data && data.student_name) {
+                    data.student_name = data.student_name.trim();
+                }
+                window.EQUIVALENCE_REPORT_DATA = data;
+            } catch (e) {
+                console.error('Error parsing equivalence report data:', e);
+                window.EQUIVALENCE_REPORT_DATA = null;
+            }
+        } else {
+            window.EQUIVALENCE_REPORT_DATA = null;
+        }
+    })();
+</script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'grades/js/course_equivalence.js' %}?v=1.0.6"></script>
+{% endblock %}

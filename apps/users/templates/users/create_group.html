@@ -1,0 +1,249 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}إنشاء مجموعة صلاحيات جديدة - كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<style>
+    .create-group-container {
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+    }
+    
+    .users-page-header {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        text-align: right !important;
+        direction: rtl !important;
+        width: 100% !important;
+        margin-bottom: 1.5rem !important;
+        padding-bottom: 0.75rem !important;
+        border-bottom: 1px solid rgba(226, 232, 240, 0.8) !important;
+    }
+    .dark .users-page-header {
+        border-bottom-color: rgba(51, 65, 85, 0.8) !important;
+    }
+    
+    .users-page-title-box {
+        text-align: right !important;
+        margin-left: auto !important;
+        margin-right: 0 !important;
+    }
+    
+    .users-page-title {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-start !important;
+        gap: 0.6rem !important;
+        font-size: 1.4rem !important;
+        font-weight: 900 !important;
+        color: #307e92 !important;
+        text-align: right !important;
+        margin: 0 !important;
+    }
+    .dark .users-page-title {
+        color: #38bdf8 !important;
+    }
+    
+    .users-page-subtitle {
+        font-size: 0.875rem !important;
+        font-weight: 600 !important;
+        color: #64748b !important;
+        text-align: right !important;
+        margin-top: 0.25rem !important;
+        margin-right: 0 !important;
+        margin-left: auto !important;
+        display: block !important;
+    }
+    .dark .users-page-subtitle {
+        color: #94a3b8 !important;
+    }
+
+    .users-header-actions {
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.75rem !important;
+        margin-right: auto !important;
+        margin-left: 0 !important;
+    }
+
+    .system-card-box {
+        position: relative !important;
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        text-align: right !important;
+        direction: rtl !important;
+        margin-bottom: 1.5rem;
+    }
+    .dark .system-card-box {
+        background: #1e293b;
+        border-color: #334155;
+    }
+
+    .system-card-badge {
+        position: absolute !important;
+        top: -14px !important;
+        right: 24px !important;
+        left: auto !important;
+        transform: none !important;
+        background: #307e92 !important;
+        color: #ffffff !important;
+        padding: 4px 16px !important;
+        border-radius: 50px !important;
+        font-weight: 800 !important;
+        font-size: 0.85rem !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        border: 2px solid #ffffff !important;
+        box-shadow: 0 4px 10px rgba(48, 126, 146, 0.25) !important;
+        margin: 0 !important;
+    }
+    .dark .system-card-badge {
+        background: #0284c7 !important;
+        border-color: #1e293b !important;
+    }
+    .system-card-badge * {
+        color: #ffffff !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="create-group-container max-w-5xl mx-auto space-y-6">
+
+    <!-- 1. Header Section -->
+    <div class="users-page-header">
+        <div class="users-page-title-box">
+            <h1 class="users-page-title">
+                <span class="material-symbols-outlined text-3xl">add_moderator</span>
+                <span>إنشاء مجموعة صلاحيات جديدة</span>
+            </h1>
+            <p class="users-page-subtitle">تعريف مجموعة وصول جديدة وتعيين الصلاحيات والأذونات الخاصة بها في المنظومة</p>
+        </div>
+        <div class="users-header-actions">
+            <a href="{% url 'users:group_permissions' %}" class="btn-action bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold transition-all shadow-sm">
+                <span class="material-symbols-outlined text-lg">arrow_forward</span>
+                <span>رجوع إلى صلاحيات المجموعات</span>
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="space-y-2 text-right" dir="rtl">
+        {% for message in messages %}
+        <div class="p-3.5 rounded-xl text-sm font-bold flex items-center justify-start gap-2 {% if message.tags == 'error' %}bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300{% else %}bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300{% endif %}">
+            <span class="material-symbols-outlined text-xl">
+                {% if message.tags == 'error' %}error{% elif message.tags == 'success' %}check_circle{% else %}info{% endif %}
+            </span>
+            <span>{{ message }}</span>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Create Group Form -->
+    <form method="POST" action="{% url 'users:create_group' %}" class="space-y-6 text-right" dir="rtl">
+        {% csrf_token %}
+
+        <!-- Group Name Section -->
+        <div class="system-card-box">
+            <span class="system-card-badge">
+                <span class="material-symbols-outlined">badge</span>
+                <span>بيانات المجموعة</span>
+            </span>
+
+            <div class="max-w-xl text-right pt-2">
+                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 text-right">
+                    اسم المجموعة الجديدة <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" name="name" required placeholder="مثال: موظفي الشؤون الإدارية، مساعدي التسجيل، الكنترول المركزي..."
+                       class="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 font-semibold focus:border-[#307e92] focus:ring-2 focus:ring-[#307e92]/20 text-right" dir="rtl">
+                <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 text-right">يجب أن يكون اسم المجموعة فريداً ومعبراً عن الدور الوظيفي للمنتسبين إليها.</p>
+            </div>
+        </div>
+
+        <!-- Permissions Assignment Section -->
+        <div class="system-card-box space-y-4">
+            <span class="system-card-badge">
+                <span class="material-symbols-outlined">verified_user</span>
+                <span>تحديد صلاحيات المجموعة (Permissions)</span>
+            </span>
+
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 dark:border-slate-700/60 pb-3 pt-2 text-right">
+                <div class="text-right">
+                    <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5 text-right">اختر الصلاحيات التي سيحصل عليها أي مستخدم يتم ضمه إلى هذه المجموعة.</p>
+                </div>
+                <div class="flex items-center justify-start sm:justify-end gap-2">
+                    <button type="button" onclick="toggleAllPerms(true)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        تحديد الكل
+                    </button>
+                    <button type="button" onclick="toggleAllPerms(false)" class="px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                        إلغاء الكل
+                    </button>
+                </div>
+            </div>
+
+            <!-- Categories Grid -->
+            <div class="space-y-5 text-right">
+                {% for category_name, perms in grouped_permissions.items %}
+                <div class="p-4 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-800/30 space-y-3 text-right">
+                    <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60 text-right">
+                        <span class="font-bold text-xs text-[#307e92] dark:text-[#38bdf8] flex items-center justify-start gap-1.5 text-right">
+                            <span class="material-symbols-outlined text-sm">folder_open</span>
+                            <span>{{ category_name }}</span>
+                        </span>
+                        <button type="button" onclick="toggleCategory('{{ forloop.counter }}')" class="text-[11px] font-semibold text-slate-500 hover:text-[#307e92]">
+                            تبديل تحديد القسم
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 text-right" id="cat-{{ forloop.counter }}">
+                        {% for p in perms %}
+                        <label class="flex items-start justify-start gap-2.5 p-2 rounded-lg border border-slate-200/80 dark:border-slate-700 bg-white dark:bg-[#1e293b] hover:bg-teal-50/30 transition-all cursor-pointer text-xs text-right">
+                            <input type="checkbox" name="permissions" value="{{ p.id }}"
+                                   class="perm-checkbox w-4 h-4 mt-0.5 text-[#307e92] rounded border-slate-300 focus:ring-[#307e92]">
+                            <span class="text-slate-700 dark:text-slate-200 font-semibold leading-tight text-right">{{ p.name }}</span>
+                        </label>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Actions Row -->
+        <div class="flex items-center justify-start gap-3 pt-2">
+            <button type="submit" class="btn-action bg-[#307e92] hover:bg-[#256677] px-6 py-2.5 rounded-xl text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-[#307e92]/20 transition-all">
+                <span class="material-symbols-outlined">save</span>
+                <span>إنشاء وحفظ المجموعة</span>
+            </button>
+            <a href="{% url 'users:group_permissions' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                رجوع
+            </a>
+        </div>
+    </form>
+</div>
+
+<script>
+function toggleAllPerms(checked) {
+    document.querySelectorAll('.perm-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+}
+
+function toggleCategory(catId) {
+    const container = document.getElementById(`cat-${catId}`);
+    if (!container) return;
+    const cbs = container.querySelectorAll('.perm-checkbox');
+    const allChecked = Array.from(cbs).every(c => c.checked);
+    cbs.forEach(c => c.checked = !allChecked);
+}
+</script>
+{% endblock %}

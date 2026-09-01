@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}قسم المحاسبة - كلية طرابلس{% endblock %}
+
+
+
+{% block content %}
+<div class="dept-container">
+
+    <!-- رأس القسم -->
+    <div class="dept-header">
+        <div class="dept-header-content">
+            <div>
+                <h1 class="dept-title">قسم المحاسبة</h1>
+                <p class="dept-subtitle">Accounting Department</p>
+                <p class="dept-desc" id="deptDesc">
+                    يهتم القسم بتخريج محاسبين متميزين ومؤهلين علمياً وعملياً للعمل في مختلف المؤسسات المالية والشركات الخاصة والعامة.
+                </p>
+            </div>
+            <div class="dept-badge">
+                <span class="material-symbols-outlined badge-icon">account_balance_wallet</span>
+                <div class="badge-text">
+                    <p class="badge-label">النظام الأكاديمي</p>
+                    <p class="badge-title">كلية طرابلس</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- إحصائيات + الرسم البياني -->
+    <div class="stats-grid">
+        <div class="chart-card">
+            <div class="card-title"><span class="title-text">إحصائيات الطلاب حسب الفصول الدراسية</span><span class="material-symbols-outlined card-icon">analytics</span><span class="title-bar"></span></div>
+            <div class="chart-wrapper">
+                <canvas id="studentsChart"></canvas>
+            </div>
+            <div class="empty-chart-message hidden" id="emptyChartMessage">
+                ⚠️ لم يتم إدخال بيانات بعد لعرض الرسم البياني.
+            </div>
+        </div>
+
+        <div class="stats-card">
+            <div class="card-title"><span class="title-text">إجمالي المسجلين</span><span class="material-symbols-outlined card-icon">pie_chart</span><span class="title-bar"></span></div>
+            <p class="stats-desc">إجمالي عدد الطلبة الفعلي في كافة الفصول الدراسية المسجلة لدى القسم حالياً.</p>
+            <div class="total-box">
+                <p class="total-label">العدد الكلي للطلبة</p>
+                <span class="total-number" id="totalStudentsCount">0</span>
+                <span class="total-unit">طالب / طالبة</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- بيانات الإدارة -->
+    <div class="management-card">
+        <div class="card-title"><span class="title-text">بيانات الإدارة</span><span class="material-symbols-outlined card-icon">badge</span><span class="title-bar"></span></div>
+        <div class="management-grid">
+            <div class="management-field">
+                <label class="field-label">رئيس القسم</label>
+                <input type="text" class="field-input" id="headName" readonly disabled>
+            </div>
+            <div class="management-field">
+                <label class="field-label">البريد الإلكتروني للإدارة</label>
+                <input type="email" class="field-input" id="headEmail" readonly disabled>
+            </div>
+        </div>
+    </div>
+
+    <!-- أعضاء هيئة التدريس + الموظفين -->
+    <div class="staff-grid">
+        
+        <div class="staff-card">
+            <div class="staff-header">
+                <div class="card-title"><span class="title-text">أعضاء هيئة التدريس</span><span class="material-symbols-outlined card-icon">school</span><span class="title-bar"></span></div>
+                <button class="btn-add" onclick="addTeacher()">
+                    <span class="material-symbols-outlined">add</span> إضافة
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th class="col-action">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teachersList"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="staff-card">
+            <div class="staff-header">
+                <div class="card-title"><span class="title-text">موظفو القسم</span><span class="material-symbols-outlined card-icon">work</span><span class="title-bar"></span></div>
+                <button class="btn-add" onclick="addEmployee()">
+                    <span class="material-symbols-outlined">add</span> إضافة
+                </button>
+            </div>
+            <div class="table-wrapper">
+                <table class="staff-table">
+                    <thead>
+                        <tr>
+                            <th>الاسم</th>
+                            <th>البريد الإلكتروني</th>
+                            <th class="col-action">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employeesList"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="{% static 'faculty/js/accounting.js' %}?v=1.0.0"></script>
+{% endblock %}

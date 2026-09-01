@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}بيانات الأماكن - كلية طرابلس{% endblock %}
+
+{% block content %}
+<main class="custom-main">
+    <div class="places-container">
+        <!-- هيدر الصفحة -->
+        <div class="page-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+            <div>
+                <h1 class="page-header-title">بيانات الأماكن</h1>
+                <p class="page-header-subtitle">إدارة المدن والمناطق الجغرافية للطلاب وتحديد أعدادهم بالمنظومة</p>
+            </div>
+            {% if not request.user|has_exec_perm:'student.add_placeofbirth' and not request.user|has_exec_perm:'student.change_placeofbirth' and not request.user|has_exec_perm:'add_placeofbirth' and not request.user|has_exec_perm:'change_placeofbirth' %}
+            <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold shadow-sm" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; font-weight: 700; background: #fffbeb; color: #92400e; border: 1px solid #fde68a;">
+                <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                <span>نمط العرض فقط (Read-Only)</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div id="viewList">
+            <!-- البوكس الأول: فلاتر وإجراءات البحث -->
+            <div class="group-box">
+                <span class="group-title">بيانات الأماكن</span>
+                
+                <div class="table-actions-header-row">
+                    <div class="table-actions-title-search">
+                        <div class="section-title-row">
+                            <span class="section-title">الأماكن</span>
+                            <span class="material-symbols-outlined" style="color: var(--primary);">location_on</span>
+                        </div>
+                        <div class="search-input-group">
+                            <label class="search-label">بحث:</label>
+                            <input type="text" id="searchPlaceInput" placeholder="بحث عن مكان..." class="search-field" oninput="window.filterPlaces()">
+                        </div>
+                    </div>
+
+                    <div class="actions-buttons-group">
+                        {% if request.user|has_exec_perm:'student.add_placeofbirth' or request.user|has_exec_perm:'student.change_placeofbirth' or request.user|has_exec_perm:'add_placeofbirth' or request.user|has_exec_perm:'change_placeofbirth' %}
+                        <button class="btn-action btn-new" onclick="window.showAddPage()">
+                            <span class="material-symbols-outlined">add</span> إضافة مكان
+                        </button>
+                        {% endif %}
+                        <button class="btn-action btn-exit" onclick="window.goBack()">
+                            <span class="material-symbols-outlined">arrow_back</span> رجوع
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- الجزء الثاني: سجل بيانات الأماكن (مخفي افتراضياً ويظهر عند البحث) -->
+            <div class="group-box mt-6 hidden" id="placesTableCard">
+                <span class="group-title">الأماكن المسجلة</span>
+                <div class="table-card" style="border: none;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th class="text-center w-16">#</th>
+                                <th class="text-center">المدينة / المنطقة</th>
+                                <th class="text-center">الدولة</th>
+                                <th class="text-center w-32">الحالة</th>
+                                <th class="text-center w-32">الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="placesTableBody">
+                            <!-- سيتم تعبئتها ديناميكياً -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="viewAdd" class="hidden">
+            <div class="group-box">
+                <span class="group-title">إضافة مكان جديد</span>
+                
+                <form id="placeForm" onsubmit="event.preventDefault();">
+                    <div class="form-container">
+                        <div class="filters-grid-2col" style="max-width: 600px; margin-bottom: 1rem;">
+                            <div>
+                                <label class="field-label">اسم المدينة / المنطقة *</label>
+                                <input type="text" id="cityInput" placeholder="مثال: بني وليد" class="form-control" required>
+                            </div>
+                            <div>
+                                <label class="field-label">الدولة *</label>
+                                <input type="text" id="countryInput" value="ليبيا" placeholder="مثال: ليبيا" class="form-control" required>
+                            </div>
+                        </div>
+
+                        <div class="buttons-row">
+                            <button type="button" class="btn-action btn-save" onclick="window.addPlace()">
+                                <span class="material-symbols-outlined">save</span> تخزين
+                            </button>
+                            <button type="button" class="btn-action btn-exit" onclick="window.showListPage()">
+                                <span class="material-symbols-outlined">close</span> إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
+<div id="toastNotification">
+    <div id="toastIconCircle" class="toast-icon-circle">
+        <span id="toastIcon" class="material-symbols-outlined" style="font-size: 24px; color: #10b981;">check_circle</span>
+    </div>
+    <div style="flex: 1; min-width: 0;">
+        <p id="toastMessage" style="margin: 0; font-size: 0.92rem; font-weight: 700; color: #1e293b; line-height: 1.45; word-break: break-word;"></p>
+    </div>
+</div>
+
+<style>
+    /* 🔔 Floating Toast Notification */
+    #toastNotification {
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        z-index: 99999;
+        transform: translateY(80px);
+        opacity: 0;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        max-width: 420px;
+        width: auto;
+        min-width: 280px;
+        background: #ffffff;
+        border-right: 4.5px solid #10b981;
+        border-radius: 14px;
+        box-shadow: 0 12px 35px -5px rgba(0, 0, 0, 0.18), 0 4px 12px rgba(0, 0, 0, 0.08);
+        padding: 14px 18px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        direction: rtl;
+        pointer-events: auto;
+    }
+    .toast-icon-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        background: rgba(16, 185, 129, 0.12);
+        transition: all 0.25s ease;
+    }
+    html.dark #toastNotification {
+        background: #1e293b !important;
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
+    }
+    html.dark #toastNotification p {
+        color: #f8fafc !important;
+    }
+</style>
+
+{% if messages %}
+<script id="django-messages-data" type="application/json">
+[
+    {% for message in messages %}
+    {
+        "tag": "{{ message.tags|default:'info'|escapejs }}",
+        "message": "{{ message|escapejs }}"
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        try {
+            const dataEl = document.getElementById('django-messages-data');
+            if (dataEl) {
+                const msgList = JSON.parse(dataEl.textContent);
+                msgList.forEach(function(item, index) {
+                    setTimeout(function() {
+                        const tag = item.tag || 'info';
+                        const type = tag.includes('success') ? 'success' : (tag.includes('error') ? 'error' : (tag.includes('warning') ? 'warning' : 'info'));
+                        if (typeof showNotification === 'function') {
+                            showNotification(type, item.message);
+                        }
+                    }, index * 450);
+                });
+            }
+        } catch(e) {
+            console.error('Error parsing django messages:', e);
+        }
+    });
+</script>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'renewal/js/places_data.js' %}?v=1.1.0"></script>
+{% endblock %}
