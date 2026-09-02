@@ -805,11 +805,161 @@ function initTransferConfirmation() {
 }
 window.initTransferConfirmation = initTransferConfirmation;
 
+// ============================================================
+// 🔍 نظام البحث التفاعلي الفوري للطلاب (Live Autocomplete Search)
+// ============================================================
+function initStudentSearchAutocomplete() {
+    const searchInput = document.getElementById('searchEquivalenceInput');
+    const dropdown = document.getElementById('studentSearchResultsDropdown');
+    if (!searchInput || !dropdown) return;
+
+    let debounceTimer = null;
+    let selectedIndex = -1;
+    let currentItems = [];
+
+    function closeDropdown() {
+        dropdown.style.display = 'none';
+        dropdown.innerHTML = '';
+        selectedIndex = -1;
+        currentItems = [];
+    }
+
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(debounceTimer);
+
+        if (!query) {
+            closeDropdown();
+            return;
+        }
+
+        debounceTimer = setTimeout(() => {
+            fetch(`/grades/api/search-students/?q=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success || !data.students || data.students.length === 0) {
+                        dropdown.innerHTML = `
+                            <div style="padding: 12px 16px; text-align: center; color: #94a3b8; font-size: 0.9rem;">
+                                <span class="material-symbols-outlined" style="vertical-align: middle; font-size: 18px; margin-left: 4px;">search_off</span>
+                                لا توجد نتائج مطابقة لـ "<strong>${escapeHtml(query)}</strong>"
+                            </div>
+                        `;
+                        dropdown.style.display = 'block';
+                        currentItems = [];
+                        return;
+                    }
+
+                    currentItems = data.students;
+                    selectedIndex = -1;
+
+                    let html = `
+                        <div style="padding: 6px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; font-size: 0.8rem; font-weight: 700; color: #64748b; display: flex; justify-content: space-between;">
+                            <span>النتائج المطابقة (${data.students.length})</span>
+                            <span style="font-weight: 500;">اختر طالباً للعرض</span>
+                        </div>
+                        <div style="max-height: 240px; overflow-y: auto;">
+                    `;
+
+                    data.students.forEach((st, idx) => {
+                        html += `
+                            <div class="autocomplete-item equivalence-search-item" data-index="${idx}" data-student-id="${escapeHtml(st.student_id)}" style="padding: 10px 14px; cursor: pointer; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; transition: background 0.15s;">
+                                <div>
+                                    <div style="font-weight: 700; color: #1e293b; font-size: 0.95rem;">
+                                        ${escapeHtml(st.name || st.full_name)}
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 2px;">
+                                        <span style="color: #0284c7; font-weight: 700;">${escapeHtml(st.department || 'عام')}</span>
+                                        ${st.level ? ` &bull; <span>${escapeHtml(st.level)}</span>` : ''}
+                                        ${st.status ? ` &bull; <span style="color: #e11d48;">${escapeHtml(st.status)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div>
+                                    <span style="background: #e0f2fe; color: #0369a1; font-family: monospace; font-weight: 800; padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; border: 1px solid #bae6fd;">
+                                        ${escapeHtml(st.student_id)}
+                                    </span>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                    dropdown.innerHTML = html;
+                    dropdown.style.display = 'block';
+
+                    // ربط أحداث النقر على عناصر الاقتراحات
+                    const items = dropdown.querySelectorAll('.equivalence-search-item');
+                    items.forEach(item => {
+                        item.addEventListener('mouseenter', function() {
+                            items.forEach(i => i.style.background = '#ffffff');
+                            this.style.background = '#f0f9fa';
+                            selectedIndex = parseInt(this.getAttribute('data-index'), 10);
+                        });
+
+                        item.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            const stId = this.getAttribute('data-student-id');
+                            if (stId) {
+                                window.location.href = `/grades/course-equivalence/?student_id=${encodeURIComponent(stId)}`;
+                            }
+                        });
+                    });
+                })
+                .catch(err => {
+                    console.error('Error fetching student suggestions:', err);
+                });
+        }, 220);
+    });
+
+    // التنقل بالأسهم والزر Enter
+    searchInput.addEventListener('keydown', function(e) {
+        if (dropdown.style.display !== 'block' || currentItems.length === 0) return;
+
+        const items = dropdown.querySelectorAll('.equivalence-search-item');
+        if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex + 1) % items.length;
+            highlightItem(items, selectedIndex);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            selectedIndex = (selectedIndex - 1 + items.length) % items.length;
+            highlightItem(items, selectedIndex);
+        } else if (e.key === 'Enter') {
+            if (selectedIndex >= 0 && selectedIndex < items.length) {
+                e.preventDefault();
+                items[selectedIndex].click();
+            }
+        } else if (e.key === 'Escape') {
+            closeDropdown();
+        }
+    });
+
+    function highlightItem(items, idx) {
+        items.forEach((item, i) => {
+            if (i === idx) {
+                item.style.background = '#e0f2fe';
+                item.scrollIntoView({ block: 'nearest' });
+            } else {
+                item.style.background = '#ffffff';
+            }
+        });
+    }
+
+    // إغلاق القائمة عند النقر خارجها
+    document.addEventListener('click', function(e) {
+        if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+            closeDropdown();
+        }
+    });
+}
+window.initStudentSearchAutocomplete = initStudentSearchAutocomplete;
+
 // تهيئة عند تحميل الصفحة
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initializing Course Equivalence Permissions & Confirmation...');
+    console.log('🚀 Initializing Course Equivalence Permissions, Autocomplete & Confirmation...');
     updateJobPermissionState();
     initTransferConfirmation();
+    initStudentSearchAutocomplete();
 
     const searchForm = document.querySelector('.search-form');
     if (searchForm) {
@@ -833,3 +983,4 @@ document.addEventListener('DOMContentLoaded', function() {
 // تطبيق أولي مباشر
 updateJobPermissionState();
 initTransferConfirmation();
+initStudentSearchAutocomplete();

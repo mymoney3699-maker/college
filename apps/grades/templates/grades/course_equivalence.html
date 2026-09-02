@@ -73,9 +73,12 @@
         <div class="group-box no-print mb-6">
             <span class="group-title">البحث والتحقق الأكاديمي للطالب</span>
 
-            <form method="GET" action="{% url 'grades:course_equivalence' %}" class="search-form" style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem;">
+            <form method="GET" action="{% url 'grades:course_equivalence' %}" class="search-form" style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem; position: relative;">
                 <div style="flex: 1; position: relative;">
-                    <input type="text" id="searchEquivalenceInput" name="search" value="{{ search_query }}" placeholder="أدخل رقم القيد أو اسم الطالب للبحث..." required class="filter-input {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1; font-weight: 600;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %} />
+                    <input type="text" id="searchEquivalenceInput" name="search" value="{{ search_query }}" placeholder="أدخل رقم القيد أو اسم الطالب للبحث..." autocomplete="off" required class="filter-input {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem 1rem; border-radius: 8px; border: 1.5px solid #cbd5e1; font-weight: 600;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %} />
+                    <input type="hidden" id="selectedStudentIdInput" name="student_id" value="" />
+                    <!-- قائمة الاقتراحات التفاعلية اللحظية أثناء الكتابة -->
+                    <div id="studentSearchResultsDropdown" class="autocomplete-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); right: 0; left: 0; background: #ffffff; border: 1.5px solid #307e92; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.18); z-index: 2000; max-height: 290px; overflow-y: auto;"></div>
                 </div>
                 {% if selected_new_dept %}
                 <input type="hidden" name="new_department" value="{{ selected_new_dept.id }}" />
@@ -87,10 +90,71 @@
             </form>
         </div>
 
+        {% if matching_students %}
+        <!-- جدول نتائج البحث المتعددة للاختيار -->
+        <div class="group-box no-print mb-6" style="background: #ffffff; border: 1.5px solid #307e92; border-top: 4px solid #307e92; border-radius: 10px; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+                <span class="group-title" style="position: static; margin-bottom: 0; color: #1e293b; font-size: 1.05rem;">
+                    🔍 نتائج البحث المطابقة لـ (<strong>{{ search_query }}</strong>) — وجدنا <strong>{{ matching_students|length }}</strong> طالب، اختر الطالب المطلوب:
+                </span>
+            </div>
+
+            <div class="table-responsive" style="margin-top: 0.5rem;">
+                <table class="data-table" style="width: 100%; border-collapse: collapse; background: #fff;">
+                    <thead>
+                        <tr style="background: #f1f5f9; color: #1e293b; text-align: right;">
+                            <th style="padding: 0.75rem 1rem; width: 45px; text-align: center;">#</th>
+                            <th style="padding: 0.75rem 1rem;">رقم القيد</th>
+                            <th style="padding: 0.75rem 1rem;">اسم الطالب</th>
+                            <th style="padding: 0.75rem 1rem;">القسم / التخصص</th>
+                            <th style="padding: 0.75rem 1rem;">المستوى</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">الحالة الأكاديمية</th>
+                            <th style="padding: 0.75rem 1rem; text-align: center;">إجراء</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for st in matching_students %}
+                        <tr style="border-bottom: 1px solid #e2e8f0; transition: background 0.15s;">
+                            <td style="padding: 0.75rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
+                            <td style="padding: 0.75rem 1rem; font-family: monospace; font-weight: 800; color: #0284c7;">{{ st.student_id|default:st.id }}</td>
+                            <td style="padding: 0.75rem 1rem; font-weight: 700; color: #1e293b;">{{ st.name }} {{ st.father_name|default:'' }} {{ st.last_name|default:'' }}</td>
+                            <td style="padding: 0.75rem 1rem; color: #334155; font-weight: 600;">{{ st.department.name|default:'عام' }}</td>
+                            <td style="padding: 0.75rem 1rem; color: #64748b;">{{ st.level.name|default:'المستوى الأول' }}</td>
+                            <td style="padding: 0.75rem 1rem; text-align: center;">
+                                <span class="badge" style="padding: 0.3rem 0.65rem; border-radius: 6px; font-weight: 700; font-size: 0.8rem; background: #e2e8f0; color: #334155;">{{ st.student_status.name|default:'منتظم' }}</span>
+                            </td>
+                            <td style="padding: 0.75rem 1rem; text-align: center;">
+                                <a href="{% url 'grades:course_equivalence' %}?student_id={{ st.student_id|default:st.id }}" class="btn-action" style="padding: 0.45rem 1.1rem; background: #307e92; color: #fff; border-radius: 6px; text-decoration: none; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 4px;">
+                                    <span class="material-symbols-outlined" style="font-size: 18px;">person_check</span>
+                                    اختيار وعرض
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% elif search_query and not student %}
+        <div class="group-box no-print mb-6" style="padding: 2rem; text-align: center; background: #fff; border: 1.5px dashed #cbd5e1; border-radius: 10px;">
+            <span class="material-symbols-outlined" style="font-size: 44px; color: #94a3b8; display: block; margin-bottom: 0.5rem;">person_search</span>
+            <strong style="color: #475569; font-size: 1.1rem;">لم يتم العثور على أي طالب يطابق البحث: «{{ search_query }}»</strong>
+            <p style="color: #94a3b8; font-size: 0.9rem; margin: 0.35rem 0 0 0;">تأكد من كتابة رقم القيد أو اسم الطالب بشكل صحيح.</p>
+        </div>
+        {% endif %}
+
         {% if student %}
         <!-- بطاقة البيانات الأساسية والتحقق الأكاديمي -->
         <div class="group-box mb-6" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 1.25rem;">
-            <span class="group-title">الملف الأكاديمي الحالي للطالب</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
+                <span class="group-title" style="position: static; margin-bottom: 0;">الملف الأكاديمي الحالي للطالب</span>
+                {% if allow_print and not is_withdrawn %}
+                <button type="button" onclick="printEquivalenceReport();" class="btn-print-prominent no-print" style="padding: 0.4rem 1.1rem; font-size: 0.88rem; display: inline-flex; align-items: center; gap: 6px;" title="طباعة تقرير الطالب">
+                    <i class="fas fa-print" style="font-size: 1.05rem;"></i>
+                    <span>طباعة التقرير</span>
+                </button>
+                {% endif %}
+            </div>
 
             <div class="student-info-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 0.75rem;">
                 <div>
@@ -304,12 +368,14 @@
                     </p>
                 </div>
 
+                {% if not is_withdrawn %}
                 <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
                     <button type="button" onclick="printEquivalenceReport();" class="btn-print-prominent" title="طباعة تقرير تغيير المسار والمعادلة المعتمد للطالب">
                         <i class="fas fa-print" style="font-size: 1.1rem;"></i>
                         <span>طباعة تقرير المعادلة السابق</span>
                     </button>
                 </div>
+                {% endif %}
             </div>
         </div>
 
@@ -358,7 +424,6 @@
                 ملاحظة: يعتبر هذا التقرير وثيقة رسمية معتمدة لمعادلة المواد وتغيير المسار ولا يعتد به دون التواقيع والأختام الرسمية المعتمدة.
             </div>
         </div>
-        {% endif %}
         {% endif %}
 
 <!-- ===== 🔔 بطاقة الإشعارات العائمة الأنيقة (Floating Toast Notification Card) ===== -->
@@ -803,5 +868,5 @@
     })();
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'grades/js/course_equivalence.js' %}?v=1.0.9"></script>
+<script src="{% static 'grades/js/course_equivalence.js' %}?v=1.1.0"></script>
 {% endblock %}

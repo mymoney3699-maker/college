@@ -2333,17 +2333,20 @@ def search_students_api(request):
             Q(father_name__icontains=query) |
             Q(grandfather_name__icontains=query) |
             Q(last_name__icontains=query)
-        )[:20]
+        ).select_related('department', 'level', 'student_status')[:25]
         
         data = []
         for s in students:
             st_quad = ' '.join(filter(None, [s.name, s.father_name, s.grandfather_name, s.last_name]))
             data.append({
                 'id': s.id,
-                'student_id': s.student_id,
+                'student_id': s.student_id or str(s.id),
                 'name': st_quad,
                 'full_name': st_quad,
                 'quad_name': st_quad,
+                'department': s.department.name if s.department else 'عام',
+                'level': s.level.name if s.level else 'المستوى الأول',
+                'status': s.student_status.name if s.student_status else 'منتظم',
             })
 
         return JsonResponse({
@@ -3465,17 +3468,51 @@ def course_equivalence_page(request):
     limit_warning = None
     selected_new_dept = None
 
-    # 1. البحث المرن عن الطالب عند إدخال رقم القيد أو الاسم
-    if search_query:
-        q_filter = Q(student_id__icontains=search_query) | Q(name__icontains=search_query)
-        if search_query.isdigit():
-            q_filter |= Q(id=int(search_query))
-        student = Student.objects.filter(q_filter).select_related('department', 'level', 'group', 'student_status').first()
+    selected_student_id = request.GET.get('student_id', '').strip()
+    matching_students = []
 
-    student_eligibility = {'is_allowed': True, 'status_category': 'none', 'error_message': None}
+    # 1. البحث الدقيق أو المرن عن الطالب
+    if selected_student_id:
+        student = Student.objects.filter(
+            Q(student_id=selected_student_id) | (Q(id=int(selected_student_id)) if selected_student_id.isdigit() else Q(id=-1))
+        ).select_related('department', 'level', 'group', 'student_status').first()
+    elif search_query:
+        # فحص إن كان البحث مطابقاً تماماً لرقم قيد كامل
+        exact_student = Student.objects.filter(
+            Q(student_id__iexact=search_query) | (Q(id=int(search_query)) if (search_query.isdigit() and len(search_query) >= 5) else Q(id=-1))
+        ).select_related('department', 'level', 'group', 'student_status').first()
+
+        if exact_student:
+            student = exact_student
+        else:
+            q_filter = (
+                Q(student_id__icontains=search_query) | 
+                Q(name__icontains=search_query) | 
+                Q(father_name__icontains=search_query) | 
+                Q(last_name__icontains=search_query)
+            )
+            candidates = list(Student.objects.filter(q_filter).select_related('department', 'level', 'group', 'student_status')[:30])
+            if len(candidates) == 1:
+                student = candidates[0]
+            elif len(candidates) > 1:
+                matching_students = candidates
+            else:
+                student = None
+
+    student_eligibility = {'is_allowed': True, 'status_category': 'none', 'error_message': None, 'allow_reports': True}
+    is_withdrawn = False
     if student:
         from apps.student.utils import check_student_academic_eligibility
         student_eligibility = check_student_academic_eligibility(student, action_type='major_change')
+        st_status_name = student.student_status.name if student.student_status else ""
+        if (
+            student_eligibility.get('status_category') == 'blocked' or
+            not student_eligibility.get('allow_reports', True) or
+            any(kw in st_status_name for kw in ['سحب', 'مسحوب', 'إخلاء', 'مفصول'])
+        ):
+            is_withdrawn = True
+
+    allow_print = bool(student) and (not is_withdrawn) and student_eligibility.get('allow_reports', True)
 
     # 2. فحص قيد تغيير المسار السابق للطالب
     if student:
@@ -3650,6 +3687,9 @@ def course_equivalence_page(request):
         'departments': departments,
         'search_query': search_query,
         'student': student,
+        'matching_students': matching_students,
+        'is_withdrawn': is_withdrawn,
+        'allow_print': allow_print,
         'previous_dept_name': previous_dept_name,
         'target_dept_name': target_dept_name,
         'student_eligibility': student_eligibility,
