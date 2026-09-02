@@ -152,7 +152,7 @@
                             <th scope="col" class="px-4 py-3.5 text-center" style="width: 50px;">#</th>
                             <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">كود المادة</th>
                             <th scope="col" class="px-6 py-3.5">اسم المادة الدراسية</th>
-                            <th scope="col" class="px-6 py-3.5">القسم العلمي</th>
+                            <th scope="col" class="px-6 py-3.5 text-center" style="width: 140px;">التخصص</th>
                             <th scope="col" class="px-4 py-3.5 text-center" style="width: 90px;">المستوى</th>
                             <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">الطلاب المسجلون</th>
                             <th scope="col" class="px-4 py-3.5 text-center" style="width: 120px;">المكتمل رصدهم</th>
@@ -211,5 +211,5 @@
     window.GRADE_APPROVAL_JOB_MESSAGE = "{{ grade_approval_job_message|escapejs }}";
     window.CAN_PUBLISH_GRADES = {% if request.user|has_exec_perm:'grades.publish_grades' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'publish_grades' or request.user|has_exec_perm:'change_grade' %}true{% else %}false{% endif %};
 </script>
-<script src="{% static 'grades/js/publish_results.js' %}?v=1.0.2"></script>
+<script src="{% static 'grades/js/publish_results.js' %}?v=1.0.3"></script>
 {% endblock %}

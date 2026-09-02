@@ -315,7 +315,37 @@ def check_student_academic_eligibility(student, action_type='academic_operation'
                 'is_allowed': False,
                 'status_category': 'suspended',
                 'status_name': display_status,
-                'error_message': f'🛑 تنبيه: الطالب ({display_status}) - لا يمكن تجديد قيده عبر التجديد الجماعي، ويجب تجديد قيده حصراً عبر شاشة (تجديد قيد - حالة خاصة).',
+                'error_message': f'🛑 تنبيه: الطالب ({display_status}) - لا يمكن تجديد قيده أو تنزيل مواده عبر الشاشات العامة، ويجب إتمام ذلك حصراً عبر شاشات (الحالات الخاصة).',
+                'allow_reports': True
+            }
+
+    # 1.6 فحص حالة تغيير المسار لأول مرة (حظر التجديد والتنزيل العام لأول فصل)
+    is_major_change_first_time = False
+    if getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1:
+        if hasattr(student, 'enrollmentrenewal_set'):
+            has_prev_regular = student.enrollmentrenewal_set.filter(
+                status__in=['active', 'RENEWED'],
+                special_type='REGULAR'
+            ).exists()
+            is_major_change_first_time = not has_prev_regular
+        else:
+            is_major_change_first_time = True
+
+    if is_major_change_first_time:
+        if action_type in ['special_renewal', 'special_renew', 'view', 'report_only', 'major_change']:
+            return {
+                'is_allowed': True,
+                'status_category': 'major_change',
+                'status_name': status_name or "تغيير مسار (أول مرة)",
+                'error_message': None,
+                'allow_reports': True
+            }
+        elif action_type in ['renewal', 'regular_renewal', 'registration']:
+            return {
+                'is_allowed': False,
+                'status_category': 'major_change',
+                'status_name': status_name or "تغيير مسار (أول مرة)",
+                'error_message': '🛑 تنبيه: الطالب قام بتغيير مساره الأكاديمي حديثاً - لا يمكن تجديد قيده أو تنزيل مواده عبر الشاشات العامة، ويجب إتمام ذلك حصراً عبر شاشات (الحالات الخاصة).',
                 'allow_reports': True
             }
 

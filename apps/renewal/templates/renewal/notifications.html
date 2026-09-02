@@ -449,6 +449,10 @@ html.dark .icon-professor_grade_reply, html.dark .icon-grade_submission { backgr
                 <span class="material-symbols-outlined" style="font-size: 16px;">fact_check</span>
                 <span>اعتماد نتائج</span>
             </a>
+            <a href="?type=registration" class="notif-tab {% if filter_type == 'registration' %}active{% endif %}">
+                <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
+                <span>تنزيل مواد</span>
+            </a>
             {% endif %}
 
             {% if request.user.role in 'registrar,general_registrar' or request.user.is_superuser or request.user.role == 'admin' %}
@@ -464,21 +468,16 @@ html.dark .icon-professor_grade_reply, html.dark .icon-grade_submission { backgr
                 <span class="material-symbols-outlined" style="font-size: 16px;">how_to_reg</span>
                 <span>تجديد قيد</span>
             </a>
-            {% endif %}
-
-            <a href="?type=registration" class="notif-tab {% if filter_type == 'registration' %}active{% endif %}">
-                <span class="material-symbols-outlined" style="font-size: 16px;">menu_book</span>
-                <span>تنزيل مواد</span>
-            </a>
-
-            {% if request.user.role in 'registrar,general_registrar' or request.user.is_superuser or request.user.role == 'admin' %}
-            <a href="?type=graduation" class="notif-tab {% if filter_type == 'graduation' %}active{% endif %}">
-                <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
-                <span>خريجون</span>
-            </a>
             <a href="?type=file_withdrawal" class="notif-tab {% if filter_type == 'file_withdrawal' or filter_type == 'withdrawal' %}active{% endif %}">
                 <span class="material-symbols-outlined" style="font-size: 16px;">folder_off</span>
                 <span>سحب الملفات</span>
+            </a>
+            {% endif %}
+
+            {% if request.user.is_superuser or request.user.role == 'admin' %}
+            <a href="?type=graduation" class="notif-tab {% if filter_type == 'graduation' %}active{% endif %}">
+                <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+                <span>خريجون</span>
             </a>
             {% endif %}
 

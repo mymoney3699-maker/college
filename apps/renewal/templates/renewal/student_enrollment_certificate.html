@@ -587,7 +587,10 @@
 <head>
 <meta charset="UTF-8">
 <title>شهادة تعريف طالبة - ${escapeHtml(student.name)}</title>
+<link rel="stylesheet" href="/static/css/fonts.css">
 <style>
+    @import url('/static/css/fonts.css');
+
     @page {
         size: A4 portrait;
         margin: 8mm;
@@ -597,6 +600,7 @@
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+        font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Arial, sans-serif !important;
         background: transparent !important;
         background-color: transparent !important;
         color: #000000 !important;
@@ -605,8 +609,8 @@
     }
 
     html, body {
-        font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
-        font-size: 13px;
+        font-family: 'Cairo', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Tahoma, Arial, sans-serif !important;
+        font-size: 13.5px;
         direction: rtl;
         background: #ffffff !important;
         background-color: #ffffff !important;
@@ -624,7 +628,7 @@
         border: 2.5px solid #000000 !important;
         outline: 1.5px solid #000000 !important;
         outline-offset: -6px;
-        padding: 22px 28px;
+        padding: 24px 30px;
         box-sizing: border-box;
         width: 100%;
         min-height: 278mm;
@@ -934,15 +938,25 @@
         doc.write(printHtml);
         doc.close();
 
-        // إطلاق أمر الطباعة فوراً دون أي انتظار
-        setTimeout(() => {
+        // ضمان اكتمال تحميل خط Cairo المعتمد وكافة عناصر التصميم قبل فتح نافذة الطباعة
+        const triggerPrint = () => {
             try {
                 iframe.contentWindow.focus();
                 iframe.contentWindow.print();
             } catch (e) {
                 console.error('Print launch error:', e);
             }
-        }, 60);
+        };
+
+        if (doc.fonts && doc.fonts.ready) {
+            doc.fonts.ready.then(() => {
+                setTimeout(triggerPrint, 80);
+            }).catch(() => {
+                setTimeout(triggerPrint, 150);
+            });
+        } else {
+            setTimeout(triggerPrint, 150);
+        }
     }
 
     function escapeHtml(text) {

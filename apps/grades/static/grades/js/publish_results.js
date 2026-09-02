@@ -255,7 +255,7 @@ function renderCoursesTable(courses) {
                 <td class="text-center font-bold">${idx + 1}</td>
                 <td class="font-bold text-primary">${escapeHtml(c.course_code)}</td>
                 <td class="font-semibold">${escapeHtml(c.course_name)}</td>
-                <td>${escapeHtml(c.department_name)}</td>
+                <td class="text-center font-bold text-slate-700 dark:text-slate-200" title="${escapeHtml(c.department_full || c.department_name)}">${escapeHtml(c.department_name || 'عام')}</td>
                 <td class="text-center font-medium">${escapeHtml(c.level_number)}</td>
                 <td class="text-center font-bold">${total}</td>
                 <td class="text-center font-bold text-green">${graded}</td>

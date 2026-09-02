@@ -108,10 +108,10 @@
                                 المواد
                             </button>
                             {% endif %}
-                            <button class="btn-action btn-print" onclick="printStudentMaterials()"
+                            <button type="button" id="btnPrintStudentMaterials" class="btn-action btn-print"
+                                onclick="window.printCurrentSearchedStudentMaterials()"
                                 style="background-color: #b59b66; color: white; padding: 8px 20px; border: none; border-radius: 8px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-weight: 700;">
-                                <span class="material-symbols-outlined" style="font-size: 20px;">print</span> طباعة كشف
-                                المواد
+                                <span class="material-symbols-outlined" style="font-size: 20px;">print</span> طباعة ورقة تنزيل المواد
                             </button>
                         </div>
                     </div>
@@ -208,19 +208,22 @@
                                 <tr
                                     style="background: linear-gradient(135deg, #f1f5f9 0%, #e8edf5 100%); border-bottom: 3px solid #307e92;">
                                     <th
-                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 60px;">
+                                        style="text-align: center; padding: 14px 10px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 50px;">
                                         تحديد</th>
                                     <th
-                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 130px;">
+                                        style="text-align: center; padding: 14px 10px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 120px;">
                                         رقم القيد</th>
                                     <th
-                                        style="text-align: right; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; min-width: 180px;">
+                                        style="text-align: right; padding: 14px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; min-width: 170px;">
                                         اسم الطالب</th>
                                     <th
-                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 110px;">
+                                        style="text-align: center; padding: 14px 10px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 140px;">
+                                        التخصص</th>
+                                    <th
+                                        style="text-align: center; padding: 14px 10px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 100px;">
                                         المستوى</th>
                                     <th
-                                        style="text-align: center; padding: 16px 12px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 180px;">
+                                        style="text-align: center; padding: 14px 10px; font-weight: 800; color: #1e293b; font-size: 0.85rem; white-space: nowrap; width: 170px;">
                                         المواد المتبقية / المراد تنزيلها</th>
                                 </tr>
                             </thead>
@@ -237,6 +240,10 @@
                         style="background-color: #0f766e; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
                         <span class="material-symbols-outlined" style="font-size: 16px;">library_add</span> تنزيل المواد
                         للمحددين
+                    </button>
+                    <button id="btnPrintStudentSheet" class="btn-action btn-print" onclick="window.printSelectedStudentsMaterials()"
+                        style="background-color: #0284c7; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
+                        <span class="material-symbols-outlined" style="font-size: 16px;">description</span> طباعة ورقة تنزيل المواد
                     </button>
                     <button class="btn-action btn-print" onclick="window.printPage()"
                         style="background-color: #b59b66; color: white; padding: 6px 16px; border: none; border-radius: 5px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 700; font-size: 0.75rem;">
@@ -455,16 +462,17 @@
                     <table class="print-table">
                         <thead>
                             <tr>
-                                <th style="width: 8%;">م</th>
-                                <th style="width: 22%;">رقم القيد</th>
-                                <th style="width: 40%;">اسم الطالب</th>
+                                <th style="width: 6%;">م</th>
+                                <th style="width: 18%;">رقم القيد</th>
+                                <th style="width: 30%;">اسم الطالب</th>
                                 <th style="width: 18%;">التخصص</th>
-                                <th style="width: 12%;">المواد المتبقية</th>
+                                <th style="width: 12%;">المستوى</th>
+                                <th style="width: 16%;">المواد المتبقية</th>
                             </tr>
                         </thead>
                         <tbody id="rpt_tbody">
                             <tr>
-                                <td colspan="5" class="no-data-cell">لا توجد بيانات</td>
+                                <td colspan="6" class="no-data-cell">لا توجد بيانات</td>
                             </tr>
                         </tbody>
                     </table>
@@ -473,7 +481,7 @@
                 <!-- توقيع منسق الدراسة والامتحانات -->
                 <div class="print-signature-box" data-official="exams_coordinator">
                     <span class="off-name"
-                        style="display:block;font-size:13.5px;font-weight:bold;min-height:1.3em;"></span>
+                        style="display:block;font-size:13.5px;font-weight:bold;min-height:1.3em;">{{ exams_coordinator_name|default:"أ. لبنى" }}</span>
                     <span class="off-pos"
                         style="display:block;font-size:12.5px;font-weight:600;margin-bottom:6px;">منسق الدراسة والامتحانات</span>
                     <span class="sig-dots" style="display:block;font-size:12.5px;letter-spacing:1px;">التوقيع والختم:
@@ -756,7 +764,7 @@
             background: #fff !important;
             color: #000 !important;
             direction: rtl !important;
-            font-family: 'Segoe UI', Tahoma, sans-serif !important;
+            font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
             display: flex !important;
             flex-direction: column !important;
             justify-content: flex-start !important;
@@ -886,6 +894,23 @@
             margin-left: 20px !important;
             page-break-inside: avoid !important;
         }
+
+        /* ── إخفاء أزرار التحميل التفاعلية في الطباعة واستبدالها بنص واضح ── */
+        .btn-download-action,
+        .btn-download,
+        button.btn-download,
+        .no-print {
+            display: none !important;
+        }
+
+        .print-remaining-text {
+            display: block !important;
+            font-weight: 700 !important;
+            font-size: 11.5px !important;
+            color: #000000 !important;
+            line-height: 1.5 !important;
+            text-align: center !important;
+        }
     }
 
     /* 🔔 Floating Toast Notification */
@@ -986,7 +1011,9 @@
         window.IS_DOWNLOAD_JOB_OPEN = true;
         window.DOWNLOAD_JOB_MESSAGE = "";
     }
+    window.OFFICIAL_EXAMS_COORDINATOR = "{{ exams_coordinator_name|escapejs }}";
+    window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/special_download.js' %}?v=1.0.23"></script>
+<script src="{% static 'renewal/js/special_download.js' %}?v=1.0.25"></script>
 {% endblock %}

@@ -863,6 +863,47 @@ html.dark .meta-badge-count {
   border-color: rgba(56, 189, 248, 0.4) !important;
 }
 
+/* ============================================================
+   Dark Mode Overrides for Smart Distribution & Form Elements
+   ============================================================ */
+html.dark .distribution-controls-grid {
+  background: #0f172a !important;
+  border: 1px solid #334155 !important;
+}
+
+html.dark .form-label {
+  color: #38bdf8 !important;
+}
+
+html.dark .form-input,
+html.dark .form-select {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .form-input:focus,
+html.dark .form-select:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+}
+
+html.dark .dist-field-card {
+  background: #0f172a !important;
+  border-color: #334155 !important;
+  box-shadow: none !important;
+}
+
+html.dark .dist-field-label {
+  color: #38bdf8 !important;
+}
+
+html.dark .dist-field-input {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
 html.dark .result-box {
   background: #0f172a !important;
   border-color: #334155 !important;
@@ -873,7 +914,71 @@ html.dark .result-metrics {
 }
 
 html.dark .result-metrics strong {
+  color: #38bdf8 !important;
+}
+
+html.dark .status-pending {
+  background-color: rgba(245, 158, 11, 0.18) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+}
+
+html.dark .status-completed {
+  background-color: rgba(16, 185, 129, 0.18) !important;
+  color: #34d399 !important;
+  border: 1px solid rgba(16, 185, 129, 0.45) !important;
+}
+
+html.dark .status-overflow {
+  background-color: rgba(239, 68, 68, 0.18) !important;
+  color: #f87171 !important;
+  border: 1px solid rgba(239, 68, 68, 0.45) !important;
+}
+
+html.dark .btn-ghost {
+  background-color: #1e293b !important;
+  color: #cbd5e1 !important;
+  border: 1.5px solid #334155 !important;
+}
+
+html.dark .btn-ghost:hover {
+  background-color: #334155 !important;
+  color: #ffffff !important;
+}
+
+html.dark .btn-outline {
+  background-color: transparent !important;
+  color: #38bdf8 !important;
+  border-color: #38bdf8 !important;
+}
+
+html.dark .btn-outline:hover {
+  background-color: rgba(56, 189, 248, 0.15) !important;
+}
+
+html.dark .section-title {
+  color: #38bdf8 !important;
+  border-bottom-color: #334155 !important;
+}
+
+html.dark .btn-close-icon {
+  color: #94a3b8 !important;
+}
+
+html.dark .btn-close-icon:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #f87171 !important;
+}
+
+html.dark .table-responsive {
+  border-color: #334155 !important;
+}
+
+html.dark .toast {
+  background: #1e293b !important;
   color: #f8fafc !important;
+  border-color: #334155 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ============================================================

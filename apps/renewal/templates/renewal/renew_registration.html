@@ -608,50 +608,51 @@
                 style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير تجديد
                 القيد</div>
 
-            <!-- 2. معلومات التقرير (اليمين: التخصص ثم المستوى | اليسار: التاريخ ثم عدد الطلاب) -->
-            <div class="print-info-grid">
-                <div class="print-info-right">
-                    <div><span class="info-lbl">التخصص:</span> <span id="printDeptName" class="info-val">جميع التخصصات /
-                            غير محدد</span></div>
-                    <div><span class="info-lbl">المستوى الدراسي:</span> <span id="printLevelName"
-                            class="info-val">الكل</span></div>
+            <!-- 2. معلومات التقرير (اثنين يمين واثنين يسار وبدون المستوى) -->
+            <div class="print-info-grid" style="display: flex; justify-content: space-between; align-items: center; margin: 8px 0 14px; padding: 8px 14px; border: 1.5px solid #000; direction: rtl; font-size: 12px;">
+                <div class="print-info-right" style="display: flex; flex-direction: column; gap: 5px; text-align: right;">
+                    <div><span class="info-lbl" style="font-weight: 700; color: #222;">القسم / التخصص:</span> <span id="printDeptName" class="info-val" style="font-weight: 900; color: #000;">جميع التخصصات / غير محدد</span></div>
+                    <div><span class="info-lbl" style="font-weight: 700; color: #222;">الفصل الدراسي:</span> <span id="printSemesterName" class="info-val" style="font-weight: 900; color: #000;">ربيع 2026</span></div>
                 </div>
-                <div class="print-info-left">
-                    <div><span class="info-lbl">التاريخ:</span> <span id="printDateVal" class="info-val">—</span></div>
-                    <div><span class="info-lbl">عدد الطلاب:</span> <span id="printCountVal" class="info-val">0</span>
-                    </div>
+                <div class="print-info-left" style="display: flex; flex-direction: column; gap: 5px; text-align: left; direction: rtl;">
+                    <div><span class="info-lbl" style="font-weight: 700; color: #222;">عدد الطلاب:</span> <span id="printCountVal" class="info-val" style="font-weight: 900; color: #000;">0</span> طالب</div>
+                    <div><span class="info-lbl" style="font-weight: 700; color: #222;">تاريخ التقرير:</span> <span id="printDateVal" class="info-val" style="font-weight: 900; color: #000;">—</span></div>
                 </div>
             </div>
 
-            <!-- 3. جدول التقرير الرسمي — بدون عمود المستوى/الفصل -->
+            <!-- 3. جدول التقرير الرسمي — بدون عمود التخصص -->
             <div class="print-table-container">
-                <table class="print-table">
+                <table class="print-table" style="width: 100%; border-collapse: collapse; margin-bottom: 12px;">
                     <thead>
                         <tr>
-                            <th style="width: 9%;">م</th>
-                            <th style="width: 25%;">رقم القيد</th>
-                            <th style="width: 42%;">اسم الطالب</th>
-                            <th style="width: 24%;">التخصص</th>
+                            <th style="width: 6%;">م</th>
+                            <th style="width: 20%;">رقم القيد</th>
+                            <th style="width: 38%;">اسم الطالب</th>
+                            <th style="width: 18%;">المستوى الحالي</th>
+                            <th style="width: 18%;">المستوى المنتقل إليه</th>
                         </tr>
                     </thead>
                     <tbody id="printTableBody">
                         <tr>
-                            <td colspan="4" class="empty-print-cell">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً
+                            <td colspan="5" class="empty-print-cell" style="padding: 24px; text-align: center; font-weight: 800; border: 1px solid #000;">لا توجد بيانات طلاب مسجلة في هذا التقرير حالياً
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
 
-            <!-- 4. صندوق التوقيع الرسمي — margin-top: 35px بدلاً من auto -->
-            <div class="print-signature-box" data-official>
-                <span class="off-name"
-                    style="display: block; font-size: 13.5px; font-weight: bold; min-height: 1.3em;"></span>
-                <span class="off-pos"
-                    style="display: block; font-size: 12.5px; font-weight: 600; margin-bottom: 6px;">المسجل العام
-                    بالكلية</span>
-                <span class="signature-line" style="display: block; font-size: 12.5px; letter-spacing: 1px;">التوقيع
-                    والختم: ....................................</span>
+            <!-- 4. صندوق التوقيع الرسمي (المسجل العام وقسم التسجيل والقبول) -->
+            <div class="print-signatures-row" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; page-break-inside: avoid;">
+                <div class="print-signature-box" style="text-align: center; width: 250px;">
+                    <span class="off-name" style="display: block; font-size: 13.5px; font-weight: 900; margin-bottom: 3px;">{{ admission_official_name|default:'أ. أميرة الشلادي' }}</span>
+                    <span class="off-pos" style="display: block; font-size: 12px; font-weight: 800; color: #111; margin-bottom: 16px;">رئيس قسم التسجيل والقبول</span>
+                    <span class="signature-line" style="display: block; font-size: 11.5px; font-weight: 700;">التوقيع والختم: ....................................</span>
+                </div>
+                <div class="print-signature-box" style="text-align: center; width: 250px;">
+                    <span class="off-name" style="display: block; font-size: 13.5px; font-weight: 900; margin-bottom: 3px;">{{ registrar_official_name|default:'أ. أحمد محمد علي محمود' }}</span>
+                    <span class="off-pos" style="display: block; font-size: 12px; font-weight: 800; color: #111; margin-bottom: 16px;">المسجل العام بالكلية</span>
+                    <span class="signature-line" style="display: block; font-size: 11.5px; font-weight: 700;">التوقيع والختم: ....................................</span>
+                </div>
             </div>
 
         </div>
@@ -677,5 +678,5 @@
     }
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/renew_registration.js' %}?v=2.4.1"></script>
+<script src="{% static 'renewal/js/renew_registration.js' %}?v=2.5.0"></script>
 {% endblock %}

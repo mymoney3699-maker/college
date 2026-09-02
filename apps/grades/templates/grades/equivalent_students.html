@@ -303,8 +303,7 @@
         <div class="buttons-row no-print mb-4"
             style="display: flex; justify-content: space-between; align-items: center;">
             <div style="font-weight: 700; color: #334155;">
-                إجمالي الطلبة المعروضين: <span style="color: #0284c7; font-size: 1.1rem;" id="totalCountDisplay">{{
-                    total_count|default:0 }}</span> طالب
+                إجمالي الطلبة المعروضين: <span style="color: #0284c7; font-size: 1.1rem;" id="totalCountDisplay">{{ total_count|default:0 }}</span> طالب
             </div>
             <div>
                 <button type="button" id="printReportBtn" class="btn-action btn-save"
@@ -336,8 +335,7 @@
                     <tbody id="equivalentStudentsTableBody">
                         {% for st in students_list %}
                         <tr style="border-bottom: 1px solid #e2e8f0;">
-                            <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter
-                                }}</td>
+                            <td style="padding: 0.85rem 1rem; text-align: center; font-weight: 700;">{{ forloop.counter }}</td>
                             <td
                                 style="padding: 0.85rem 1rem; font-family: monospace; font-weight: 700; color: #0284c7;">
                                 {{ st.id }}</td>
@@ -518,5 +516,5 @@
 
 {% block extra_js %}
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'grades/js/equivalent_students.js' %}?v=1.0.1"></script>
+<script src="{% static 'grades/js/equivalent_students.js' %}?v=1.0.4"></script>
 {% endblock %}

@@ -5,10 +5,10 @@
 {% block title %}إدارة وتوزيع المجموعات - كلية طرابلس{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.0.9">
+<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.1.0">
 {% endblock %}
 {% block extra_head %}
-<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.0.9">
+<link rel="stylesheet" href="{% static 'renewal/css/groups.css' %}?v=1.1.0">
 {% endblock %}
 
 {% block content %}
@@ -247,9 +247,6 @@
                 <button class="btn btn-secondary" onclick="printCurrentGroupView()">
                     <span class="material-symbols-outlined">print</span> طباعة الكشف
                 </button>
-                <button class="btn btn-primary btn-create-action {% if not is_create_groups_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}" id="editStudentsBtn" onclick="toggleEditFromStudentsPage()" {% if not is_create_groups_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important;"{% endif %}>
-                    <span class="material-symbols-outlined">edit</span> تعديل المجموعة
-                </button>
             </div>
         </div>
 
@@ -290,5 +287,5 @@
     window.CREATE_GROUPS_JOB_MESSAGE = "{{ create_groups_job_message|escapejs }}";
     window.ACTIVE_ACADEMIC_YEAR = "{{ active_year|default:'2026' }}";
 </script>
-<script src="{% static 'renewal/js/groups.js' %}?v=1.0.9"></script>
+<script src="{% static 'renewal/js/groups.js' %}?v=1.2.0"></script>
 {% endblock %}

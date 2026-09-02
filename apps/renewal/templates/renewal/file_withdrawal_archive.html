@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}أرشيف سحب الملفات والفلترة المتقدمة | كلية طرابلس{% endblock %}
+{% block title %}الطلاب المسحوبة ملفاتهم والفلترة المتقدمة | كلية طرابلس{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'renewal/css/file_withdrawal_archive.css' %}?v=3.2.0" />
@@ -187,37 +187,46 @@
             font-weight: bold !important;
         }
 
-        /* ④ صندوق التوقيع - جهة اليسار من الأسفل */
+        /* ④ صف التواقيع - متناسق في الأسفل (رئيس قسم التسجيل والقبول يميناً، المسجل العام يساراً) */
+        .rpt-signatures-row {
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: flex-end !important;
+            margin-top: 35px !important;
+            padding: 0 10px !important;
+            page-break-inside: avoid !important;
+        }
+
         .rpt-signature-box {
-            margin-top: 55px !important;
-            text-align: left !important;
-            float: left !important;
-            margin-left: 20px !important;
+            text-align: center !important;
+            width: 250px !important;
             page-break-inside: avoid !important;
         }
 
         .rpt-signature-box .off-name {
             display: block !important;
-            font-size: 14px !important;
-            font-weight: bold !important;
+            font-size: 13.5px !important;
+            font-weight: 900 !important;
             color: #000000 !important;
-            margin-bottom: 4px !important;
+            margin-bottom: 3px !important;
             min-height: 1em !important;
         }
 
         .rpt-signature-box .off-pos {
             display: block !important;
-            font-size: 13px !important;
-            font-weight: 600 !important;
-            color: #000000 !important;
-            margin-bottom: 10px !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+            color: #111111 !important;
+            margin-bottom: 16px !important;
         }
 
         .rpt-signature-box .off-sig-line {
             display: block !important;
-            font-size: 13px !important;
+            font-size: 11.5px !important;
+            font-weight: 700 !important;
             color: #000000 !important;
             letter-spacing: 1px !important;
+            white-space: nowrap !important;
         }
     }
 </style>
@@ -230,8 +239,7 @@
         <!-- Page Header -->
         <div class="page-header-row no-print">
             <div>
-                <h1 class="page-header-title text-3xl sm:text-4xl">أرشيف سحب الملفات والفلترة المتقدمة (السجلات
-                    الإدارية)</h1>
+                <h1 class="page-header-title text-3xl sm:text-4xl">كشف الطلاب المسحوبة ملفاتهم والفلترة المتقدمة (السجلات الإدارية)</h1>
                 <p class="page-header-subtitle">
                     متابعة واستعراض وتصدير كافة سجلات الطلاب الذين قاموا بإجراء سحب الملفات إدارياً بالمؤسسة.
                 </p>
@@ -244,7 +252,7 @@
             <span class="plan-title-badge group-title card-badge"
                 style="position: absolute !important; top: -16px !important; right: 30px !important; left: auto !important; transform: none !important; margin-right: 0 !important; margin-left: auto !important;">
                 <span class="material-symbols-outlined text-base">tune</span>
-                <span>خيارات البحث وتصفية أرشيف سحب الملفات</span>
+                <span>خيارات البحث وتصفية الطلاب المسحوبة ملفاتهم</span>
             </span>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 pt-2">
@@ -415,11 +423,18 @@
             </table>
         </div>
 
-        <!-- ④ صندوق التوقيع - جهة اليسار (الاسم فوق، المنصب، التوقيع والختم) -->
-        <div class="rpt-signature-box" data-official>
-            <span class="off-name"></span>
-            <span class="off-pos">المسجل العام بالكلية</span>
-            <span class="off-sig-line">التوقيع والختم: ............................................</span>
+        <!-- ④ صندوق التوقيعات (رئيس قسم التسجيل والقبول يميناً، المسجل العام يساراً) -->
+        <div class="rpt-signatures-row">
+            <div class="rpt-signature-box" data-official="admission">
+                <span class="off-name"></span>
+                <span class="off-pos">رئيس قسم التسجيل والقبول</span>
+                <span class="off-sig-line">التوقيع والختم: ....................................</span>
+            </div>
+            <div class="rpt-signature-box" data-official="registrar">
+                <span class="off-name"></span>
+                <span class="off-pos">المسجل العام بالكلية</span>
+                <span class="off-sig-line">التوقيع والختم: ....................................</span>
+            </div>
         </div>
 
     </div>
@@ -434,5 +449,5 @@
 
 {% block extra_js %}
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/file_withdrawal_archive.js' %}?v=3.2.0"></script>
+<script src="{% static 'renewal/js/file_withdrawal_archive.js' %}?v=3.2.1"></script>
 {% endblock %}

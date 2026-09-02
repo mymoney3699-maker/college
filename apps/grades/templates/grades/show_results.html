@@ -312,17 +312,18 @@
 
         /* ④ صندوق التوقيع */
         .rpt-signature-box {
-            margin-top: 35px !important;
-            text-align: left !important;
+            margin-top: 30px !important;
+            text-align: center !important;
             float: left !important;
+            width: 250px !important;
             margin-left: 10px !important;
             page-break-inside: avoid !important;
         }
 
         .rpt-signature-box .off-name {
             display: block !important;
-            font-size: 12.5px !important;
-            font-weight: bold !important;
+            font-size: 13.5px !important;
+            font-weight: 900 !important;
             color: #000000 !important;
             margin-bottom: 3px !important;
             min-height: 1em !important;
@@ -330,15 +331,16 @@
 
         .rpt-signature-box .off-pos {
             display: block !important;
-            font-size: 11.5px !important;
-            font-weight: 600 !important;
-            color: #000000 !important;
-            margin-bottom: 8px !important;
+            font-size: 12px !important;
+            font-weight: 800 !important;
+            color: #111111 !important;
+            margin-bottom: 16px !important;
         }
 
         .rpt-signature-box .off-sig-line {
             display: block !important;
             font-size: 11.5px !important;
+            font-weight: 700 !important;
             color: #000000 !important;
             letter-spacing: 1px !important;
         }
@@ -554,10 +556,10 @@
         </div>
 
         <!-- ④ صندوق التوقيع جهة اليسار -->
-        <div class="rpt-signature-box" data-official="exams_coordinator">
-            <span class="off-name"></span>
-            <span class="off-pos">منسق الدراسة والامتحانات</span>
-            <span class="off-sig-line">التوقيع والختم: ............................................</span>
+        <div class="rpt-signature-box" data-official="مدير الدراسة والامتحانات">
+            <span class="off-name">{{ exams_director_name|default:'د. فاطمة عمران الشريف' }}</span>
+            <span class="off-pos">مدير الدراسة والامتحانات</span>
+            <span class="off-sig-line">التوقيع والختم: ....................................</span>
         </div>
 
     </div>
@@ -566,5 +568,5 @@
 
 {% block extra_js %}
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'grades/js/show_results.js' %}?v=3.3.0"></script>
+<script src="{% static 'grades/js/show_results.js' %}?v=3.3.1"></script>
 {% endblock %}

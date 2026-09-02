@@ -60,8 +60,9 @@ def exclude_withdrawn_students(queryset):
 
 def exclude_suspended_and_withdrawn_students(queryset, semester=None):
     """
-    استبعاد الطلاب المسحوبة ملفاتهم أو الموقوف قيدهم من استعلامات تجديد القيد العادية،
-    بحيث يقتصر التجديد الجماعي على المنتظمين، وتجديد الموقوفين يتم حصراً عبر الحالات الخاصة.
+    استبعاد الطلاب المسحوبة ملفاتهم أو الموقوف قيدهم أو الذين غيروا مسارهم لأول مرة
+    من استعلامات تجديد القيد وتنزيل المواد العامة،
+    بحيث يقتصر التجديد والتنزيل العام على المنتظمين، وتتم خدمتهم حصراً عبر الحالات الخاصة.
     """
     from apps.renewal.models import StudentWithdrawal, EnrollmentRenewal
     withdrawn_statuses = ['مسحوبة ملف', 'سحب ملف', 'WITHDRAWN', 'مسحوب', 'مخلو طرفه', 'إخلاء طرف', 'مفصول', 'طرد']
@@ -72,7 +73,7 @@ def exclude_suspended_and_withdrawn_students(queryset, semester=None):
         Q(student_status__name__icontains='إيقاف') |
         Q(student_status__name__icontains='موقف') |
         Q(enrollmentrenewal__status='suspended') |
-        Q(enrollmentrenewal__special_type__in=['STOPPED', 'STOPPED_ENROLLMENT', 'SUSPENDED'])
+        Q(enrollmentrenewal__special_type__in=['STOPPED', 'STOPPED_ENROLLMENT', 'SUSPENDED', 'suspended'])
     )
 
     if semester:
@@ -85,13 +86,30 @@ def exclude_suspended_and_withdrawn_students(queryset, semester=None):
             status='suspended'
         ).values_list('student_id', flat=True)
 
+    # 🛑 استبعاد الطلاب الذين غيروا مسارهم لأول مرة (حتى يتم أول تجديد وتنزيل مواد لهم كحالة خاصة)
+    major_change_first_time_ids = []
+    major_change_candidates = queryset.filter(
+        Q(has_changed_major=True) | Q(major_change_count__gte=1) | Q(student_status__name__icontains='مسار')
+    )
+    for st in major_change_candidates:
+        regular_renewals_in_dept = EnrollmentRenewal.objects.filter(
+            student=st,
+            status__in=['active', 'RENEWED'],
+            special_type='REGULAR'
+        )
+        if semester:
+            regular_renewals_in_dept = regular_renewals_in_dept.exclude(semester=semester)
+        if not regular_renewals_in_dept.exists():
+            major_change_first_time_ids.append(st.id)
+
     return queryset.exclude(
         Q(student_status__name__in=withdrawn_statuses) |
         Q(student_status__name__icontains='مسحوب') |
         Q(student_status__name__icontains='سحب') |
         Q(id__in=withdrawn_ids) |
         suspended_filter |
-        Q(id__in=suspended_ids)
+        Q(id__in=suspended_ids) |
+        Q(id__in=major_change_first_time_ids)
     ).distinct()
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -3203,10 +3221,12 @@ def get_students_by_department_and_level_api(request):
     if not department_id or not level_id:
         return JsonResponse({'success': False, 'error': 'الرجاء اختيار التخصص والمستوى'})
     
-    students = Student.objects.filter(
-        department_id=department_id,
-        level_id=level_id
-    ).select_related('department', 'level')
+    students = exclude_suspended_and_withdrawn_students(
+        Student.objects.filter(
+            department_id=department_id,
+            level_id=level_id
+        ).select_related('department', 'level')
+    )
     
     data = []
     for student in students:
@@ -4017,6 +4037,26 @@ def download_materials(request):
     
     download_job_info = get_download_materials_job_info()
 
+    exams_coordinator_name = "أ. لبنى"
+    general_registrar_name = "أ. أحمد محمد علي محمود"
+    try:
+        from apps.users.models import Official
+        coord_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='exams_coordinator') |
+            Q(position_name__icontains='منسق') |
+            Q(position_name__icontains='منسقة')
+        ).first()
+        if coord_obj:
+            exams_coordinator_name = coord_obj.get_full_name()
+
+        reg_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='registrar') | Q(position_name__icontains='المسجل العام') | Q(position_name__icontains='مسجل')
+        ).exclude(position_key='admission').first()
+        if reg_obj:
+            general_registrar_name = reg_obj.get_full_name()
+    except Exception as e:
+        logger.warning(f"Error fetching officials in download_materials: {e}")
+
     # 🛡️ توثيق زيارة صفحة تنزيل المواد في سجل الأحداث
     try:
         from apps.users.utils import log_activity
@@ -4037,6 +4077,8 @@ def download_materials(request):
         'departments': departments,
         'is_download_job_open': download_job_info['is_download_job_open'],
         'download_job_message': download_job_info['download_job_message'],
+        'exams_coordinator_name': exams_coordinator_name,
+        'general_registrar_name': general_registrar_name,
     }
     return render(request, 'renewal/download_materials.html', context)
 
@@ -4092,14 +4134,22 @@ def get_students_for_materials_api(request):
 
         BLOCKED_STATUSES = ['مسحوبة ملف', 'سحب ملف', 'WITHDRAWN', 'مسحوب', 'موقف قيده', 'موقوف قيده', 'موقوف', 'إخلاء طرف', 'نشط', 'موقوف']
         
-        # 🛑 استبعاد طلاب الحالات الخاصة / الموقوفين المجددين حصراً للشاشة الاستثنائية
+        # 🛑 استبعاد طلاب الحالات الخاصة / الموقوفين المجددين وتغيير المسار لأول مرة حصراً للشاشة الاستثنائية
         special_renewed_student_ids = set(EnrollmentRenewal.objects.filter(
             semester=semester,
             status__in=['active', 'RENEWED']
         ).filter(
-            Q(special_type__in=['STOPPED', 'STOPPED_ENROLLMENT', 'suspended', 'LATE_NEW_STUDENT', 'new_delayed']) |
-            Q(notes__icontains='موقوف') | Q(notes__icontains='وقف') | Q(notes__icontains='حالة خاصة')
+            Q(special_type__in=['STOPPED', 'STOPPED_ENROLLMENT', 'SUSPENDED', 'suspended', 'LATE_NEW_STUDENT', 'new_delayed', 'MAJOR_CHANGE', 'major_change', 'track_change']) |
+            Q(notes__icontains='موقوف') | Q(notes__icontains='وقف') | Q(notes__icontains='إيقاف') | Q(notes__icontains='حالة خاصة') |
+            Q(notes__icontains='تغيير مسار') | Q(notes__icontains='مسار')
         ).values_list('student_id', flat=True))
+
+        # استبعاد طلاب تغيير المسار لأول مرة حتى يكملوا تنزيل موادهم كحالة خاصة
+        major_change_first_time_ids = set()
+        for st in Student.objects.filter(department_id=dept_id).filter(Q(has_changed_major=True) | Q(major_change_count__gte=1)):
+            if not EnrollmentRenewal.objects.filter(student=st, status__in=['active', 'RENEWED'], special_type='REGULAR').exclude(semester=semester).exists():
+                major_change_first_time_ids.add(st.id)
+        special_renewed_student_ids.update(major_change_first_time_ids)
 
         student_map = {}
 
@@ -4131,7 +4181,7 @@ def get_students_for_materials_api(request):
                 'level_number': ren_level_num
             }
 
-        # 2. الطلاب المستجدون لأول مرة (Brand New Students: مستوى 1 بدون تجديدات سابقة وبدون درجات)
+        # 2. الطلاب المستجدون لأول مرة (Brand New Students: مستوى 1 بدون تجديدات سابقة وبدون درجات وبدون تغيير مسار)
         # يظهرون تلقائياً بالسمستر الأول دون الحاجة لتجديد قيد
         if target_level_num is None or target_level_num == 1:
             from apps.grades.models import Grade
@@ -4141,6 +4191,8 @@ def get_students_for_materials_api(request):
                 Q(level__number=1) | Q(level__isnull=True)
             ).exclude(
                 id__in=special_renewed_student_ids
+            ).exclude(
+                Q(has_changed_major=True) | Q(major_change_count__gte=1)
             ).select_related('department', 'level', 'student_status')
 
             for st in level1_students:
@@ -4657,13 +4709,27 @@ def get_student_courses_api(request, student_id, semester_id):
         from apps.student.models import Student
         from apps.renewal.models import Semester
         
-        student = Student.objects.filter(id=student_id).select_related('department', 'level').first()
-        semester = Semester.objects.filter(id=semester_id).first()
+        if not semester_id or semester_id == 0:
+            semester = Semester.objects.filter(is_active=True).first()
+        else:
+            semester = Semester.objects.filter(id=semester_id).first()
+            if not semester:
+                semester = Semester.objects.filter(is_active=True).first()
         
+        sem_id = semester.id if semester else semester_id
         registrations = CourseRegistration.objects.filter(
             student_id=student_id,
-            semester_id=semester_id
+            semester_id=sem_id
         ).select_related('course', 'course__level', 'student', 'student__level').prefetch_related('course__prerequisites')
+        
+        if not registrations.exists():
+            latest_reg = CourseRegistration.objects.filter(student_id=student_id).order_by('-id').first()
+            if latest_reg and latest_reg.semester:
+                semester = latest_reg.semester
+                registrations = CourseRegistration.objects.filter(
+                    student_id=student_id,
+                    semester_id=semester.id
+                ).select_related('course', 'course__level', 'student', 'student__level').prefetch_related('course__prerequisites')
         
         data = []
         total_credits = 0
@@ -4721,6 +4787,26 @@ def special_download(request):
     
     download_job_info = get_download_materials_job_info()
 
+    exams_coordinator_name = "أ. لبنى"
+    general_registrar_name = "أ. أحمد محمد علي محمود"
+    try:
+        from apps.users.models import Official
+        coord_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='exams_coordinator') |
+            Q(position_name__icontains='منسق') |
+            Q(position_name__icontains='منسقة')
+        ).first()
+        if coord_obj:
+            exams_coordinator_name = coord_obj.get_full_name()
+
+        reg_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='registrar') | Q(position_name__icontains='المسجل العام') | Q(position_name__icontains='مسجل')
+        ).exclude(position_key='admission').first()
+        if reg_obj:
+            general_registrar_name = reg_obj.get_full_name()
+    except Exception as e:
+        logger.warning(f"Error fetching officials in special_download: {e}")
+
     context = {
         'departments': departments,
         'current_semester': current_semester,
@@ -4731,6 +4817,8 @@ def special_download(request):
         'active_season_display': current_semester.get_type_display() if current_semester else 'خريف',
         'is_download_job_open': download_job_info['is_download_job_open'],
         'download_job_message': download_job_info['download_job_message'],
+        'exams_coordinator_name': exams_coordinator_name,
+        'general_registrar_name': general_registrar_name,
     }
     return render(request, 'renewal/special_download.html', context)
 
@@ -5057,16 +5145,20 @@ def search_student_simple_api(request):
     
     students = Student.objects.filter(
         db_models.Q(student_id__icontains=query) | 
-        db_models.Q(name__icontains=query)
+        db_models.Q(name__icontains=query) |
+        db_models.Q(father_name__icontains=query) |
+        db_models.Q(national_id__icontains=query)
     ).select_related('department', 'level')[:20]
     
     if students.exists():
         data = []
         for student in students:
+            full_name = f"{student.name} {student.father_name or ''} {student.last_name or ''}".strip()
             data.append({
                 'id': student.id,
-                'student_id': student.student_id,
-                'name': student.name,
+                'student_id': student.student_id or f"STU{student.id}",
+                'name': full_name or student.name,
+                'national_id': student.national_id or '',
                 'father_name': student.father_name or '',
                 'department_id': student.department.id if student.department else '',
                 'department_name': student.department.name if student.department else '-',
@@ -5754,14 +5846,15 @@ def department_detail_view(request, dept_code):
         st_avg = round(avg_grade, 2) if avg_grade is not None else None
         st_gpa = round((st_avg / 25.0), 2) if st_avg is not None else None
         
-        # مؤشر الإنذار الأكاديمي أو الأداء المنخفض
-        status_name = st.student_status.name if st.student_status else ''
+        # تحديد الحالة الأكاديمية الفعلية للطالب بدقة
+        status_name = st.student_status.name if st.student_status else 'مستمر'
         is_low_perf = (st_avg is not None and st_avg < 50.0) or ('إنذار' in status_name or 'تحذير' in status_name)
         if is_low_perf:
             low_gpa_count += 1
             
         students_data.append({
             'student': st,
+            'status_name': status_name,
             'avg_grade': st_avg,
             'gpa': st_gpa,
             'is_low_perf': is_low_perf,
@@ -6093,6 +6186,7 @@ def subject_data_api(request):
     API: استعلام عن مواد الفصل المطروحة بناءً على التخصص، نوع الفصل، والسنة الدراسية
     """
     department_id = request.GET.get('department_id') or request.GET.get('department') or request.GET.get('major_id')
+    level_id = request.GET.get('level_id') or request.GET.get('level')
     semester_type = request.GET.get('semester_type') or request.GET.get('season_type')
     semester_year = request.GET.get('semester_year') or request.GET.get('year')
 
@@ -6105,6 +6199,12 @@ def subject_data_api(request):
             courses_qs = courses_qs.filter(department__id=int(department_id))
         else:
             courses_qs = courses_qs.filter(department__name__icontains=str(department_id).strip())
+
+    if is_valid_filter(level_id):
+        if str(level_id).isdigit():
+            courses_qs = courses_qs.filter(Q(level__id=int(level_id)) | Q(level__number=int(level_id)))
+        else:
+            courses_qs = courses_qs.filter(level__name__icontains=str(level_id).strip())
 
     semester_obj = None
     if is_valid_filter(semester_type) and is_valid_filter(semester_year):
@@ -6708,18 +6808,93 @@ def get_departments_api(request):
 # APIs إدارة المجموعات المتقدمة
 # ================================================================
 
+def resolve_single_course_for_group(group, students=None, target_course=None):
+    """
+    إرجاع مادة واحدة فقط محددة للمجموعة بدقة تامة وبدون أي تداخل أو دمج أسماء مواد متعددة:
+    (course_id, course_name, course_code)
+    """
+    from apps.faculty.models import CourseAssignment
+    from apps.renewal.models import Course, CourseRegistration
+    from apps.grades.models import Grade
+    from django.db.models import Count
+
+    if target_course:
+        return target_course.id, target_course.name, target_course.code or ''
+
+    # 1. البحث في تكليفات الأساتذة للمجموعة (CourseAssignment)
+    assignment = CourseAssignment.objects.filter(
+        student_group=group,
+        is_active=True
+    ).select_related('course').first()
+    if assignment and assignment.course:
+        return assignment.course.id, assignment.course.name, assignment.course.code or ''
+
+    # 2. فحص مطابقة اسم المجموعة مع أسماء ورموز المواد
+    group_name = (group.name or '').strip().lower()
+    if group_name:
+        dept = group.department
+        level = group.level
+        courses_qs = Course.objects.filter(is_active=True)
+        if dept:
+            courses_qs = courses_qs.filter(department=dept)
+        if level:
+            courses_qs = courses_qs.filter(level=level)
+
+        # مطابقة تامة أو شبه تامة
+        for c in courses_qs:
+            c_name = (c.name or '').strip().lower()
+            c_code = (c.code or '').strip().lower()
+            if (c_name and (c_name in group_name or group_name in c_name)) or (c_code and c_code in group_name):
+                return c.id, c.name, c.code or ''
+
+        # مطابقة كلمات رئيسية في اسم المادة (مثل رياضة، برمجة، شبكات، قواعد، إلخ)
+        for c in courses_qs:
+            c_name = (c.name or '').strip().lower()
+            keywords = [w for w in c_name.split() if len(w) > 2]
+            for kw in keywords:
+                if kw in group_name:
+                    return c.id, c.name, c.code or ''
+
+    # 3. جلب المادة الأكثر شيوعاً بين طلاب المجموعة من التسجيلات (أو الأولى فقط)
+    if students is None:
+        students = group.student_set.all()
+
+    if students.exists():
+        top_reg = CourseRegistration.objects.filter(
+            student__in=students,
+            course__isnull=False
+        ).values('course__id', 'course__name', 'course__code').annotate(
+            cnt=Count('id')
+        ).order_by('-cnt').first()
+
+        if top_reg and top_reg.get('course__name'):
+            return top_reg['course__id'], top_reg['course__name'], top_reg.get('course__code') or ''
+
+        top_grade = Grade.objects.filter(
+            student__in=students,
+            course__isnull=False
+        ).values('course__id', 'course__name', 'course__code').annotate(
+            cnt=Count('id')
+        ).order_by('-cnt').first()
+
+        if top_grade and top_grade.get('course__name'):
+            return top_grade['course__id'], top_grade['course__name'], top_grade.get('course__code') or ''
+
+    return None, 'غير محددة', '-'
+
+
 @login_required
 def get_filtered_groups_api(request):
-    """API: جلب المجموعات حسب معايير الفلترة بأمان تام مع معالجة الأخطاء وحماية 500"""
+    """
+    API: جلب المجموعات مع الفلترة حسب (القسم، المستوى، المادة، الفصل، السنة)
+    مع إرجاع اسم مادة واحدة محددة بدقة لكل مجموعة
+    """
     try:
-        from apps.grades.models import Grade
-        from django.db.models import Q
-        
         department_id = request.GET.get('department_id') or request.GET.get('department')
         level_id = request.GET.get('level_id') or request.GET.get('level')
-        semester_type = request.GET.get('semester_type') or request.GET.get('semester')
-        semester_year = request.GET.get('semester_year') or request.GET.get('academic_year')
         course_id = request.GET.get('course_id') or request.GET.get('course')
+        semester_year = request.GET.get('semester_year') or request.GET.get('academic_year') or request.GET.get('year')
+        semester_type = request.GET.get('semester_type') or request.GET.get('semester')
         
         # جلب كافة المجموعات مع بيانات القسم والمستوى
         groups = Group.objects.all().select_related('department', 'level').order_by('-id')
@@ -6756,40 +6931,7 @@ def get_filtered_groups_api(request):
         data = []
         for group in groups:
             students = group.student_set.all().select_related('level', 'department')
-            
-            course_name = ''
-            course_code = ''
-            c_id = None
-            
-            if target_course:
-                course_name = target_course.name
-                course_code = target_course.code or ''
-                c_id = target_course.id
-            else:
-                reg_courses = CourseRegistration.objects.filter(
-                    student__in=students
-                ).select_related('course').values('course__id', 'course__name', 'course__code').distinct()
-                
-                if reg_courses.exists():
-                    c_names = list(dict.fromkeys([r['course__name'] for r in reg_courses if r['course__name']]))
-                    c_codes = list(dict.fromkeys([r['course__code'] for r in reg_courses if r['course__code']]))
-                    course_name = " / ".join(c_names)
-                    course_code = " / ".join(c_codes)
-                    c_id = reg_courses[0]['course__id']
-                else:
-                    grade_courses = Grade.objects.filter(
-                        student__in=students
-                    ).select_related('course').values('course__id', 'course__name', 'course__code').distinct()
-                    if grade_courses.exists():
-                        c_names = list(dict.fromkeys([g['course__name'] for g in grade_courses if g['course__name']]))
-                        c_codes = list(dict.fromkeys([g['course__code'] for g in grade_courses if g['course__code']]))
-                        course_name = " / ".join(c_names)
-                        course_code = " / ".join(c_codes)
-                        c_id = grade_courses[0]['course__id']
-                    else:
-                        course_name = 'غير محددة'
-                        course_code = '-'
-                        c_id = None
+            c_id, course_name, course_code = resolve_single_course_for_group(group, students=students, target_course=target_course)
 
             data.append({
                 'id': group.id,
@@ -6828,36 +6970,12 @@ def get_filtered_groups_api(request):
 
 @login_required
 def get_group_details_api(request, group_id):
-    """API: جلب تفاصيل مجموعة محددة مع تفاصيل المادة"""
-    from apps.grades.models import Grade
+    """API: جلب تفاصيل مجموعة محددة مع مادة واحدة بدقة"""
     try:
         group = get_object_or_404(Group, id=group_id)
         students = group.student_set.all().select_related('level', 'department')
         
-        reg_courses = CourseRegistration.objects.filter(
-            student__in=students
-        ).select_related('course').values('course__id', 'course__name', 'course__code').distinct()
-        
-        if reg_courses.exists():
-            c_names = list(dict.fromkeys([r['course__name'] for r in reg_courses if r['course__name']]))
-            c_codes = list(dict.fromkeys([r['course__code'] for r in reg_courses if r['course__code']]))
-            course_name = " / ".join(c_names)
-            course_code = " / ".join(c_codes)
-            c_id = reg_courses[0]['course__id']
-        else:
-            grade_courses = Grade.objects.filter(
-                student__in=students
-            ).select_related('course').values('course__id', 'course__name', 'course__code').distinct()
-            if grade_courses.exists():
-                c_names = list(dict.fromkeys([g['course__name'] for g in grade_courses if g['course__name']]))
-                c_codes = list(dict.fromkeys([g['course__code'] for g in grade_courses if g['course__code']]))
-                course_name = " / ".join(c_names)
-                course_code = " / ".join(c_codes)
-                c_id = grade_courses[0]['course__id']
-            else:
-                course_name = 'غير محددة'
-                course_code = '-'
-                c_id = None
+        c_id, course_name, course_code = resolve_single_course_for_group(group, students=students)
 
         data = {
             'id': group.id,
@@ -7572,14 +7690,16 @@ def get_special_case_students_api(request):
     suspended_q = (
         Q(student_status__name__icontains="موقوف") | 
         Q(student_status__name__icontains="موقف") | 
-        Q(student_status__name__icontains="وقف")
+        Q(student_status__name__icontains="وقف") |
+        Q(enrollmentrenewal__semester=current_semester, enrollmentrenewal__special_type='STOPPED')
     )
 
     major_change_q = (
         Q(has_changed_major=True) |
         Q(major_change_count__gte=1) |
         Q(student_status__name__icontains="مسار") |
-        Q(student_status__name__icontains="محول")
+        Q(student_status__name__icontains="محول") |
+        Q(enrollmentrenewal__semester=current_semester, enrollmentrenewal__special_type='MAJOR_CHANGE')
     )
     
     blocked_q = (
@@ -7596,7 +7716,7 @@ def get_special_case_students_api(request):
     else:
         case_filter = suspended_q | major_change_q
     
-    base_students = Student.objects.filter(case_filter).exclude(blocked_q).select_related('department', 'level', 'student_status')
+    base_students = Student.objects.filter(case_filter).exclude(blocked_q).select_related('department', 'level', 'student_status').distinct()
         
     if is_valid_filter(department_id):
         base_students = base_students.filter(department_id=int(department_id))
@@ -7621,7 +7741,7 @@ def get_special_case_students_api(request):
             semester=current_semester
         ).first()
         
-        is_major_change = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1
+        is_major_change = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1 or (existing_enrollment and existing_enrollment.special_type == 'MAJOR_CHANGE')
         status_name = student.student_status.name if student.student_status else ('تغيير مسار' if is_major_change else 'موقوف قيده')
         
         special_type = 'major_change' if is_major_change else 'suspended'
@@ -7632,12 +7752,15 @@ def get_special_case_students_api(request):
             'student_id': student.student_id or f"STU{student.id:06d}",
             'name': student.name or '',
             'father_name': student.father_name or '',
+            'national_id': getattr(student, 'national_id', '—') or '—',
             'department_name': student.department.name if student.department else '-',
             'level_number': student.level.number if student.level else 1,
+            'level_name': student.level.name if student.level else 'المستوى الأول',
             'student_status': status_name,
             'special_type': special_type,
             'interruption_reason': reason_text,
             'has_enrollment': existing_enrollment is not None,
+            'enrollment_id': existing_enrollment.id if existing_enrollment else None,
             'notes': existing_enrollment.notes if existing_enrollment else '',
         })
     
@@ -7851,12 +7974,15 @@ def get_students_for_download_api(request):
             is_passed=True
         ).values_list('course_id', flat=True))
         
-        remaining_count = Course.objects.filter(
+        remaining_courses_qs = Course.objects.filter(
             department=s.department,
             level__number__lt=s.level.number if s.level else 1,
             is_active=True
-        ).exclude(id__in=passed_course_ids).count() if s.department else 0
-        
+        ).exclude(id__in=passed_course_ids) if s.department else Course.objects.none()
+        remaining_count = remaining_courses_qs.count()
+        remaining_course_names = list(remaining_courses_qs.values_list('name', flat=True)[:4])
+        remaining_text = "، ".join(remaining_course_names) if remaining_course_names else ("لا توجد مواد متبقية" if remaining_count == 0 else f"{remaining_count} مواد")
+
         data.append({
             'id': s.id,
             'student_id': s.student_id or f"STU{s.id:06d}",
@@ -7866,6 +7992,7 @@ def get_students_for_download_api(request):
             'level_number': item['level_number'],
             'student_status': s.student_status.name if s.student_status else 'منتظم',
             'remaining_subjects': remaining_count,
+            'remaining_text': remaining_text,
             'case_type': item['case_type_display'],
             'is_renewed': True,
             'is_active': True,
@@ -10085,11 +10212,8 @@ def plan_add_course_view(request, plan_id):
 
 
 @login_required
-def students_by_gpa(request):
-    """
-    صفحة كشف الطلاب حسب المعدل التراكمي (GPA)
-    تربط مباشرة بقاعدة البيانات وتوفر فلاتر البحث الحقيقي.
-    """
+def _build_students_gpa_dataset(request):
+    """دالة مساعدة لبناء وتصفية بيانات كشف الطلاب حسب المعدل"""
     departments = Department.objects.all().order_by('name')
     levels = Level.objects.all().order_by('name')
     
@@ -10124,7 +10248,7 @@ def students_by_gpa(request):
 
     # 3. تحديد الفصل الدراسي المستهدف من الفلتر
     semester_year_param = request.GET.get('year')
-    semester_type_param = request.GET.get('semester')  # 'خريف' أو 'ربيع'
+    semester_type_param = request.GET.get('semester')
 
     SEMESTER_TYPE_MAP = {
         'خريف': 'fall',
@@ -10146,7 +10270,6 @@ def students_by_gpa(request):
             sem_qs = sem_qs.filter(type=semester_type_internal)
         target_semester = sem_qs.first()
 
-    # فلترة الطلاب الذين لديهم سجلات في الفصل المحدد
     if target_semester:
         students_qs = students_qs.filter(
             Q(grade_set__semester=target_semester) |
@@ -10160,7 +10283,6 @@ def students_by_gpa(request):
         completed_hours = 0
 
         if target_semester:
-            # حساب GPA للفصل الدراسي المحدد فقط
             from apps.student.models import SemesterRecord
             sem_record = SemesterRecord.objects.filter(
                 student=s, semester=target_semester
@@ -10169,7 +10291,6 @@ def students_by_gpa(request):
                 gpa = round(sem_record.semester_gpa, 2)
                 completed_hours = int(sem_record.completed_credits)
             else:
-                # حساب يدوي من جدول الدرجات للفصل المحدد
                 sem_grades = s.grade_set.filter(semester=target_semester).select_related('course')
                 total_points = sum(g.total_grade * g.course.credits for g in sem_grades if g.total_grade > 0)
                 total_credits = sum(g.course.credits for g in sem_grades)
@@ -10177,7 +10298,6 @@ def students_by_gpa(request):
                     gpa = round(total_points / total_credits, 2)
                     completed_hours = int(sum(g.course.credits for g in sem_grades if g.is_passed))
         else:
-            # لا يوجد فصل محدد: استخدام المعدل التراكمي الكامل
             if hasattr(s, 'academicrecord') and s.academicrecord:
                 gpa = round(s.academicrecord.cumulative_gpa, 2)
                 completed_hours = int(s.academicrecord.total_completed_credits)
@@ -10198,7 +10318,6 @@ def students_by_gpa(request):
         if is_valid_filter(grade_filter) and grade_label != grade_filter:
             continue
             
-        # الفلترة الذكية حسب نوع الكشف (الناجحين، الراسبين، الأوائل، النطاق)
         filter_type = request.GET.get('type') or request.GET.get('filter_type')
         if is_valid_filter(filter_type):
             if filter_type == 'passed' and not (gpa >= 2.0 if gpa <= 4.0 else gpa >= 50.0):
@@ -10216,7 +10335,6 @@ def students_by_gpa(request):
                 except (ValueError, TypeError):
                     pass
 
-        # تحديد قيم السنة والفصل للعرض
         if target_semester:
             display_year = str(target_semester.year)
             display_semester = target_semester.get_type_display()
@@ -10240,9 +10358,18 @@ def students_by_gpa(request):
 
     students_data.sort(key=lambda x: x['gpa'], reverse=True)
 
-    # إرسال الفصول الدراسية المتاحة للـ template (السنوات الفريدة)
     all_semesters = Semester.objects.all().order_by('-year', 'type')
     unique_years = sorted(set(s.year for s in all_semesters), reverse=True)
+
+    return students_data, departments, levels, all_semesters, unique_years, semester_year_param, semester_type_param
+
+
+def students_by_gpa(request):
+    """
+    صفحة كشف الطلاب حسب المعدل التراكمي (GPA)
+    تربط مباشرة بقاعدة البيانات وتوفر فلاتر البحث الحقيقي.
+    """
+    students_data, departments, levels, all_semesters, unique_years, semester_year_param, semester_type_param = _build_students_gpa_dataset(request)
 
     context = {
         'page_title': 'كشف الطلاب حسب المعدل',
@@ -10258,6 +10385,87 @@ def students_by_gpa(request):
     }
 
     return render(request, 'renewal/students_by_gpa.html', context)
+
+
+@login_required
+def export_students_gpa_excel(request):
+    """
+    تصدير حقيقي لملف Excel بتنسيق XLSX مع التنسيق الاحترافي واتجاه اليمين لليسار.
+    """
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from urllib.parse import quote
+
+    students_data, _, _, _, _, _, _ = _build_students_gpa_dataset(request)
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "كشف الطلاب حسب المعدل"
+    ws.views.sheetView[0].rightToLeft = True
+
+    header_fill = PatternFill(start_color="1E3A8A", end_color="1E3A8A", fill_type="solid")
+    header_font = Font(name="Arial", size=11, bold=True, color="FFFFFF")
+    zebra_fill = PatternFill(start_color="F8FAFC", end_color="F8FAFC", fill_type="solid")
+    align_center = Alignment(horizontal="center", vertical="center")
+    align_right = Alignment(horizontal="right", vertical="center")
+    border_thin = Border(
+        left=Side(style='thin', color='CBD5E1'),
+        right=Side(style='thin', color='CBD5E1'),
+        top=Side(style='thin', color='CBD5E1'),
+        bottom=Side(style='thin', color='CBD5E1')
+    )
+
+    headers = ["م", "الرقم الدراسي", "اسم الطالب الكامل", "القسم / التخصص", "المستوى", "الوحدات", "المعدل التراكمي", "التقدير"]
+    ws.append(headers)
+
+    for col_idx in range(1, len(headers) + 1):
+        cell = ws.cell(row=1, column=col_idx)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = align_center
+        cell.border = border_thin
+
+    ws.row_dimensions[1].height = 28
+
+    for idx, s in enumerate(students_data, 1):
+        gpa_val = float(s.get('gpa', 0) or 0)
+        row = [
+            idx,
+            str(s.get('id', '')),
+            str(s.get('name', '')),
+            str(s.get('major', '') or s.get('dept', '')),
+            str(s.get('level', '')),
+            int(s.get('hours', 0) or 0),
+            round(gpa_val, 2),
+            str(s.get('grade', ''))
+        ]
+        ws.append(row)
+        current_row = idx + 1
+        ws.row_dimensions[current_row].height = 22
+        for col_idx in range(1, len(row) + 1):
+            cell = ws.cell(row=current_row, column=col_idx)
+            cell.font = Font(name="Arial", size=10)
+            cell.alignment = align_right if col_idx in (3, 4) else align_center
+            cell.border = border_thin
+            if idx % 2 == 0:
+                cell.fill = zebra_fill
+
+    column_widths = {1: 8, 2: 18, 3: 35, 4: 25, 5: 15, 6: 12, 7: 16, 8: 15}
+    for col_idx, width in column_widths.items():
+        ws.column_dimensions[openpyxl.utils.get_column_letter(col_idx)].width = width
+
+    buffer = io.BytesIO()
+    wb.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+    filename = "كشف_الطلاب_حسب_المعدل.xlsx"
+    response['Content-Disposition'] = f"attachment; filename*=UTF-8''{quote(filename)}"
+    return response
 
 
 @login_required
@@ -11310,34 +11518,61 @@ def my_materials_report(request):
     from apps.student.models import Student
     
     search_query = request.GET.get('q', '').strip()
+    selected_student_id = request.GET.get('student_id', '').strip()
     student = None
+    matching_students = []
     
-    # 1. إذا تم البحث باستخدام رقم قيد / رقم وطني / رقم جواز / اسم
-    if search_query:
-        student = Student.objects.filter(
+    # 1. إذا تم اختيار طالب محدد بالـ ID أو رقم القيد بشكل صريح
+    if selected_student_id:
+        if selected_student_id.isdigit():
+            student = Student.objects.filter(id=int(selected_student_id)).select_related(
+                'department', 'level', 'student_status', 'nationality'
+            ).first()
+        if not student:
+            student = Student.objects.filter(student_id=selected_student_id).select_related(
+                'department', 'level', 'student_status', 'nationality'
+            ).first()
+
+    # 2. إذا تم البحث باستخدام رقم قيد / رقم وطني / اسم / رقم جواز
+    elif search_query:
+        candidates = Student.objects.filter(
             Q(student_id__icontains=search_query) |
             Q(national_id__icontains=search_query) |
             Q(passport_number__icontains=search_query) |
             Q(name__icontains=search_query) |
             Q(father_name__icontains=search_query) |
             Q(last_name__icontains=search_query)
-        ).select_related('department', 'level', 'student_status', 'nationality').first()
-        
-        if not student and search_query.isdigit():
-            student = Student.objects.filter(id=int(search_query)).select_related('department', 'level', 'student_status', 'nationality').first()
+        ).select_related('department', 'level', 'student_status', 'nationality').distinct()
+
+        candidates_count = candidates.count()
+        if candidates_count == 1:
+            student = candidates.first()
+        elif candidates_count > 1:
+            # إذا كتب المستخدم رقم قيد كامل يطابق طالباً معيناً تماماً
+            exact_match = candidates.filter(student_id__iexact=search_query).first()
+            if exact_match and len(search_query) >= 4:
+                student = exact_match
+            else:
+                # يوجد أكثر من طالب مطابق للبحث الجزئي، يتم عرض القائمة ليختار المستخدم منها
+                student = None
+                matching_students = list(candidates[:100])
+        else:
+            student = None
+
     else:
-        # 2. إذا لم يتم البحث والمستخدم طالب
+        # 3. إذا لم يتم البحث ولم يتم تحديد طالب (فتح الصفحة لأول مرة):
+        # منع جلب أي طالب افتراضي تلقائياً لمديري وموظفي النظام
         if hasattr(request.user, 'student_profile') and request.user.student_profile:
             student = request.user.student_profile
         elif hasattr(request.user, 'student') and request.user.student:
             student = request.user.student
+        elif Student.objects.filter(national_id__iexact=request.user.username).exists():
+            student = Student.objects.filter(national_id__iexact=request.user.username).select_related(
+                'department', 'level', 'student_status', 'nationality'
+            ).first()
         else:
-            student = Student.objects.filter(
-                Q(national_id__iexact=request.user.username) |
-                Q(user=request.user)
-            ).select_related('department', 'level', 'student_status', 'nationality').first()
-            if not student:
-                student = Student.objects.select_related('department', 'level', 'student_status', 'nationality').first()
+            # مدير النظام / المسجل / الموظف: تبقى الصفحة والحقول فارغة حتى يتم البحث
+            student = None
 
     # 4. جلب الفصل الدراسي النشط
     active_semester = Semester.objects.filter(is_active=True).first()
@@ -11375,6 +11610,9 @@ def my_materials_report(request):
 
     context = {
         'student': student,
+        'matching_students': matching_students,
+        'matching_count': len(matching_students),
+        'selected_student_id': selected_student_id,
         'active_semester': active_semester,
         'semester_display_name': semester_display_name,
         'registered_courses': registered_courses,
@@ -11559,12 +11797,20 @@ def get_scoped_notifications_queryset(user):
     # 3. المسجل العام وشؤون القبول والتسجيل (Registrar)
     if role in ['registrar', 'general_registrar', 'المسجل العام', 'مسجل عام', 'شؤون الطلاب', 'تسجيل']:
         return Notification.objects.filter(
-            Q(target_role__in=['registrar', 'general_registrar', 'all']) |
+            Q(target_role__in=['registrar', 'general_registrar']) |
+            (Q(target_role='all') & ~Q(notification_type__in=['registration', 'graduation', 'clearance', 'course_assignment', 'grade_recording', 'professor_grade_reply', 'grade_submission', 'grade_approval'])) |
             Q(notification_type__in=[
-                'new_student', 'hold', 'renewal', 'registration',
-                'clearance', 'graduation', 'department_change',
+                'new_student', 'hold', 'renewal', 'department_change',
                 'failed_three_times', 'file_withdrawal', 'withdrawal'
             ])
+        ).exclude(
+            Q(notification_type__in=['registration', 'graduation', 'clearance']) |
+            Q(title__icontains='تنزيل') |
+            Q(title__icontains='خريج') |
+            Q(title__icontains='إفادة') |
+            Q(title__icontains='إخلاء طرف') |
+            Q(message__icontains='تنزيل مواد') |
+            Q(message__icontains='تخرج')
         )
 
     # 3.5 قسم الخريجين (Graduation Department) - حصرياً لإخلاء طرف التخرج وإصدار الإفادات مع استبعاد سحب الملفات تماماً

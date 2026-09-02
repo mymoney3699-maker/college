@@ -113,6 +113,10 @@ async function printMyMaterialsReport() {
 <head>
 <meta charset="UTF-8">
 <title>ورقة تنزيل مواد - ${escapeHtml(studentName)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/fonts.css">
 <style>
     @page {
         size: A4 portrait;
@@ -122,6 +126,7 @@ async function printMyMaterialsReport() {
         box-sizing: border-box;
         margin: 0;
         padding: 0;
+        font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
         background: transparent !important;
         background-color: transparent !important;
         color: #000000 !important;
@@ -136,7 +141,7 @@ async function printMyMaterialsReport() {
         background: #ffffff !important;
         background-color: #ffffff !important;
         color: #000000 !important;
-        font-family: 'Cairo', 'Segoe UI', Tahoma, Arial, sans-serif;
+        font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
         direction: rtl;
         font-size: 12.5px;
         -webkit-print-color-adjust: exact !important;
@@ -433,6 +438,113 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// ============================================================
+// 🔍 البحث الفوري التفاعلي والقائمة المنسدلة للطلبة
+// ============================================================
+
+function initMaterialsSearchAutocomplete() {
+    const searchInput = document.getElementById('materialsSearchInput');
+    const resultsContainer = document.getElementById('materialsSearchResults');
+    const searchForm = document.getElementById('materialsSearchForm');
+    const resetBtn = document.getElementById('btnResetSearch');
+
+    if (!searchInput || !resultsContainer) return;
+
+    let debounceTimer = null;
+
+    // إظهار/إخفاء زر إعادة الضبط ديناميكياً
+    const updateResetButtonVisibility = () => {
+        if (resetBtn) {
+            const hasValue = searchInput.value.trim().length > 0;
+            const urlHasQ = window.location.search.includes('q=');
+            resetBtn.style.display = (hasValue || urlHasQ) ? 'inline-flex' : 'none';
+        }
+    };
+
+    // معالجة زر إعادة الضبط
+    if (resetBtn) {
+        resetBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            searchInput.value = '';
+            resultsContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            window.location.href = window.location.pathname;
+        });
+    }
+
+    searchInput.addEventListener('input', function () {
+        updateResetButtonVisibility();
+        clearTimeout(debounceTimer);
+        const query = this.value.trim();
+
+        if (query.length < 1) {
+            resultsContainer.innerHTML = '';
+            resultsContainer.style.display = 'none';
+            return;
+        }
+
+        resultsContainer.innerHTML = '<div class="autocomplete-item" style="color:#94a3b8;cursor:default;padding:10px;text-align:center;">⏳ جاري البحث...</div>';
+        resultsContainer.style.display = 'block';
+
+        debounceTimer = setTimeout(() => {
+            fetch(`/renewal/api/search-student-simple/?search=${encodeURIComponent(query)}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success && data.students && data.students.length > 0) {
+                        resultsContainer.innerHTML = data.students.map(st => `
+                            <div class="autocomplete-item" data-student-id="${escapeHtml(st.student_id)}" style="padding:10px 14px;cursor:pointer;">
+                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px;">
+                                    <strong style="font-size:0.9rem;">${escapeHtml(st.name)}</strong>
+                                    <span class="st-meta" style="font-family:monospace;font-weight:800;font-size:0.82rem;">${escapeHtml(st.student_id)}</span>
+                                </div>
+                                <div class="st-meta" style="font-size:0.75rem;display:flex;justify-content:space-between;align-items:center;margin-top:2px;">
+                                    <span>${escapeHtml(st.department_name || '-')}</span>
+                                    <span>${st.level_number ? 'المستوى ' + st.level_number : ''}</span>
+                                </div>
+                            </div>
+                        `).join('');
+                        resultsContainer.style.display = 'block';
+
+                        // تفعيل النقر لاختيار الطالب وتحميل تقريره فوراً
+                        resultsContainer.querySelectorAll('.autocomplete-item[data-student-id]').forEach(item => {
+                            item.addEventListener('click', function () {
+                                const id = this.getAttribute('data-student-id');
+                                searchInput.value = id;
+                                resultsContainer.style.display = 'none';
+                                updateResetButtonVisibility();
+                                window.location.href = `?student_id=${encodeURIComponent(id)}&q=${encodeURIComponent(id)}`;
+                            });
+                        });
+                    } else {
+                        resultsContainer.innerHTML = '<div class="autocomplete-item" style="color:#94a3b8;cursor:default;padding:10px;text-align:center;">لا توجد نتائج مطابقة</div>';
+                        resultsContainer.style.display = 'block';
+                    }
+                })
+                .catch(err => {
+                    console.error('Search error:', err);
+                    resultsContainer.innerHTML = '<div class="autocomplete-item" style="color:#e11d48;cursor:default;padding:10px;text-align:center;">❌ حدث خطأ أثناء البحث</div>';
+                    resultsContainer.style.display = 'block';
+                });
+        }, 250);
+    });
+
+    // إغلاق القائمة عند النقر في أي مكان خارجها
+    document.addEventListener('click', function (e) {
+        if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+            resultsContainer.style.display = 'none';
+        }
+    });
+
+    // إغلاق القائمة عند الضغط على مفتاح Escape
+    searchInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            resultsContainer.style.display = 'none';
+        }
+    });
+
+    updateResetButtonVisibility();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // ربط أزرار الطباعة في الصفحة
     const printBtns = document.querySelectorAll('button[onclick*="print"]');
@@ -442,6 +554,10 @@ document.addEventListener('DOMContentLoaded', () => {
             printMyMaterialsReport();
         };
     });
+
+    // تهيئة البحث التفاعلي الفوري والقائمة المنسدلة
+    initMaterialsSearchAutocomplete();
 });
 
 window.printMyMaterialsReport = printMyMaterialsReport;
+window.initMaterialsSearchAutocomplete = initMaterialsSearchAutocomplete;

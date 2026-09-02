@@ -450,17 +450,17 @@ window.ensurePrintContainerInBody = ensurePrintContainerInBody;
 // 🏛️ جلب بيانات المسؤولين والمسجل العام
 // ============================================================
 
-let cachedRegistrarName = '';
+let cachedRegistrarName = 'أ. أحمد محمد علي محمود';
+let cachedAdmissionName = 'أ. أميرة الشلادي';
 
 async function fetchActiveOfficials() {
-    if (cachedRegistrarName) return cachedRegistrarName;
     try {
-        if (window.OfficialsHelper && typeof window.OfficialsHelper.getOfficial === 'function') {
-            const off = window.OfficialsHelper.getOfficial('general_registrar');
-            if (off && off.name) {
-                cachedRegistrarName = ((off.title ? off.title + ' ' : '') + off.name).trim();
-                return cachedRegistrarName;
-            }
+        if (window.OfficialsHelper) {
+            const regOff = await window.OfficialsHelper.getOfficialAsync('registrar');
+            if (regOff) cachedRegistrarName = window.OfficialsHelper.buildName(regOff);
+            const admOff = await window.OfficialsHelper.getOfficialAsync('admission');
+            if (admOff) cachedAdmissionName = window.OfficialsHelper.buildName(admOff);
+            return;
         }
         const res = await fetch('/users/api/officials/');
         if (res.ok) {
@@ -472,19 +472,27 @@ async function fetchActiveOfficials() {
                 ));
                 if (reg) {
                     cachedRegistrarName = `${(reg.title || 'أ.').trim()} ${(reg.name || '').trim()}`.trim();
-                    return cachedRegistrarName;
+                }
+                const adm = data.officials.find(o => o.status === 'active' && (
+                    (o.position && (o.position.includes('تسجيل') || o.position.includes('قبول'))) ||
+                    o.role === 'admission'
+                ));
+                if (adm) {
+                    cachedAdmissionName = `${(adm.title || 'أ.').trim()} ${(adm.name || '').trim()}`.trim();
                 }
             }
         }
     } catch (e) {
         console.warn('Could not fetch officials from API:', e);
     }
-    cachedRegistrarName = 'أ. أحمد محمد علي محمود';
-    return cachedRegistrarName;
 }
 
 function fillRegistrarName() {
     return cachedRegistrarName || 'أ. أحمد محمد علي محمود';
+}
+
+function fillAdmissionName() {
+    return cachedAdmissionName || 'أ. أميرة الشلادي';
 }
 
 // ============================================================
@@ -496,6 +504,7 @@ async function printPage() {
 
     await fetchActiveOfficials();
     const registrarName = fillRegistrarName();
+    const admissionName = fillAdmissionName();
 
     // ── جمع بيانات الفلاتر ──────────────────────────────────
     const departmentSelect = document.getElementById('majorSelect');
@@ -547,11 +556,10 @@ async function printPage() {
                     <td style="padding: 6px 10px; border: 1px solid #000; text-align: right; font-weight: 800; font-size: 12.5px;">${escapeHtml(name)}</td>
                     <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-weight: 700;">${escapeHtml(currentLvl)}</td>
                     <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-weight: 800;">${escapeHtml(targetLvl)}</td>
-                    <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-weight: 700;">${escapeHtml(departmentName)}</td>
                 </tr>`;
         }).join('');
     } else {
-        rowsHtml = `<tr><td colspan="6" style="padding: 24px; text-align: center; font-weight: 800; font-size: 13px; border: 1px solid #000;">لا يوجد طلاب مجدد قيدهم في هذا الفصل للطباعة</td></tr>`;
+        rowsHtml = `<tr><td colspan="5" style="padding: 24px; text-align: center; font-weight: 800; font-size: 13px; border: 1px solid #000;">لا يوجد طلاب مجدد قيدهم في هذا الفصل للطباعة</td></tr>`;
     }
 
     const printHtml = `<!DOCTYPE html>
@@ -573,7 +581,7 @@ async function printPage() {
     }
     html, body {
         width: 100%;
-        height: 100%;
+        height: auto;
         margin: 0;
         padding: 0;
         background: #ffffff !important;
@@ -584,15 +592,13 @@ async function printPage() {
     }
     .print-page-frame {
         width: 100%;
-        min-height: 275mm;
+        min-height: auto;
         margin: 0 auto;
-        padding: 22px 28px;
+        padding: 20px 24px;
         border: 2px solid #000000;
         background: #ffffff;
         box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: block;
     }
     .bf-header {
         text-align: center;
@@ -624,29 +630,43 @@ async function printPage() {
         display: block;
     }
     .bf-title {
-        font-size: 20px;
+        font-size: 17px;
         font-weight: 900;
-        margin: 6px 0;
+        margin: 4px 0 10px;
         text-align: center;
         color: #000000;
     }
-    .report-meta-grid {
+    .report-meta-box {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin: 10px 0 14px 0;
-        font-size: 12.5px;
-        font-weight: 700;
+        margin: 8px 0 14px 0;
+        padding: 8px 14px;
+        border: 1.5px solid #000000;
         background: #ffffff;
+        font-size: 12px;
+        direction: rtl;
+    }
+    .meta-col-right, .meta-col-left {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+    }
+    .meta-col-right {
+        text-align: right;
+    }
+    .meta-col-left {
+        text-align: left;
+        direction: rtl;
     }
     .meta-item {
         display: flex;
         align-items: center;
-        gap: 4px;
+        gap: 6px;
     }
     .meta-lbl {
         font-weight: 700;
-        color: #000;
+        color: #222;
     }
     .meta-val {
         font-weight: 900;
@@ -674,9 +694,12 @@ async function printPage() {
     }
     .bf-signatures-container {
         display: flex !important;
-        justify-content: flex-end !important;
-        margin-top: 25px !important;
-        padding-left: 10px !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
+        margin-top: 35px !important;
+        padding: 0 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         -webkit-column-break-inside: avoid !important;
@@ -710,8 +733,8 @@ async function printPage() {
     }
     @media print {
         @page { size: A4 portrait; margin: 4mm; }
-        html, body { width: 100%; height: 100%; }
-        .print-page-frame { min-height: 275mm; border: 2px solid #000000; }
+        html, body { width: 100%; height: auto; }
+        .print-page-frame { min-height: auto; border: 2px solid #000000; }
         .bf-signatures-container,
         .bf-sig-col {
             page-break-inside: avoid !important;
@@ -723,79 +746,81 @@ async function printPage() {
 </head>
 <body>
     <div class="print-page-frame">
-        <div>
-            <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
-            <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
-                <!-- اليمين: العربية -->
-                <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
-                    <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
-                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
-                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
-                    <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
-                </div>
-
-                <!-- الوسط: الشعار الدائري -->
-                <div class="print-header-logo-box" style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
-                    <img class="bf-logo" src="${logoUrl}" alt="شعار الكلية" style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null; this.style.display='none';">
-                </div>
-
-                <!-- اليسار: الإنجليزية -->
-                <div class="print-header-en" style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
-                    <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
-                    <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
-                    <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
-                    <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
-                    <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND TECHNOLOGY</div>
-                </div>
+        <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
             </div>
 
-            <div class="print-header-line" style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
-            <div class="bf-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">تقرير تجديد القيد</div>
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box" style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img class="bf-logo" src="${logoUrl}" alt="شعار الكلية" style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null; this.style.display='none';">
+            </div>
 
-            <!-- شبكة بيانات التقرير والتخصص -->
-            <div class="report-meta-grid">
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en" style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div class="print-header-line" style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="bf-title">تقرير تجديد القيد</div>
+
+        <!-- 2. شبكة بيانات التقرير (اثنين يمين واثنين يسار وبدون المستوى من فوق) -->
+        <div class="report-meta-box">
+            <div class="meta-col-right">
                 <div class="meta-item">
                     <span class="meta-lbl">القسم / التخصص:</span>
                     <span class="meta-val">${escapeHtml(departmentName)}</span>
                 </div>
                 <div class="meta-item">
-                    <span class="meta-lbl">المستوى:</span>
-                    <span class="meta-val">${escapeHtml(levelName)}</span>
-                </div>
-                <div class="meta-item">
                     <span class="meta-lbl">الفصل الدراسي:</span>
                     <span class="meta-val">${escapeHtml(semesterFormatted)}</span>
                 </div>
+            </div>
+            <div class="meta-col-left">
                 <div class="meta-item">
                     <span class="meta-lbl">عدد الطلاب:</span>
-                    <span class="meta-val">${studentCount}</span>
+                    <span class="meta-val">${studentCount} طالب</span>
                 </div>
                 <div class="meta-item">
                     <span class="meta-lbl">التاريخ:</span>
                     <span class="meta-val">${dateStr}</span>
                 </div>
             </div>
-
-            <!-- جدول الطلاب -->
-            <table class="students-table">
-                <thead>
-                    <tr>
-                        <th style="width: 5%;">م</th>
-                        <th style="width: 17%;">رقم القيد</th>
-                        <th style="width: 27%;">اسم الطالب</th>
-                        <th style="width: 18%;">المستوى الحالي</th>
-                        <th style="width: 18%;">المستوى المنتقل إليه</th>
-                        <th style="width: 15%;">التخصص</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${rowsHtml}
-                </tbody>
-            </table>
         </div>
 
-        <!-- اعتماد التوقيع والختم في أقصى اليسار -->
+        <!-- 3. جدول الطلاب (بدون عمود التخصص لترك مساحة كافية للأسماء والمستويات) -->
+        <table class="students-table">
+            <thead>
+                <tr>
+                    <th style="width: 6%;">م</th>
+                    <th style="width: 20%;">رقم القيد</th>
+                    <th style="width: 38%;">اسم الطالب</th>
+                    <th style="width: 18%;">المستوى الحالي</th>
+                    <th style="width: 18%;">المستوى المنتقل إليه</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${rowsHtml}
+            </tbody>
+        </table>
+
+        <!-- 4. اعتماد التوقيع والختم: مرن ينزل مباشرة تحت الجدول -->
         <div class="bf-signatures-container">
+            <div class="bf-sig-col">
+                <div class="off-name">${escapeHtml(admissionName)}</div>
+                <div class="off-pos">رئيس قسم التسجيل والقبول</div>
+                <div class="off-sig">التوقيع والختم: ....................................</div>
+            </div>
             <div class="bf-sig-col">
                 <div class="off-name">${escapeHtml(registrarName)}</div>
                 <div class="off-pos">المسجل العام بالكلية</div>
@@ -851,6 +876,7 @@ async function printSingleStudentRenew(studentId) {
 
     await fetchActiveOfficials();
     const registrarName = fillRegistrarName();
+    const admissionName = fillAdmissionName();
 
     let student = (window.loadedStudentsMap && window.loadedStudentsMap[studentId]) ? window.loadedStudentsMap[studentId] : null;
 
@@ -1005,9 +1031,10 @@ async function printSingleStudentRenew(studentId) {
     }
     .bf-signatures-container {
         display: flex !important;
-        justify-content: flex-end !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
         margin-top: 25px !important;
-        padding-left: 10px !important;
+        padding: 0 10px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         -webkit-column-break-inside: avoid !important;
@@ -1121,8 +1148,13 @@ async function printSingleStudentRenew(studentId) {
             </div>
         </div>
 
-        <!-- اعتماد التوقيع والختم في أقصى اليسار -->
+        <!-- اعتماد التوقيع والختم: رئيس قسم التسجيل والقبول يميناً، المسجل العام يساراً -->
         <div class="bf-signatures-container">
+            <div class="bf-sig-col">
+                <div class="off-name">${escapeHtml(admissionName)}</div>
+                <div class="off-pos">رئيس قسم التسجيل والقبول</div>
+                <div class="off-sig">التوقيع والختم: ....................................</div>
+            </div>
             <div class="bf-sig-col">
                 <div class="off-name">${escapeHtml(registrarName)}</div>
                 <div class="off-pos">المسجل العام بالكلية</div>

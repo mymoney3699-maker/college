@@ -16944,6 +16944,10 @@ a.btn-primary {
    الترويسة الرسمية الموحدة ثنائية اللغة لجميع تقارير ونماذج الطباعة (Global Print Header)
    ========================================================================== */
 @media print {
+    *, html, body, .print-page-frame, .print-table, table, .print-info-grid {
+        font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
+    }
+
     .print-header-section {
         display: flex !important;
         justify-content: space-between !important;

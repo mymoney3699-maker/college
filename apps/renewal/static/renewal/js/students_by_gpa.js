@@ -493,7 +493,7 @@ function printReportDirect() {
 }
 
 // ============================================================
-// REAL PDF EXPORT (DOWNLOADABLE .PDF FILE)
+// REAL PDF EXPORT (DOWNLOADABLE .PDF FILE / VECTOR PRINT)
 // ============================================================
 function exportPDFDirect() {
     const data = filteredData.length > 0 ? filteredData : currentData;
@@ -502,121 +502,31 @@ function exportPDFDirect() {
         return;
     }
 
-    showToast('🔄 جاري توليد وتصدير ملف PDF...', 'info');
-
-    const today = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: 'long', day: 'numeric' });
-    const dateStr = new Date().toISOString().split('T')[0];
-
-    const pdfContainer = document.createElement('div');
-    pdfContainer.style.padding = '20px';
-    pdfContainer.style.fontFamily = "'Cairo', sans-serif";
-    pdfContainer.style.direction = 'rtl';
-    pdfContainer.style.color = '#1e293b';
-    pdfContainer.style.background = '#ffffff';
-
-    let rowsHtml = '';
-    data.forEach((s, idx) => {
-        const rank = idx + 1;
-        const gpaVal = Number(s.gpa) || 0;
-        rowsHtml += `
-            <tr style="border-bottom: 1px solid #e2e8f0; text-align: center;">
-                <td style="padding: 8px; border: 1px solid #cbd5e1;">${rank}</td>
-                <td style="padding: 8px; border: 1px solid #cbd5e1;">${s.id}</td>
-                <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">${s.name}</td>
-                <td style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #307e92;">${gpaVal.toFixed(2)}</td>
-                <td style="padding: 8px; border: 1px solid #cbd5e1;">${s.grade || '—'}</td>
-            </tr>
-        `;
-    });
-
-    pdfContainer.innerHTML = `
-        <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #307e92; padding-bottom: 10px;">
-            <h2 style="margin: 0; color: #307e92; font-size: 18px; font-weight: 900;">كلية طرابلس للعلوم والتقنية</h2>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">وزارة التعليم التقني والفني · دولة ليبيا</div>
-            <h3 style="margin: 8px 0 0 0; color: #1e293b; font-size: 15px; font-weight: 800;">كشف ترتيب الطلاب حسب المعدل التراكمي</h3>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; font-size: 11px; color: #475569; margin-bottom: 12px; background: #f8fafc; padding: 8px 12px; border-radius: 6px;">
-            <div><strong>التاريخ:</strong> ${today}</div>
-            <div><strong>إجمالي الطلاب:</strong> ${data.length}</div>
-        </div>
-
-        <table style="width: 100%; border-collapse: collapse; font-size: 11px;">
-            <thead>
-                <tr style="background: #307e92; color: #ffffff;">
-                    <th style="padding: 8px; border: 1px solid #246374;">#</th>
-                    <th style="padding: 8px; border: 1px solid #246374;">الرقم الدراسي</th>
-                    <th style="padding: 8px; border: 1px solid #246374;">اسم الطالب</th>
-                    <th style="padding: 8px; border: 1px solid #246374;">المعدل</th>
-                    <th style="padding: 8px; border: 1px solid #246374;">التقدير</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${rowsHtml}
-            </tbody>
-        </table>
-
-        <div style="margin-top: 16px; text-align: center; font-size: 10px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-            هذا المستند صادر رسمياً من المنظومة الإلكترونية لكلية طرابلس للعلوم والتقنية
-        </div>
-    `;
-
-    if (typeof html2pdf !== 'undefined') {
-        const opt = {
-            margin: 10,
-            filename: `كشف_الطلاب_حسب_المعدل_${dateStr}.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        html2pdf().set(opt).from(pdfContainer).save().then(() => {
-            showToast('✅ تم تحميل ملف PDF بنجاح', 'success');
-        }).catch(err => {
-            console.error(err);
-            showToast('⚠️ حدث خطأ أثناء التصدير، جاري فتح الطباعة المباشرة', 'info');
-            printReportDirect();
-        });
-    } else {
-        printReportDirect();
-    }
+    showToast('📄 جاري تجهيز وفتح نافذة تصدير PDF المعتمدة...', 'info');
+    printReportDirect();
 }
 
 // ============================================================
-// EXPORT EXCEL (REAL .CSV DOWNLOAD WITH UTF-8 BOM)
+// EXPORT EXCEL (REAL .XLSX DOWNLOAD FROM BACKEND OPENPYXL)
 // ============================================================
 function exportExcel() {
-    const data = filteredData.length > 0 ? filteredData : currentData;
-    if (data.length === 0) {
-        showToast('لا توجد بيانات لتصديرها كـ Excel', 'error');
-        return;
-    }
+    const deptEl = document.getElementById('filterDepartment');
+    const levelEl = document.getElementById('filterLevel');
+    const yearEl = document.getElementById('filterYear');
+    const semEl = document.getElementById('filterSemester');
+    const typeEl = document.getElementById('filterType');
+    const searchEl = document.getElementById('tableSearch');
 
-    let csvContent = "\uFEFF";
-    csvContent += "الترتيب,الرقم الدراسي,اسم الطالب,المعدل,التقدير\n";
+    const params = new URLSearchParams();
+    if (deptEl && deptEl.value && deptEl.value !== 'all') params.append('department', deptEl.value);
+    if (levelEl && levelEl.value && levelEl.value !== 'all') params.append('level', levelEl.value);
+    if (yearEl && yearEl.value && yearEl.value !== 'all') params.append('year', yearEl.value);
+    if (semEl && semEl.value && semEl.value !== 'all') params.append('semester', semEl.value);
+    if (typeEl && typeEl.value && typeEl.value !== 'all') params.append('type', typeEl.value);
+    if (searchEl && searchEl.value.trim()) params.append('search', searchEl.value.trim());
 
-    data.forEach((s, idx) => {
-        const gpaVal = Number(s.gpa) || 0;
-        const row = [
-            idx + 1,
-            `"${s.id}"`,
-            `"${s.name}"`,
-            gpaVal.toFixed(2),
-            `"${s.grade || ''}"`
-        ];
-        csvContent += row.join(",") + "\n";
-    });
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const dateStr = new Date().toISOString().split('T')[0];
-    link.setAttribute("href", url);
-    link.setAttribute("download", `كشف_الطلاب_حسب_المعدل_${dateStr}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-
-    showToast('✅ تم تصدير ملف Excel بنجاح', 'success');
+    showToast('📊 جاري توليد ملف Excel حقيقي بصيغة XLSX...', 'info');
+    window.location.href = `/renewal/export-students-gpa-excel/?${params.toString()}`;
 }
 
 // ============================================================

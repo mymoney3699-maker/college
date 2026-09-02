@@ -277,9 +277,18 @@ async function printEquivalenceReport() {
         return;
     }
 
-    const regName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
-    const admName = window.OFFICIAL_ADMISSION_HEAD || 'أ. محمد علي عمر';
-    const examsName = window.OFFICIAL_EXAMS_HEAD || '....................................';
+    let regName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
+    let admName = window.OFFICIAL_ADMISSION_HEAD || 'أ. أميرة الشلادي';
+    let examsName = window.OFFICIAL_EXAMS_HEAD || 'أ. لبنى';
+
+    if (window.OfficialsHelper) {
+        const regOff = await window.OfficialsHelper.getOfficialAsync('registrar');
+        if (regOff) regName = window.OfficialsHelper.buildName(regOff);
+        const admOff = await window.OfficialsHelper.getOfficialAsync('admission');
+        if (admOff) admName = window.OfficialsHelper.buildName(admOff);
+        const coordOff = await window.OfficialsHelper.getOfficialAsync('exams_coordinator');
+        if (coordOff) examsName = window.OfficialsHelper.buildName(coordOff);
+    }
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -554,19 +563,19 @@ async function printEquivalenceReport() {
         <div>
             <div class="signatures-row">
                 <div class="sig-box">
-                    <div class="sig-title">رئيس قسم التسجيل والقبول</div>
                     <div class="sig-name">${escapeHtml(admName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">رئيس قسم التسجيل والقبول</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
                 <div class="sig-box">
-                    <div class="sig-title">الشؤون العلمية والدراسة والامتحانات</div>
                     <div class="sig-name">${escapeHtml(examsName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">منسق الدراسة والامتحانات</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
                 <div class="sig-box">
-                    <div class="sig-title">المسجل العام بالكلية</div>
                     <div class="sig-name">${escapeHtml(regName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">المسجل العام بالكلية</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
             </div>
 

@@ -3,9 +3,7 @@
 // كلية طرابلس للعلوم والتقنية
 // ============================================================
 
-console.log('✅ plans_display.js v2.0.0 loaded successfully');
-
-let cachedRegistrarName = '';
+console.log('✅ plans_display.js v2.1.1 loaded successfully');
 
 function escapeHtml(text) {
     if (!text) return '';
@@ -22,31 +20,31 @@ function escapeHtml(text) {
 
 // ─────────────────────────────────────────────────────────────
 // ─────────────────────────────────────────────────────────────
-// 🏛️ جلب بيانات المسؤولين ومنسق الدراسة والامتحانات
+// 🏛️ جلب بيانات المسؤولين: المسجل العام بالكلية
 // ─────────────────────────────────────────────────────────────
-let cachedCoordinatorName = '';
-let cachedCoordinatorTitle = 'منسقة دراسة والامتحانات';
+let cachedRegistrarName = '';
+let cachedRegistrarTitle = 'المسجل العام بالكلية';
 
 async function fetchActiveOfficials() {
-    if (cachedCoordinatorName) return cachedCoordinatorName;
+    if (cachedRegistrarName) return cachedRegistrarName;
     try {
         if (window.OfficialsHelper) {
-            const off = await window.OfficialsHelper.getOfficialAsync('exams_coordinator');
+            const off = await window.OfficialsHelper.getOfficialAsync('general_registrar');
             if (off) {
-                cachedCoordinatorName = window.OfficialsHelper.buildName(off);
-                if (off.position) cachedCoordinatorTitle = off.position;
-                return cachedCoordinatorName;
+                cachedRegistrarName = window.OfficialsHelper.buildName(off);
+                if (off.position) cachedRegistrarTitle = off.position;
+                return cachedRegistrarName;
             }
         }
     } catch (e) {
         console.warn('Could not fetch officials from API:', e);
     }
-    cachedCoordinatorName = 'أ. أبرار';
-    return cachedCoordinatorName;
+    cachedRegistrarName = 'أ. أحمد محمد علي محمود';
+    return cachedRegistrarName;
 }
 
 function fillRegistrarName() {
-    return cachedCoordinatorName || 'أ. أبرار';
+    return cachedRegistrarName || 'أ. أحمد محمد علي محمود';
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -161,7 +159,7 @@ async function printStudyPlanReport() {
     }
     html, body {
         width: 100%;
-        height: 100%;
+        height: auto;
         margin: 0;
         padding: 0;
         background: #ffffff !important;
@@ -172,15 +170,13 @@ async function printStudyPlanReport() {
     }
     .print-page-frame {
         width: 100%;
-        min-height: 275mm;
+        min-height: auto;
         margin: 0 auto;
         padding: 22px 28px;
         border: 2px solid #000000;
         background: #ffffff;
         box-sizing: border-box;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
+        display: block;
     }
     .bf-header {
         text-align: center;
@@ -243,8 +239,10 @@ async function printStudyPlanReport() {
     .bf-signatures-container {
         display: flex !important;
         justify-content: flex-end !important;
-        margin-top: 25px !important;
+        margin-top: 35px !important;
         padding-left: 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
         -webkit-column-break-inside: avoid !important;
@@ -278,8 +276,8 @@ async function printStudyPlanReport() {
     }
     @media print {
         @page { size: A4 portrait; margin: 4mm; }
-        html, body { width: 100%; height: 100%; }
-        .print-page-frame { min-height: 275mm; border: 2px solid #000000; }
+        html, body { width: 100%; height: auto; }
+        .print-page-frame { min-height: auto; border: 2px solid #000000; }
         .bf-signatures-container,
         .bf-sig-col {
             page-break-inside: avoid !important;
@@ -291,62 +289,60 @@ async function printStudyPlanReport() {
 </head>
 <body>
     <div class="print-page-frame">
-        <div>
-            <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
-            <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
-                <!-- اليمين: العربية -->
-                <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
-                    <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
-                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
-                    <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
-                    <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
-                </div>
-
-                <!-- الوسط: الشعار الدائري -->
-                <div class="print-header-logo-box" style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
-                    <img class="bf-logo" src="${logoUrl}" alt="شعار الكلية" style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null; this.style.display='none';">
-                </div>
-
-                <!-- اليسار: الإنجليزية -->
-                <div class="print-header-en" style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
-                    <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
-                    <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
-                    <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
-                    <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
-                    <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND TECHNOLOGY</div>
-                </div>
+        <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
+        <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
             </div>
 
-            <div class="print-header-line" style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
-            <div class="bf-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">الخطة الدراسية الأكاديمية المعتمدة</div>
-
-            <!-- شبكة بيانات الخطة والتخصص -->
-            <div class="plan-meta-grid">
-                <div class="meta-item">
-                    <span class="meta-lbl">الخطة الدراسية:</span>
-                    <span class="meta-val">${escapeHtml(planName)}</span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-lbl">القسم / التخصص:</span>
-                    <span class="meta-val">${escapeHtml(deptName)}</span>
-                </div>
-                <div class="meta-item">
-                    <span class="meta-lbl">تاريخ الطباعة:</span>
-                    <span class="meta-val">${dateStr}</span>
-                </div>
+            <!-- الوسط: الشعار الدائري -->
+            <div class="print-header-logo-box" style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img class="bf-logo" src="${logoUrl}" alt="شعار الكلية" style="max-height:75px;max-width:75px;width:auto;object-fit:contain;display:block;margin:0 auto;" onerror="this.onerror=null; this.style.display='none';">
             </div>
 
-            <!-- جداول المستويات والمواد الدراسية -->
-            <div>
-                ${levelsContentHtml}
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en" style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND TECHNOLOGY</div>
             </div>
         </div>
 
-        <!-- اعتماد التوقيع والختم في أقصى اليسار -->
+        <div class="print-header-line" style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="bf-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">الخطة الدراسية الأكاديمية المعتمدة</div>
+
+        <!-- شبكة بيانات الخطة والتخصص -->
+        <div class="plan-meta-grid">
+            <div class="meta-item">
+                <span class="meta-lbl">الخطة الدراسية:</span>
+                <span class="meta-val">${escapeHtml(planName)}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-lbl">القسم / التخصص:</span>
+                <span class="meta-val">${escapeHtml(deptName)}</span>
+            </div>
+            <div class="meta-item">
+                <span class="meta-lbl">تاريخ الطباعة:</span>
+                <span class="meta-val">${dateStr}</span>
+            </div>
+        </div>
+
+        <!-- جداول المستويات والمواد الدراسية -->
+        <div>
+            ${levelsContentHtml}
+        </div>
+
+        <!-- اعتماد التوقيع والختم في أقصى اليسار: المسجل العام بالكلية -->
         <div class="bf-signatures-container">
             <div class="bf-sig-col">
                 <div class="off-name">${escapeHtml(registrarName)}</div>
-                <div class="off-pos">منسق الدراسة والامتحانات</div>
+                <div class="off-pos">${escapeHtml(cachedRegistrarTitle || 'المسجل العام بالكلية')}</div>
                 <div class="off-sig">التوقيع والختم: ....................................</div>
             </div>
         </div>

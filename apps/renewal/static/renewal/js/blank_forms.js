@@ -373,10 +373,10 @@ function printBlankForm(formType) {
                     </div>
                 </div>
 
-                <div style="margin-top: 30px; text-align: center;" data-official="general_registrar">
-                    <div class="off-name" style="font-size: 14px; font-weight: 900; min-height: 1.4em; margin-bottom: 6px;"></div>
-                    <div style="font-size: 14px; font-weight: 900; margin-bottom: 14px;">اعتماد لجنة الطعون والمسجل العام </div>
-                    <div style="font-size: 13px; font-weight: 900;">التوقيع والختم الرسمي: ....................................</div>
+                <div style="margin-top: 32px; text-align: center;" data-official="general_registrar">
+                    <div class="off-name" style="font-size: 14.5px; font-weight: 900; min-height: 1.5em; margin-bottom: 8px;"></div>
+                    <div style="font-size: 14px; font-weight: 900; margin-bottom: 42px;">اعتماد لجنة الطعون والمسجل العام</div>
+                    <div style="font-size: 13.5px; font-weight: 900; letter-spacing: 0.5px;">التوقيع والختم الرسمي: ....................................</div>
                 </div>
             </div>`;
             break;

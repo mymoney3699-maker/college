@@ -92,10 +92,114 @@ html.dark .val-success {
     color: #34d399 !important;
 }
 
+/* 🔘 زر إعادة الضبط */
+.btn-report-reset {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.6rem 1.1rem;
+    font-size: 0.88rem;
+    font-weight: 700;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.btn-report-reset:hover {
+    background-color: #e2e8f0;
+    color: #1e293b;
+    border-color: #94a3b8;
+}
+
+/* 📋 القائمة المنسدلة للبحث الفوري */
+.autocomplete-dropdown {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+    max-height: 280px;
+    overflow-y: auto;
+    z-index: 1050;
+}
+
+.autocomplete-item {
+    padding: 10px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s ease;
+    text-align: right;
+    direction: rtl;
+}
+
+.autocomplete-item:last-child {
+    border-bottom: none;
+}
+
+.autocomplete-item:hover {
+    background-color: #f8fafc;
+}
+
+.autocomplete-item strong {
+    color: #0f172a;
+}
+
+.autocomplete-item .st-meta {
+    color: #64748b;
+}
+
+/* 🌙 Dark Mode Styles - القضاء التام على اللون الأبيض في الوضع الداكن */
+html.dark #materialsSearchInput,
 html.dark input[name="q"] {
     background-color: #0f172a !important;
     border-color: #334155 !important;
     color: #f8fafc !important;
+}
+
+html.dark #materialsSearchInput:focus {
+    border-color: #38bdf8 !important;
+    box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2) !important;
+}
+
+html.dark .btn-report-reset {
+    background-color: #1e293b !important;
+    color: #e2e8f0 !important;
+    border: 1.5px solid #475569 !important;
+}
+
+html.dark .btn-report-reset:hover {
+    background-color: #334155 !important;
+    color: #ffffff !important;
+    border-color: #64748b !important;
+}
+
+html.dark .autocomplete-dropdown {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.5) !important;
+}
+
+html.dark .autocomplete-item {
+    border-bottom-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .autocomplete-item:hover {
+    background-color: #334155 !important;
+}
+
+html.dark .autocomplete-item strong {
+    color: #38bdf8 !important;
+}
+
+html.dark .autocomplete-item .st-meta {
+    color: #94a3b8 !important;
 }
 
 html.dark .field-label {
@@ -135,6 +239,54 @@ html.dark .report-summary-bar {
 html.dark .report-summary-bar span {
     color: #f8fafc !important;
 }
+
+/* 🌙 جدول نتائج البحث الجزئي للطلاب في الوضع الداكن */
+html.dark .matching-students-table {
+    border-color: #334155 !important;
+}
+
+html.dark .matching-students-table th {
+    background-color: #0f172a !important;
+    color: #f8fafc !important;
+    border-color: #334155 !important;
+}
+
+html.dark .matching-students-table td {
+    color: #f8fafc !important;
+    background-color: #1e293b !important;
+    border-bottom-color: #334155 !important;
+}
+
+html.dark .matching-students-table tr:hover td {
+    background-color: #273549 !important;
+}
+
+html.dark .btn-select-student {
+    background-color: #0f766e !important;
+    color: #ffffff !important;
+}
+
+html.dark .btn-select-student:hover {
+    background-color: #14b8a6 !important;
+}
+
+html.dark .empty-search-box {
+    background-color: #0f172a !important;
+    border-color: #334155 !important;
+    color: #f8fafc !important;
+}
+
+html.dark .empty-search-badge {
+    background-color: #1e293b !important;
+    border-color: #334155 !important;
+    color: #cbd5e1 !important;
+}
+
+html.dark .badge-match-count {
+    background-color: #0f172a !important;
+    color: #38bdf8 !important;
+    border: 1px solid #334155 !important;
+}
 </style>
 {% endblock %}
 
@@ -155,14 +307,18 @@ html.dark .report-summary-bar span {
             <span class="group-title">البحث واستدعاء بيانات الطالبة</span>
             
             <form method="GET" action="{% url 'renewal:my_materials_report' %}" id="materialsSearchForm" style="display: flex; gap: 0.75rem; align-items: flex-end; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 280px;">
+                <div style="flex: 1; min-width: 280px; position: relative;">
                     <label for="materialsSearchInput" class="field-label" style="font-weight: 800; font-size: 0.85rem; margin-bottom: 0.35rem; display: block;">
                         🔍 رقم القيد / الرقم الوطني / الاسم:
                     </label>
-                    <input type="text" id="materialsSearchInput" name="q" value="{{ search_query }}" 
-                           placeholder="أدخل رقم القيد (مثل: 261001) أو الرقم الوطني أو اسم الطالبة..." 
-                           autocomplete="off"
-                           style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.95rem; font-weight: 700;">
+                    <div style="position: relative; width: 100%;">
+                        <input type="text" id="materialsSearchInput" name="q" value="{{ search_query }}" 
+                               placeholder="أدخل رقم القيد (مثل: 261001) أو الرقم الوطني أو اسم الطالبة..." 
+                               autocomplete="off"
+                               style="width: 100%; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 0.6rem 0.85rem; font-size: 0.95rem; font-weight: 700;">
+                        <!-- القائمة المنسدلة للبحث الفوري -->
+                        <div id="materialsSearchResults" class="autocomplete-dropdown hidden" style="display: none;"></div>
+                    </div>
                 </div>
                 
                 <div style="display: flex; gap: 0.6rem; align-items: center;">
@@ -171,12 +327,11 @@ html.dark .report-summary-bar span {
                         <span>بحث</span>
                     </button>
 
-                    {% if search_query %}
-                    <a href="{% url 'renewal:my_materials_report' %}" class="btn-action" style="padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 700; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.3rem; background: #e2e8f0; color: #475569; text-decoration: none;" title="مسح وإعادة ضبط">
+                    <!-- زر إعادة الضبط / المسح - بدون أي خلفية بيضاء في الوضع الداكن -->
+                    <a href="{% url 'renewal:my_materials_report' %}" id="btnResetSearch" class="btn-action btn-report-reset" title="مسح وإعادة ضبط" {% if not search_query %}style="display: none;"{% endif %}>
                         <span class="material-symbols-outlined" style="font-size: 18px;">restart_alt</span>
                         <span>إعادة ضبط</span>
                     </a>
-                    {% endif %}
 
                     {% if student %}
                     <!-- زر الطباعة التفاعلي الرسمي -->
@@ -287,18 +442,97 @@ html.dark .report-summary-bar span {
                 </div>
             </div>
 
-            {% else %}
-            <div class="group-box" style="text-align: center; padding: 4rem 1rem; color: #64748b;">
-                <span class="material-symbols-outlined" style="font-size: 3.5rem; color: #cbd5e1; margin-bottom: 1rem; display: block;">person_search</span>
-                <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a;">لم يتم العثور على سجل الطالبة</h3>
-                {% if search_query %}
-                <p style="font-size: 0.95rem; margin-top: 0.4rem; font-weight: 700; color: #ef4444;">
-                    لا توجد أي طالبة مطابقة للبحث: <span style="font-family: monospace; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">{{ search_query }}</span>
+            {% elif matching_students %}
+            <!-- ===== جدول نتائج البحث الجزئي (عند وجود أكثر من طالب) ===== -->
+            <div class="group-box" style="margin-bottom: 1.5rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <span class="group-title" style="margin-bottom: 0;">نتائج البحث عن: "{{ search_query }}"</span>
+                    <span class="badge-match-count" style="font-size: 0.88rem; font-weight: 800; color: #0f766e; background: #ccfbf1; padding: 4px 14px; border-radius: 20px; border: 1px solid #99f6e4;">
+                        تم العثور على {{ matching_count }} طالب/ـة مطابق/ـة
+                    </span>
+                </div>
+
+                <p style="font-size: 0.88rem; color: #64748b; font-weight: 700; margin-bottom: 0.85rem;">
+                    💡 يُرجى اختيار الطالب المطلوب من الجدول التالي لاستعراض تقرير مواده المسجلة:
                 </p>
-                <p style="font-size: 0.85rem; margin-top: 0.25rem; color: #64748b;">يرجى التأكد من كتابة رقم القيد أو الرقم الوطني بشكل صحيح.</p>
-                {% else %}
-                <p style="font-size: 0.9rem; margin-top: 0.25rem;">يرجى استخدام شريط البحث أعلاه لإدخال رقم القيد أو الرقم الوطني المطلوب.</p>
-                {% endif %}
+
+                <div style="overflow-x: auto;">
+                    <table class="matching-students-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #cbd5e1; border-radius: 8px; overflow: hidden;">
+                        <thead>
+                            <tr style="background-color: #307e92; color: #ffffff;">
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: center; width: 45px;">#</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: center; width: 120px;">رقم القيد</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: right;">اسم الطالب الكامل</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: center; width: 140px;">الرقم الوطني / الهوية</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: right;">القسم العلمي / التخصص</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: center; width: 90px;">المستوى</th>
+                                <th style="padding: 0.75rem 0.8rem; font-weight: 800; text-align: center; width: 150px;">الإجراء</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for st in matching_students %}
+                            <tr class="report-table-row" style="border-bottom: 1px solid #e2e8f0; transition: background 0.15s ease;">
+                                <td style="padding: 0.7rem 0.8rem; text-align: center; font-weight: 800;">{{ forloop.counter }}</td>
+                                <td style="padding: 0.7rem 0.8rem; text-align: center; font-family: monospace; font-weight: 900; color: #307e92; font-size: 0.95rem;">
+                                    {{ st.student_id|default:"--" }}
+                                </td>
+                                <td style="padding: 0.7rem 0.8rem; font-weight: 800; font-size: 0.92rem;">
+                                    {% if st.full_name %}{{ st.full_name }}{% else %}{{ st.name }} {{ st.father_name|default:"" }} {{ st.last_name|default:"" }}{% endif %}
+                                </td>
+                                <td style="padding: 0.7rem 0.8rem; text-align: center; font-family: monospace; font-weight: 700; color: #475569;">
+                                    {{ st.national_id|default:"--" }}
+                                </td>
+                                <td style="padding: 0.7rem 0.8rem; font-weight: 700;">
+                                    {{ st.department.name|default:"عام" }}
+                                </td>
+                                <td style="padding: 0.7rem 0.8rem; text-align: center; font-weight: 800; color: #047857;">
+                                    {{ st.level.number|default:st.level.name|default:"-" }}
+                                </td>
+                                <td style="padding: 0.7rem 0.8rem; text-align: center;">
+                                    <a href="{% url 'renewal:my_materials_report' %}?student_id={{ st.id }}&q={{ search_query|urlencode }}"
+                                       class="btn-action btn-select-student"
+                                       style="padding: 0.45rem 1rem; font-size: 0.82rem; font-weight: 800; border-radius: 6px; background: #0f766e; color: #ffffff; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); cursor: pointer;">
+                                        <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                                        <span>عرض التقرير</span>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {% elif search_query %}
+            <!-- في حال تم البحث ولم يتم العثور على أي نتائج -->
+            <div class="group-box" style="text-align: center; padding: 3.5rem 1rem; color: #64748b;">
+                <span class="material-symbols-outlined" style="font-size: 3.5rem; color: #f87171; margin-bottom: 0.8rem; display: block;">person_off</span>
+                <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a;">لم يتم العثور على أي طالب مطابق</h3>
+                <p style="font-size: 0.95rem; margin-top: 0.4rem; font-weight: 700; color: #ef4444;">
+                    لا يوجد طالب يمتلك رقم القيد أو الاسم: <span style="font-family: monospace; background: #fee2e2; padding: 2px 8px; border-radius: 4px;">{{ search_query }}</span>
+                </p>
+                <p style="font-size: 0.85rem; margin-top: 0.4rem; color: #64748b;">يرجى التأكد من كتابة رقم القيد أو الرقم الوطني بشكل صحيح أو مراجعة شريط البحث.</p>
+            </div>
+
+            {% else %}
+            <!-- شاشة البداية: الحقول فارغة بانتظار البحث (منع جلب بيانات طالب افتراضي تلقائياً) -->
+            <div class="group-box empty-search-box" style="text-align: center; padding: 3.5rem 1.5rem; border: 2px dashed #cbd5e1; background: #f8fafc; border-radius: 12px;">
+                <span class="material-symbols-outlined" style="font-size: 3.8rem; color: #307e92; margin-bottom: 0.8rem; display: block;">search_insights</span>
+                <h3 style="font-size: 1.25rem; font-weight: 900; color: #0f172a; margin-bottom: 0.5rem;">بانتظار البحث عن طالب</h3>
+                <p style="font-size: 0.95rem; color: #475569; max-width: 580px; margin: 0 auto 1.5rem; line-height: 1.6; font-weight: 600;">
+                    جميع الحقول فارغة حالياً. يرجى إدخال رقم القيد أو الرقم الوطني أو اسم الطالب في خانة البحث أعلاه والضغط على <strong>بحث</strong> لاستدعاء وعرض تقرير المواد المسجلة.
+                </p>
+                <div style="display: inline-flex; gap: 0.75rem; flex-wrap: wrap; justify-content: center; font-size: 0.82rem; font-weight: 700; color: #64748b;">
+                    <span class="empty-search-badge" style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #307e92;">badge</span> بحث برقم القيد (مثال: 221008)
+                    </span>
+                    <span class="empty-search-badge" style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #307e92;">fingerprint</span> بحث بالرقم الوطني
+                    </span>
+                    <span class="empty-search-badge" style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; gap: 4px;">
+                        <span class="material-symbols-outlined" style="font-size: 16px; color: #307e92;">person</span> بحث بالاسم الكامل أو جزء منه
+                    </span>
+                </div>
             </div>
             {% endif %}
 
@@ -311,5 +545,5 @@ html.dark .report-summary-bar span {
 
 {% block extra_js %}
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/my_materials_report.js' %}?v=2.4.0"></script>
+<script src="{% static 'renewal/js/my_materials_report.js' %}?v=2.6.0"></script>
 {% endblock %}

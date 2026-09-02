@@ -438,16 +438,25 @@ document.addEventListener('DOMContentLoaded', () => {
 // =====================================================================
 // ⑦ طباعة التقرير الفردي الشامل لمعادلة الطالب وتغيير المسار
 // =====================================================================
-function printSingleStudentEquivalenceReport(index) {
+async function printSingleStudentEquivalenceReport(index) {
     const st = studentsData[index];
     if (!st) {
         alert('لم يُعثر على بيانات هذا الطالب.');
         return;
     }
 
-    const regName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
-    const admName = window.OFFICIAL_ADMISSION_HEAD || 'أ. محمد علي عمر';
-    const examsName = window.OFFICIAL_EXAMS_HEAD || '....................................';
+    let regName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
+    let admName = window.OFFICIAL_ADMISSION_HEAD || 'أ. أميرة الشلادي';
+    let examsName = window.OFFICIAL_EXAMS_HEAD || 'أ. لبنى';
+
+    if (window.OfficialsHelper) {
+        const regOff = await window.OfficialsHelper.getOfficialAsync('registrar');
+        if (regOff) regName = window.OfficialsHelper.buildName(regOff);
+        const admOff = await window.OfficialsHelper.getOfficialAsync('admission');
+        if (admOff) admName = window.OfficialsHelper.buildName(admOff);
+        const coordOff = await window.OfficialsHelper.getOfficialAsync('exams_coordinator');
+        if (coordOff) examsName = window.OfficialsHelper.buildName(coordOff);
+    }
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
@@ -534,22 +543,22 @@ function printSingleStudentEquivalenceReport(index) {
 <title>تقرير اعتماد معادلة المواد وتغيير المسار - ${escapeHtml(fullName)}</title>
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
-    @page { size: A4 portrait; margin: 6mm 8mm; }
+    @page { size: A4 portrait; margin: 4mm 6mm; }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
         font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
         background: #fff;
         color: #000;
         direction: rtl;
-        font-size: 11px;
-        line-height: 1.38;
-        padding: 4px;
+        font-size: 10.5px;
+        line-height: 1.3;
+        padding: 2px;
     }
     .print-frame {
         border: 2px solid #000;
-        padding: 10px 12px;
+        padding: 8px 10px;
         border-radius: 6px;
-        min-height: 275mm;
+        min-height: 280mm;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
@@ -557,26 +566,26 @@ function printSingleStudentEquivalenceReport(index) {
     .header-table {
         width: 100%;
         border-bottom: 2px solid #000;
-        padding-bottom: 6px;
-        margin-bottom: 8px;
+        padding-bottom: 4px;
+        margin-bottom: 6px;
     }
     .report-title {
         text-align: center;
-        font-size: 13.5pt;
+        font-size: 13pt;
         font-weight: 900;
-        margin: 4px 0 8px;
+        margin: 2px 0 6px;
         text-decoration: underline;
         color: #0f172a;
     }
     .info-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 8px;
+        margin-bottom: 6px;
     }
     .info-table td {
-        padding: 4px 6px;
+        padding: 3px 5px;
         border: 1px solid #334155;
-        font-size: 11px;
+        font-size: 10.5px;
     }
     .info-table .lbl {
         font-weight: 800;
@@ -590,9 +599,9 @@ function printSingleStudentEquivalenceReport(index) {
         width: 32%;
     }
     .section-head {
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 900;
-        padding: 3px 6px;
+        padding: 2px 5px;
         background: #f1f5f9;
         border: 1px solid #334155;
         border-bottom: none;
@@ -601,54 +610,63 @@ function printSingleStudentEquivalenceReport(index) {
     .data-table {
         width: 100%;
         border-collapse: collapse;
-        margin-bottom: 8px;
+        margin-bottom: 4px;
     }
     .data-table th {
         background: #e2e8f0;
         border: 1px solid #334155;
-        padding: 5px 6px;
-        font-size: 11px;
+        padding: 3px 4px;
+        font-size: 10px;
         font-weight: 900;
         text-align: center;
+    }
+    .data-table td {
+        padding: 2px 4px;
+        border: 1px solid #334155;
+        font-size: 9.5px;
     }
     .signatures-row {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
-        gap: 12px;
-        margin-top: 14px;
+        gap: 8px;
+        margin-top: 8px;
         page-break-inside: avoid;
         break-inside: avoid;
     }
     .sig-box {
         border: 1.5px solid #000;
-        padding: 6px 4px;
+        padding: 5px 4px;
         text-align: center;
         border-radius: 6px;
         background: #fff;
     }
-    .sig-title {
-        font-size: 11px;
-        font-weight: 900;
-        margin-bottom: 3px;
-        color: #000;
-    }
     .sig-name {
-        font-size: 10px;
-        font-weight: 800;
-        color: #0f172a;
-        margin-bottom: 22px;
+        font-size: 12.5px !important;
+        font-weight: 900 !important;
+        margin-bottom: 2px !important;
+        color: #000 !important;
+    }
+    .sig-title {
+        font-size: 11px !important;
+        font-weight: 800 !important;
+        color: #111 !important;
+        margin-bottom: 12px !important;
     }
     .sig-line {
-        font-size: 9.5px;
-        font-weight: 700;
+        font-size: 10.5px !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        white-space: nowrap !important;
     }
     .footer-note {
         text-align: center;
-        margin-top: 8px;
-        font-size: 8.5px;
+        margin-top: 4px;
+        font-size: 8px;
         color: #475569;
         border-top: 1px dashed #64748b;
-        padding-top: 4px;
+        padding-top: 2px;
+        page-break-inside: avoid;
+        break-inside: avoid;
     }
 </style>
 </head>
@@ -738,19 +756,19 @@ function printSingleStudentEquivalenceReport(index) {
         <div>
             <div class="signatures-row">
                 <div class="sig-box">
-                    <div class="sig-title">رئيس قسم التسجيل والقبول</div>
                     <div class="sig-name">${escapeHtml(admName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">رئيس قسم التسجيل والقبول</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
                 <div class="sig-box">
-                    <div class="sig-title">الشؤون العلمية والدراسة والامتحانات</div>
                     <div class="sig-name">${escapeHtml(examsName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">منسق الدراسة والامتحانات</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
                 <div class="sig-box">
-                    <div class="sig-title">المسجل العام بالكلية</div>
                     <div class="sig-name">${escapeHtml(regName)}</div>
-                    <div class="sig-line">التوقيع والختم: ..........................</div>
+                    <div class="sig-title">المسجل العام بالكلية</div>
+                    <div class="sig-line">التوقيع والختم: ....................................</div>
                 </div>
             </div>
 

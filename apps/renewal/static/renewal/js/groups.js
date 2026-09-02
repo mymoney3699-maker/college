@@ -357,10 +357,12 @@ function hideStudentsPage() {
 function renderStudentsPageContent(group) {
     currentGroupData = group;
 
+    const cleanCourse = (group.course_name || 'غير محددة').split(' / ')[0].trim();
+
     document.getElementById('studentsPageGroupTitle').textContent = `كشف طلاب - ${group.name}`;
     document.getElementById('metaDeptTag').textContent = `التخصص: ${group.department_name || '-'}`;
     document.getElementById('metaLevelTag').textContent = `المستوى: ${group.level_number || '-'}`;
-    document.getElementById('metaCourseTag').textContent = `المادة: ${group.course_name || 'غير محددة'}`;
+    document.getElementById('metaCourseTag').textContent = `المادة: ${cleanCourse}`;
     document.getElementById('metaCountTag').textContent = `العدد: ${group.student_count || 0}`;
 
     const tbody = document.getElementById('studentsTableBody');
@@ -482,8 +484,10 @@ function renderGroupCards(groups) {
 
     let html = '';
     groups.forEach(group => {
-        const courseDisplay = group.course_name
-            ? (group.course_code && group.course_code !== '-' ? `${group.course_code} - ${group.course_name}` : group.course_name)
+        const cleanCourse = group.course_name ? group.course_name.split(' / ')[0].trim() : 'غير محددة';
+        const cleanCode = group.course_code ? group.course_code.split(' / ')[0].trim() : '';
+        const courseDisplay = cleanCourse !== 'غير محددة'
+            ? (cleanCode && cleanCode !== '-' ? `${cleanCode} - ${cleanCourse}` : cleanCourse)
             : 'غير محددة';
 
         const semesterDisplay = group.semester === 'spring' ? 'ربيع' : (group.semester === 'fall' ? 'خريف' : group.semester);
@@ -1161,7 +1165,7 @@ async function printCurrentGroupView() {
                 </div>
                 <div class="info-item">
                     <span class="info-lbl">المادة الدراسية:</span>
-                    <span class="info-val">${escapeHtml(group.course_name || 'عام')}</span>
+                    <span class="info-val">${escapeHtml((group.course_name || 'عام').split(' / ')[0].trim())}</span>
                 </div>
                 <div class="info-item">
                     <span class="info-lbl">العدد الكلي:</span>

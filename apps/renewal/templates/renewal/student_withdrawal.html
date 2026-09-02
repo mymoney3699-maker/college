@@ -126,6 +126,10 @@
                             <span class="detail-label">الحالة الأكاديمية الحالية</span>
                             <span id="cardStatusBadge" class="status-badge status-active">---</span>
                         </div>
+                        <div id="cardWithdrawalDateContainer" class="detail-item hidden">
+                            <span class="detail-label">تاريخ سحب الملف</span>
+                            <span id="cardWithdrawalDate" class="detail-value font-semibold text-red-600" style="color: #dc2626; font-weight: 800; font-family: monospace;">---</span>
+                        </div>
                     </div>
 
                     <!-- Red Banner Warning for Already Withdrawn Student -->
@@ -145,7 +149,7 @@
                         نموذج استمارة سحب الملف
                     </span>
 
-                    <form id="withdrawalForm" onsubmit="event.preventDefault(); handleWithdrawalButtonClick();">
+                    <form id="withdrawalForm">
                         <div class="form-grid-2col">
 
                             <!-- Reason Selection -->
@@ -207,7 +211,6 @@
                             {% if request.user|has_exec_perm:'renewal.add_studentwithdrawal' or request.user|has_exec_perm:'student.change_studystatus' or request.user|has_exec_perm:'student.change_student' or request.user|has_exec_perm:'add_studentwithdrawal' or request.user|has_exec_perm:'change_student' %}
                             <button id="btnWithdrawalAction" type="button" data-mode="withdraw"
                                 class="btn-primary-red {% if not is_withdrawal_job_open %}opacity-50 pointer-events-none cursor-not-allowed{% endif %}"
-                                onclick="handleWithdrawalButtonClick(event)"
                                 {% if not is_withdrawal_job_open %}disabled style="opacity: 0.5 !important; cursor: not-allowed !important; pointer-events: none !important; filter: grayscale(80%) !important;" title="{{ withdrawal_job_message|default:'خدمة سحب الملف غير مفعلة حالياً' }}"{% endif %}>
                                 <span class="material-symbols-outlined">person_remove</span>
                                 <span>سحب الملف</span>
@@ -405,5 +408,5 @@
     window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/student_withdrawal.js' %}?v=2.1.3"></script>
+<script src="{% static 'renewal/js/student_withdrawal.js' %}?v=2.1.5"></script>
 {% endblock %}

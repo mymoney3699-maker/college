@@ -556,11 +556,21 @@ html.dark .badge-course-item {
                                 <td class="text-center fw-semibold">{% firstof st.level.name st.level "المستوى 1" %}</td>
                                 <td class="text-center fw-bold text-info">{% firstof st.group.name st.group_name "عام" %}</td>
                                 <td class="text-center">
-                                    {% if st.status == 'منتظم' or st.status == 'مستمر' or st.is_active %}
-                                    <span class="badge bg-success-subtle text-success">● منتظم</span>
+                                    {% with status_name=item.status_name|default:st.student_status.name|default:"مستمر" %}
+                                    {% if "منتظم" in status_name or "مستمر" in status_name %}
+                                    <span class="badge bg-success-subtle text-success" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(22, 163, 74, 0.3);">● {{ status_name }}</span>
+                                    {% elif "موقوف" in status_name or "وقف" in status_name %}
+                                    <span class="badge bg-warning-subtle text-warning" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(202, 138, 4, 0.3); color: #b45309 !important; background-color: #fef3c7 !important;">⛔ {{ status_name }}</span>
+                                    {% elif "منقطع" in status_name or "انقطاع" in status_name %}
+                                    <span class="badge bg-danger-subtle text-danger" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(220, 38, 38, 0.3); color: #b91c1c !important; background-color: #fee2e2 !important;">❌ {{ status_name }}</span>
+                                    {% elif "خريج" in status_name or "متخرج" in status_name %}
+                                    <span class="badge bg-primary-subtle text-primary" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(14, 165, 233, 0.3); color: #0284c7 !important; background-color: #e0f2fe !important;">🎓 {{ status_name }}</span>
+                                    {% elif "إخلاء طرف" in status_name %}
+                                    <span class="badge bg-secondary-subtle text-secondary" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(100, 116, 139, 0.3);">📄 {{ status_name }}</span>
                                     {% else %}
-                                    <span class="badge bg-warning-subtle text-warning">{% firstof st.status "موقوف" %}</span>
+                                    <span class="badge bg-info-subtle text-info" style="font-weight: 800; font-size: 0.8rem; padding: 4px 8px; border-radius: 6px;">{{ status_name }}</span>
                                     {% endif %}
+                                    {% endwith %}
                                 </td>
                             </tr>
                             {% endwith %}

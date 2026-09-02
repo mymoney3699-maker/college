@@ -997,13 +997,27 @@ function printStudentMaterials(studentId, studentName, studentCode) {
 
     fetch(url)
         .then(response => response.json())
-        .then(data => {
+        .then(async data => {
             let courses = [];
             let deptName = defaultDept;
             let lvlName = defaultLevel;
             let semName = window.currentSemesterName || '';
             let stName = studentName;
             let stCode = studentCode;
+
+            let examsCoordinatorName = window.OFFICIAL_EXAMS_COORDINATOR || 'أ. لبنى';
+            let registrarName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
+
+            if (window.OfficialsHelper) {
+                try {
+                    const coordOff = await window.OfficialsHelper.getOfficialAsync('exams_coordinator');
+                    if (coordOff) examsCoordinatorName = window.OfficialsHelper.buildName(coordOff);
+                    const regOff = await window.OfficialsHelper.getOfficialAsync('registrar');
+                    if (regOff) registrarName = window.OfficialsHelper.buildName(regOff);
+                } catch (e) {
+                    console.warn('Error fetching officials in printStudentMaterials:', e);
+                }
+            }
 
             if (data.success) {
                 if (data.courses) {
@@ -1141,21 +1155,22 @@ function printStudentMaterials(studentId, studentName, studentCode) {
                         </div>
                     </div>
 
-                    <!-- 4. توقيعات الاعتماد الرسمية -->
-                    <div style="margin-top:25px;display:flex;justify-content:space-between;align-items:flex-start;padding:0 10px;page-break-inside:avoid;">
-                        <div style="text-align:center;width:30%;">
-                            <div style="font-size:12px;font-weight:bold;margin-bottom:6px;">توقيع الطالب</div>
-                            <div style="font-size:11.5px;margin-top:20px;">....................................</div>
+                    <!-- 4. توقيعات الاعتماد الرسمية مصطفة في سطر واحد متناسق -->
+                    <div class="signatures-row-3col" style="margin-top:25px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:stretch;padding:0 4px;page-break-inside:avoid;break-inside:avoid;">
+                        <div class="sig-box-item" style="border:1.5px solid #000;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;break-inside:avoid;">
+                            <div style="font-size:13px;font-weight:900;margin-bottom:3px;color:#000;min-height:18px;">${escapeHtml(stName)}</div>
+                            <div style="font-size:11.5px;font-weight:800;color:#111;margin-bottom:16px;">توقيع واستلام الطالب/ـة</div>
+                            <div style="font-size:11px;font-weight:700;color:#000;white-space:nowrap;">التوقيع: ....................................</div>
                         </div>
-                        <div style="text-align:center;width:35%;" data-official="study_exams_head">
-                            <div class="off-name" style="font-size:12.5px;font-weight:bold;min-height:1.3em;"></div>
-                            <div class="off-pos" style="font-size:11.5px;font-weight:bold;margin-bottom:6px;">رئيس قسم الدراسة والامتحانات</div>
-                            <div style="font-size:11.5px;letter-spacing:1px;margin-top:10px;">التوقيع والختم: ......................</div>
+                        <div class="sig-box-item" style="border:1.5px solid #000;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;break-inside:avoid;" data-official="exams_coordinator">
+                            <div class="off-name" style="font-size:13px;font-weight:900;margin-bottom:3px;color:#000;min-height:18px;">${escapeHtml(examsCoordinatorName)}</div>
+                            <div class="off-pos" style="font-size:11.5px;font-weight:800;color:#111;margin-bottom:16px;">منسق الدراسة والامتحانات</div>
+                            <div class="off-sig" style="font-size:11px;font-weight:700;color:#000;white-space:nowrap;">التوقيع والختم: ....................................</div>
                         </div>
-                        <div class="print-signature-box" style="text-align:center;width:30%;margin:0;" data-official="general_registrar">
-                            <div class="off-name" style="font-size:12.5px;font-weight:bold;min-height:1.3em;"></div>
-                            <div class="off-pos" style="font-size:11.5px;font-weight:bold;margin-bottom:6px;">المسجل العام بالكلية</div>
-                            <div class="signature-line" style="font-size:11.5px;letter-spacing:1px;margin-top:10px;">التوقيع والختم: ......................</div>
+                        <div class="sig-box-item" style="border:1.5px solid #000;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;break-inside:avoid;" data-official="registrar">
+                            <div class="off-name" style="font-size:13px;font-weight:900;margin-bottom:3px;color:#000;min-height:18px;">${escapeHtml(registrarName)}</div>
+                            <div class="off-pos" style="font-size:11.5px;font-weight:800;color:#111;margin-bottom:16px;">المسجل العام بالكلية</div>
+                            <div class="off-sig" style="font-size:11px;font-weight:700;color:#000;white-space:nowrap;">التوقيع والختم: ....................................</div>
                         </div>
                     </div>
                 </div>

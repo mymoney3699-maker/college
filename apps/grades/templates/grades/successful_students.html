@@ -113,15 +113,10 @@
                 لا توجد سجلات تطابق خيارات البحث والموسم والفصل المحددين.
             </div>
 
-            <div class="signatures-grid no-print">
+            <div class="signatures-grid no-print" style="display: flex; justify-content: flex-start;">
                 <div data-official="registrar">
                     <p class="signature-text font-bold">المسجل العام بالكلية</p>
-                    <p class="signature-name off-name font-bold text-slate-800 dark:text-slate-200 mt-1">{{ registrar_official_name }}</p>
-                    <p class="signature-line">_______________________</p>
-                </div>
-                <div data-official="exams_head">
-                    <p class="signature-text font-bold">مدير مكتب شؤون الدراسة والامتحانات</p>
-                    <p class="signature-name off-name font-bold text-slate-800 dark:text-slate-200 mt-1">{{ exams_head_official_name }}</p>
+                    <p class="signature-name off-name font-bold text-slate-800 dark:text-slate-200 mt-1">{{ registrar_official_name|default:'أ. احمد محمد علي محمود' }}</p>
                     <p class="signature-line">_______________________</p>
                 </div>
             </div>
@@ -206,20 +201,13 @@
             </table>
         </div>
 
-        <!-- ✅ قسم التواقيع الرسمي - توقيعين متناسقين (المسجل العام يميناً، مدير الدراسة والامتحانات يساراً) -->
-        <div class="print-signatures-row">
-            <!-- اليمين: المسجل العام -->
-            <div class="print-signature-box right-sig" data-official="registrar">
-                <span class="off-name">{{ registrar_official_name }}</span>
-                <span class="off-pos">المسجل العام بالكلية</span>
-                <span class="off-sig-line">التوقيع والختم: ............................................</span>
-            </div>
-
-            <!-- اليسار: مدير / رئيس قسم الدراسة والامتحانات -->
-            <div class="print-signature-box left-sig" data-official="exams_head">
-                <span class="off-name">{{ exams_head_official_name }}</span>
-                <span class="off-pos">مدير مكتب شؤون الدراسة والامتحانات</span>
-                <span class="off-sig-line">التوقيع والختم: ............................................</span>
+        <!-- ✅ قسم التوقيع الرسمي المعتمد للمسجل العام بالكلية -->
+        <div class="print-signatures-row" style="display: flex; justify-content: flex-start; margin-top: 35px;">
+            <!-- المسجل العام -->
+            <div class="print-signature-box right-sig" data-official="registrar" style="text-align: right; min-width: 250px;">
+                <span class="off-name" style="font-size: 13.5px; font-weight: 900; color: #000; margin-bottom: 4px; display: block;">{{ registrar_official_name|default:'أ. احمد محمد علي محمود' }}</span>
+                <span class="off-pos" style="font-size: 12.5px; font-weight: 800; color: #000; margin-bottom: 8px; display: block;">المسجل العام بالكلية</span>
+                <span class="off-sig-line" style="font-size: 12px; font-weight: 800; color: #000; display: block;">التوقيع والختم: ............................................</span>
             </div>
         </div>
 

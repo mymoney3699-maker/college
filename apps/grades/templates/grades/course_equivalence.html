@@ -339,19 +339,19 @@
         <div class="print-only print-signatures-footer" style="margin-top: 35px; page-break-inside: avoid;">
             <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center;">
                 <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
-                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">رئيس قسم التسجيل والقبول</p>
-                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ admission_head_name|default:"أ. محمد علي عمر" }}</p>
-                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                    <p style="font-weight: 900; font-size: 11pt; margin: 0 0 3px 0; color: #000;">{{ admission_head_name|default:"أ. أميرة الشلادي" }}</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #475569; margin: 0 0 24px 0;">رئيس قسم التسجيل والقبول</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0; color: #000;">التوقيع والختم: ....................................</p>
                 </div>
                 <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
-                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">الشؤون العلمية والدراسة والامتحانات</p>
-                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ exams_head_name|default:"...................................." }}</p>
-                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                    <p style="font-weight: 900; font-size: 11pt; margin: 0 0 3px 0; color: #000;">{{ exams_head_name|default:"د. فاطمة عمران الشريف" }}</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #475569; margin: 0 0 24px 0;">منسق الدراسة والامتحانات</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0; color: #000;">التوقيع والختم: ....................................</p>
                 </div>
                 <div style="border: 1.5px solid #0f172a; padding: 10px 8px; border-radius: 8px; background: #ffffff;">
-                    <p style="font-weight: 800; font-size: 11pt; margin: 0 0 6px 0;">المسجل العام بالكلية</p>
-                    <p style="font-size: 9.5pt; font-weight: 700; color: #0f172a; margin: 0 0 28px 0;">{{ general_registrar_name|default:"أ. أحمد محمد علي محمود" }}</p>
-                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0;">التوقيع والختم: ..........................</p>
+                    <p style="font-weight: 900; font-size: 11pt; margin: 0 0 3px 0; color: #000;">{{ general_registrar_name|default:"أ. أحمد محمد علي محمود" }}</p>
+                    <p style="font-size: 9.5pt; font-weight: 700; color: #475569; margin: 0 0 24px 0;">المسجل العام بالكلية</p>
+                    <p style="font-weight: 700; font-size: 9.5pt; margin: 0; color: #000;">التوقيع والختم: ....................................</p>
                 </div>
             </div>
             <div style="text-align: center; margin-top: 14px; font-size: 8.5pt; color: #475569; border-top: 1px dashed #94a3b8; padding-top: 6px;">
@@ -737,6 +737,7 @@
         }
     });
 </script>
+{% endif %}
 {% if student %}
 <script id="equivalence-report-data" type="application/json">
 {
@@ -802,5 +803,5 @@
     })();
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'grades/js/course_equivalence.js' %}?v=1.0.6"></script>
+<script src="{% static 'grades/js/course_equivalence.js' %}?v=1.0.9"></script>
 {% endblock %}

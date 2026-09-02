@@ -124,22 +124,40 @@
         color: #a5b4fc;
         border-color: rgba(129, 140, 248, 0.3);
     }
+    .page-header-row {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin-bottom: 1.5rem !important;
+        text-align: right !important;
+    }
+    .page-header-row > div {
+        text-align: right !important;
+    }
+    .page-header-title {
+        text-align: right !important;
+        margin-right: 0 !important;
+        padding-right: 0 !important;
+    }
+    .page-header-subtitle {
+        text-align: right !important;
+        margin-right: 0 !important;
+        padding-right: 0 !important;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
+<main class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 dir-rtl" dir="rtl">
 <div class="max-w-7xl mx-auto space-y-6">
     <!-- Header Section (Read-Only) -->
-    <div class="page-header-row flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div class="page-header-row">
         <div>
-            <h1 class="page-header-title flex items-center gap-2">
-                <span class="material-symbols-outlined text-3xl text-indigo-600 dark:text-indigo-400">group</span>
-                <span>قائمة المستخدمين</span>
-            </h1>
+            <h1 class="page-header-title">قائمة المستخدمين</h1>
             <p class="page-header-subtitle">استعراض والبحث في حسابات وأدوار موظفي ومستخدمي المنظومة (للعرض فقط)</p>
         </div>
         <div class="flex items-center gap-2">
-            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800/60">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 text-xs font-bold border border-indigo-200 dark:border-indigo-800/60 shadow-sm">
                 <span class="material-symbols-outlined text-sm">visibility</span>
                 <span>وضع القراءة فقط</span>
             </span>
@@ -426,4 +444,5 @@
         </div>
     </div>
 </div>
+</main>
 {% endblock %}

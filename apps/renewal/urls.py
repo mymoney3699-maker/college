@@ -78,6 +78,7 @@ urlpatterns = [
     path('api/get-file-withdrawal-archive-data/', views.get_file_withdrawal_archive_api, name='get_file_withdrawal_archive_api'),
     path('failed-students/', views.failed_students, name='failed_students'),
     path('students-by-gpa/', views.students_by_gpa, name='students_by_gpa'),
+    path('export-students-gpa-excel/', views.export_students_gpa_excel, name='export_students_gpa_excel'),
     path('courses-report/', views.courses_report, name='courses_report'),
     path('excel-results/', views.excel_results, name='excel_results'),
     path('student-grades-by-course/', views.student_grades_by_course_page, name='student_grades_by_course'),

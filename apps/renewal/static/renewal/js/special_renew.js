@@ -406,14 +406,14 @@ function setRenewButtonMode(mode) {
     if (!btn) return;
 
     if (mode === 'print') {
-        btn.style.backgroundColor = '#b59b66';
-        btn.onclick = window.printRenewForm;
-        btn.innerHTML = '<span class="material-symbols-outlined">print</span> طباعة';
+        btn.style.backgroundColor = '#0284c7';
+        btn.onclick = () => window.printSpecialStudentRenew(selectedStudentId);
+        btn.innerHTML = '<span class="material-symbols-outlined">print</span> طباعة التقرير';
         btn.disabled = false;
         btn.style.opacity = '1';
         btn.style.cursor = 'pointer';
         btn.style.pointerEvents = 'auto';
-        btn.title = 'انقر لطباعة نموذج تجديد القيد';
+        btn.title = 'انقر لطباعة نموذج تجديد القيد لهذا الطالب';
     } else {
         btn.style.backgroundColor = '#0f766e';
         btn.onclick = window.confirmSpecialRenew;
@@ -509,9 +509,15 @@ async function confirmSpecialRenew() {
                     successMessage += data.was_promoted ? ` (تمت الترقية)` : ` (تثبيت في المستوى)`;
                 }
                 showNotification('success', successMessage);
+
+                // حفظ الطالب المجدد في قائمة المجددين لتفعيل زر الطباعة في صفه فوراً
+                if (!window.renewedStudentsSet) window.renewedStudentsSet = new Set();
+                if (selectedStudentId) window.renewedStudentsSet.add(String(selectedStudentId));
+                if (studentRegNum) window.renewedStudentsSet.add(String(studentRegNum));
+
                 loadSpecialCaseStudents();
                 
-                // تحويل الزر مباشرة إلى زر طباعة النموذج
+                // تحويل الزر مباشرة إلى زر طباعة النموذج لهذا الطالب
                 setRenewButtonMode('print');
             } else {
                 showNotification('error', data.error || '❌ فشل تجديد القيد');
@@ -547,23 +553,50 @@ function loadSpecialCaseStudents() {
         .then(data => {
             if (data.success) {
                 if (data.students && data.students.length > 0) {
+                    if (!window.loadedSpecialStudentsMap) window.loadedSpecialStudentsMap = {};
                     let html = '';
                     data.students.forEach((student, index) => {
+                        window.loadedSpecialStudentsMap[student.id] = student;
+                        if (student.student_id) window.loadedSpecialStudentsMap[student.student_id] = student;
+
                         const isMajorChange = student.special_type === 'major_change' || (student.interruption_reason && student.interruption_reason.includes('مسار'));
                         const statusClass = isMajorChange ? 'major-change' : 'suspended';
                         const statusText = isMajorChange ? '🔄 تغيير مسار' : '⛔ موقوف قيده';
                         const badgeStyle = isMajorChange ? 'background: #e0f2fe; color: #0369a1; border: 1.5px solid #7dd3fc;' : '';
-                        const levelDisplay = student.level_number ? `المستوى ${student.level_number}` : '-';
+                        const levelDisplay = student.level_name || (student.level_number ? `المستوى ${student.level_number}` : '-');
+
+                        const isRenewed = student.has_enrollment || (window.renewedStudentsSet && (window.renewedStudentsSet.has(String(student.id)) || window.renewedStudentsSet.has(String(student.student_id))));
+
+                        let actionHtml = '';
+                        if (isRenewed) {
+                            actionHtml = `
+                                <div style="display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap;">
+                                    <span class="special-status-badge" style="background: #ecfdf5; color: #047857; border: 1.5px solid #6ee7b7; font-weight: 800; padding: 4px 8px; border-radius: 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px;">
+                                        <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                                        <span>مجدد قيده</span>
+                                    </span>
+                                    <button type="button" class="btn-print-special-report"
+                                            onclick="event.stopPropagation(); window.printSpecialStudentRenew('${escapeHtml(student.id || student.student_id)}')"
+                                            title="طباعة نموذج تجديد القيد لهذا الطالب"
+                                            style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); color: #ffffff; border: none; padding: 5px 11px; border-radius: 6px; font-size: 11.5px; font-weight: 800; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.15); transition: all 0.2s;">
+                                        <span class="material-symbols-outlined" style="font-size: 15px;">print</span>
+                                        <span>طباعة التقرير</span>
+                                    </button>
+                                </div>
+                            `;
+                        } else {
+                            actionHtml = `<span class="special-status-badge ${statusClass}" style="${badgeStyle}">${statusText}</span>`;
+                        }
 
                         html += `
                             <tr class="clickable-row" onclick="selectStudentForSpecialRenew('${escapeHtml(student.student_id || student.id)}')" title="انقر لاختيار الطالب وجلب بياناته">
-                                <td style="text-align: center; padding: 16px 14px; font-weight: 800;" class="col-index">${index + 1}</td>
-                                <td style="text-align: center; padding: 16px 14px; font-weight: 800;" class="col-student-id">${escapeHtml(student.student_id)}</td>
-                                <td style="text-align: right; padding: 16px 14px; font-weight: 700;" class="col-student-name">${escapeHtml(student.name)} ${escapeHtml(student.father_name || '')}</td>
-                                <td style="text-align: right; padding: 16px 14px;" class="col-dept">${escapeHtml(student.department_name)}</td>
-                                <td style="text-align: center; padding: 16px 14px; font-weight: 800;" class="col-level">${levelDisplay}</td>
-                                <td style="text-align: center; padding: 16px 14px;">
-                                    <span class="special-status-badge ${statusClass}" style="${badgeStyle}">${statusText}</span>
+                                <td style="text-align: center; padding: 14px 12px; font-weight: 800;" class="col-index">${index + 1}</td>
+                                <td style="text-align: center; padding: 14px 12px; font-weight: 800; font-family: monospace; font-size: 13px;" class="col-student-id">${escapeHtml(student.student_id)}</td>
+                                <td style="text-align: right; padding: 14px 12px; font-weight: 800;" class="col-student-name">${escapeHtml(student.name)} ${escapeHtml(student.father_name || '')}</td>
+                                <td style="text-align: right; padding: 14px 12px;" class="col-dept">${escapeHtml(student.department_name)}</td>
+                                <td style="text-align: center; padding: 14px 12px; font-weight: 800;" class="col-level">${levelDisplay}</td>
+                                <td style="text-align: center; padding: 12px 10px;">
+                                    ${actionHtml}
                                 </td>
                             </tr>
                         `;
@@ -767,6 +800,344 @@ function printRenewForm() {
 }
 
 // ============================================================
+// 🖨️ طباعة نموذج تجديد القيد الفردي لطالب محدد (حالة خاصة)
+// ============================================================
+
+async function printSpecialStudentRenew(studentId) {
+    console.log('🖨️ printSpecialStudentRenew called for studentId:', studentId);
+
+    // 1. جلب بيانات المسؤولين المعتمدين (رئيس قسم التسجيل والقبول، والمسجل العام)
+    let registrarName = 'أ. أحمد محمد علي محمود';
+    let admissionName = 'أ. أميرة الشلادي';
+
+    if (typeof OfficialsHelper !== 'undefined' && OfficialsHelper.getOfficials) {
+        try {
+            const officials = await OfficialsHelper.getOfficials();
+            if (officials) {
+                if (officials.general_registrar && officials.general_registrar.name) {
+                    registrarName = officials.general_registrar.name;
+                }
+                if (officials.admission_head && officials.admission_head.name) {
+                    admissionName = officials.admission_head.name;
+                }
+            }
+        } catch (e) {
+            console.warn('[special_renew] Officials fetch error:', e);
+        }
+    }
+
+    // 2. الحصول على بيانات الطالب
+    let student = (window.loadedSpecialStudentsMap && window.loadedSpecialStudentsMap[studentId]) ? window.loadedSpecialStudentsMap[studentId] : null;
+
+    if (!student && selectedStudentData && (selectedStudentData.id == studentId || selectedStudentData.student_id == studentId)) {
+        student = selectedStudentData;
+    }
+
+    if (!student) {
+        try {
+            const res = await fetch(`/renewal/api/search-student-special-renew/?search=${encodeURIComponent(studentId)}`);
+            const data = await res.json();
+            if (data.success && data.students && data.students.length > 0) {
+                student = data.students.find(s => s.id == studentId || s.student_id == studentId) || data.students[0];
+            }
+        } catch (e) {
+            console.error('Error fetching student for print:', e);
+        }
+    }
+
+    if (!student) {
+        showNotification('error', '❌ تعذر العثور على بيانات الطالب لطباعة التقرير');
+        return;
+    }
+
+    // 3. تحديد الفصل الدراسي
+    const semesterType = document.getElementById('semesterTypeSelect')?.value || 'fall';
+    const yearVal = document.getElementById('yearInput')?.value || new Date().getFullYear();
+    const seasonText = (semesterType === 'fall' || semesterType.includes('خريف')) ? 'خريف' : 'ربيع';
+    const semesterFormatted = `${seasonText} ${yearVal}`;
+
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const logoUrl = window.COLLEGE_LOGO_URL || '/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';
+
+    const currentLvlDisplay = student.level_name || (student.level_number ? `المستوى ${student.level_number}` : 'المستوى الأول');
+    const deptName = student.department_name || 'عام';
+    const fullName = student.full_name || (student.name ? `${student.name} ${student.father_name || ''}`.trim() : student.student_id);
+    const caseTypeDesc = (student.special_type === 'major_change' || (student.interruption_reason && student.interruption_reason.includes('مسار'))) ? 'تغيير مسار' : 'موقوف قيده';
+    const notesText = student.notes || document.getElementById('renewReason')?.value.trim() || `تجديد وتفعيل قيد استثنائي (${caseTypeDesc})`;
+
+    // 4. تجهيز قالب HTML لنموذج تجديد القيد الفردي
+    const printHtml = `<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>نموذج تجديد القيد (حالة خاصة) - ${escapeHtml(fullName)}</title>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+
+    @page {
+        size: A4 portrait;
+        margin: 5mm;
+    }
+    * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+    html, body {
+        width: 100%;
+        height: auto;
+        margin: 0;
+        padding: 0;
+        background: #ffffff !important;
+        color: #000000 !important;
+        font-family: 'Cairo', 'Tahoma', 'Arial', sans-serif;
+        direction: rtl;
+        font-size: 12.5px;
+    }
+    .print-page-frame {
+        width: 100%;
+        min-height: auto;
+        margin: 0 auto;
+        padding: 20px 24px;
+        border: 2px solid #000000;
+        background: #ffffff;
+        box-sizing: border-box;
+        display: block;
+    }
+    .bf-logo {
+        width: 65px;
+        height: 65px;
+        object-fit: contain;
+        margin: 0 auto 3px auto;
+        display: block;
+    }
+    .bf-title {
+        font-size: 17.5px;
+        font-weight: 900;
+        margin: 6px 0 12px;
+        text-align: center;
+        color: #000000;
+    }
+    .single-info-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0 14px 0;
+    }
+    .single-info-table td {
+        border: 1px solid #000000;
+        padding: 7px 10px;
+        font-size: 12px;
+        color: #000000;
+    }
+    .single-info-table .lbl-cell {
+        background-color: #f8fafc;
+        font-weight: 800;
+        width: 22%;
+        color: #1e293b;
+    }
+    .single-info-table .val-cell {
+        font-weight: 700;
+        width: 28%;
+    }
+    .single-info-table .highlight {
+        font-weight: 900;
+        color: #000000;
+    }
+    .official-notice-box {
+        border: 1.5px solid #000000;
+        background-color: #f8fafc;
+        padding: 10px 14px;
+        border-radius: 4px;
+        font-size: 12px;
+        line-height: 1.6;
+        color: #000000;
+        font-weight: 700;
+        margin-bottom: 20px;
+        text-align: justify;
+    }
+    .bf-signatures-container {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-end !important;
+        margin-top: 35px !important;
+        padding: 0 10px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
+    }
+    .bf-sig-col {
+        text-align: center !important;
+        width: 260px !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        -webkit-column-break-inside: avoid !important;
+        display: block !important;
+    }
+    .off-name {
+        font-size: 13.5px !important;
+        font-weight: 900 !important;
+        margin-bottom: 3px !important;
+        min-height: 18px !important;
+        color: #000 !important;
+    }
+    .off-pos {
+        font-size: 12.5px !important;
+        font-weight: 800 !important;
+        color: #111 !important;
+        margin-bottom: 16px !important;
+    }
+    .off-sig {
+        font-size: 12px !important;
+        font-weight: 700 !important;
+        color: #000 !important;
+        white-space: nowrap !important;
+    }
+    @media print {
+        @page { size: A4 portrait; margin: 4mm; }
+        html, body { width: 100%; height: auto; }
+        .print-page-frame { min-height: auto; border: 2px solid #000000; }
+        .bf-signatures-container,
+        .bf-sig-col {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+        }
+    }
+</style>
+</head>
+<body>
+    <div class="print-page-frame">
+        <!-- الترويسة الرسمية ثنائية اللغة -->
+        <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
+            <!-- اليمين: العربية -->
+            <div class="print-header-ar" style="flex:1;text-align:center;font-size:11.5px;line-height:1.45;color:#000;">
+                <div style="font-size:13.5px;font-weight:900;margin-bottom:2px;">دولة ليبيا</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size:11px;font-weight:800;margin-bottom:1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size:12px;font-weight:900;margin-top:2px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+
+            <!-- الوسط: الشعار -->
+            <div class="print-header-logo-box" style="flex:0 0 95px;text-align:center;display:flex;justify-content:center;align-items:center;padding:0 10px;">
+                <img class="bf-logo" src="${logoUrl}" alt="شعار الكلية" onerror="this.onerror=null; this.style.display='none';">
+            </div>
+
+            <!-- اليسار: الإنجليزية -->
+            <div class="print-header-en" style="flex:1;text-align:center;font-size:10px;line-height:1.35;color:#000;direction:ltr;font-family:Arial,'Segoe UI',Tahoma,sans-serif;">
+                <div style="font-size:11.5px;font-weight:bold;margin-bottom:1px;">state of Libya</div>
+                <div style="font-weight:600;margin-bottom:1px;">government National Unity</div>
+                <div style="font-weight:600;margin-bottom:1px;">Ministry of Technical and Technical Education</div>
+                <div style="font-weight:600;margin-bottom:1px;">department of Technical</div>
+                <div style="font-size:10.5px;font-weight:bold;margin-top:2px;letter-spacing:0.5px;">TRIPOLI COLLAGE AND TECHNOLOGY</div>
+            </div>
+        </div>
+
+        <div style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
+        <div class="bf-title">نموذج تجديد القيد الدراسي (حالة خاصة)</div>
+
+        <!-- جدول البيانات الأكاديمية للطالب -->
+        <table class="single-info-table">
+            <tr>
+                <td class="lbl-cell">اسم الطالب الرباعي:</td>
+                <td class="val-cell highlight" colspan="3" style="font-size: 14.5px;">${escapeHtml(fullName)}</td>
+            </tr>
+            <tr>
+                <td class="lbl-cell">رقم القيد:</td>
+                <td class="val-cell highlight" style="font-family: monospace; font-size: 14px;">${escapeHtml(student.student_id)}</td>
+                <td class="lbl-cell">الرقم الوطني:</td>
+                <td class="val-cell" style="font-family: monospace;">${escapeHtml(student.national_id || '—')}</td>
+            </tr>
+            <tr>
+                <td class="lbl-cell">القسم / التخصص:</td>
+                <td class="val-cell highlight">${escapeHtml(deptName)}</td>
+                <td class="lbl-cell">الفصل الدراسي:</td>
+                <td class="val-cell highlight">${escapeHtml(semesterFormatted)}</td>
+            </tr>
+            <tr>
+                <td class="lbl-cell">المستوى المقيد به:</td>
+                <td class="val-cell highlight">${escapeHtml(currentLvlDisplay)}</td>
+                <td class="lbl-cell">نوع الحالة الاستثنائية:</td>
+                <td class="val-cell highlight" style="color: #0369a1;">${escapeHtml(caseTypeDesc)}</td>
+            </tr>
+            <tr>
+                <td class="lbl-cell">حالة القيد الأكاديمي:</td>
+                <td class="val-cell"><span style="font-weight: 800; color: #047857;">✅ مجدد قيده (منتظم)</span></td>
+                <td class="lbl-cell">تاريخ الطباعة:</td>
+                <td class="val-cell">${dateStr}</td>
+            </tr>
+            <tr>
+                <td class="lbl-cell">ملاحظات / سبب التجديد:</td>
+                <td class="val-cell" colspan="3" style="font-size: 11.5px; color: #334155;">${escapeHtml(notesText)}</td>
+            </tr>
+        </table>
+
+        <!-- نص الإفادة والتوثيق الرسمي -->
+        <div class="official-notice-box">
+            يُفيد قسم التسجيل والقبول بكلية طرابلس للعلوم والتقنية بأن الطالب المذكور أعلاه قد استوفى كافة متطلبات وإجراءات تجديد وتفعيل القيد الأكاديمي الاستثنائي (حالة خاصة: ${escapeHtml(caseTypeDesc)}) للفصل الدراسي (<strong>${escapeHtml(semesterFormatted)}</strong>)، وتم توثيق واعتماد قيده رسمياً في منظومة الكلية.
+        </div>
+
+        <!-- اعتماد التوقيع والختم -->
+        <div class="bf-signatures-container">
+            <div class="bf-sig-col">
+                <div class="off-name">${escapeHtml(admissionName)}</div>
+                <div class="off-pos">رئيس قسم التسجيل والقبول</div>
+                <div class="off-sig">التوقيع والختم: ....................................</div>
+            </div>
+            <div class="bf-sig-col">
+                <div class="off-name">${escapeHtml(registrarName)}</div>
+                <div class="off-pos">المسجل العام بالكلية</div>
+                <div class="off-sig">التوقيع والختم: ....................................</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`;
+
+    // 5. الطباعة عبر Iframe خفي ومحمي من التكرار
+    let printIframe = document.getElementById('specialStudentPrintIframe');
+    if (printIframe) printIframe.remove();
+
+    printIframe = document.createElement('iframe');
+    printIframe.id = 'specialStudentPrintIframe';
+    printIframe.style.position = 'fixed';
+    printIframe.style.right = '-9999px';
+    printIframe.style.bottom = '-9999px';
+    printIframe.style.width = '1px';
+    printIframe.style.height = '1px';
+    printIframe.style.border = '0';
+    printIframe.style.opacity = '0';
+    document.body.appendChild(printIframe);
+
+    const doc = printIframe.contentWindow.document;
+    doc.open();
+    doc.write(printHtml);
+    doc.close();
+
+    let hasPrinted = false;
+    const triggerPrint = () => {
+        if (hasPrinted) return;
+        hasPrinted = true;
+        try {
+            printIframe.contentWindow.focus();
+            printIframe.contentWindow.print();
+        } catch (e) {
+            console.error('Print error:', e);
+        }
+    };
+
+    const logoImg = doc.querySelector('.bf-logo');
+    if (logoImg && !logoImg.complete) {
+        logoImg.onload = () => setTimeout(triggerPrint, 300);
+        logoImg.onerror = () => setTimeout(triggerPrint, 300);
+    } else {
+        setTimeout(triggerPrint, 400);
+    }
+}
+
+// ============================================================
 // تهيئة الصفحة
 // ============================================================
 
@@ -829,6 +1200,7 @@ window.loadSpecialCaseStudents      = loadSpecialCaseStudents;
 window.clearSearch                  = clearSearch;
 window.printPage                    = printPage;
 window.printRenewForm               = printRenewForm;
+window.printSpecialStudentRenew     = printSpecialStudentRenew;
 
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

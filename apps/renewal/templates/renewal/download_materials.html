@@ -643,10 +643,27 @@
         .print-table td { border: 1px solid #000 !important; padding: 8px 6px !important; color: #000 !important; background: #fff !important; }
         .empty-print-cell { text-align: center !important; padding: 18px !important; font-weight: bold !important; }
 
-        .print-signature-box {
-            margin-top: 35px !important; padding-top: 0 !important;
-            text-align: left !important; margin-left: 20px !important;
+        .signatures-row-3col {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr 1fr !important;
+            gap: 12px !important;
+            margin-top: 25px !important;
+            padding: 0 4px !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .sig-box-item {
+            border: 1.5px solid #000 !important;
+            border-radius: 6px !important;
+            padding: 8px 6px !important;
+            text-align: center !important;
+            background: #fff !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+        }
+        .print-signature-box {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
         }
     }
 </style>
@@ -660,6 +677,9 @@
     window.IS_DOWNLOAD_JOB_OPEN = isDownloadJobOpen;
     window.DOWNLOAD_JOB_MESSAGE = "{{ download_job_message|escapejs }}";
     window.CAN_DOWNLOAD_MATERIALS = {% if request.user|has_exec_perm:'renewal.add_courseregistration' or request.user|has_exec_perm:'renewal.change_courseregistration' or request.user|has_exec_perm:'add_courseregistration' or request.user|has_exec_perm:'change_courseregistration' %}true{% else %}false{% endif %};
+    window.OFFICIAL_EXAMS_COORDINATOR = "{{ exams_coordinator_name|escapejs }}";
+    window.OFFICIAL_GENERAL_REGISTRAR = "{{ general_registrar_name|escapejs }}";
 </script>
-<script src="{% static 'renewal/js/download_materials.js' %}?v=1.0.29"></script>
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/download_materials.js' %}?v=1.0.30"></script>
 {% endblock %}

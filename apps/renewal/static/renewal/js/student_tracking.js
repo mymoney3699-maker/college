@@ -561,16 +561,16 @@ function openPrintPreview() {
             ` : ''}
 
             <!-- Official Signatures & Seal -->
-            <div class="cert-official-signatures" style="justify-content: center; gap: 3rem;">
-                <div class="sig-block stamp-center">
+            <div class="cert-official-signatures" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 2rem; padding-top: 1rem; width: 100%;">
+                <div class="sig-block stamp-center" style="text-align: right; flex: 0 0 auto;">
                     <div class="official-stamp-ring">
                         <span>ختم الكلية الرسمي</span>
                     </div>
                 </div>
-                <div class="sig-block" style="min-width: 160px;" data-official>
-                    <div class="sig-title off-pos">منسق الدراسة والامتحانات</div>
-                    <div class="sig-line"></div>
-                    <div class="sig-name off-name">أ. نيروز</div>
+                <div class="sig-block" style="min-width: 220px; text-align: left; flex: 0 0 auto;" data-official="general_registrar">
+                    <div class="sig-title off-pos" style="font-size: 13px; font-weight: 900; color: #000; margin-bottom: 4px;">المسجل العام بالكلية</div>
+                    <div class="sig-name off-name" style="font-size: 13.5px; font-weight: 900; color: #000; margin-bottom: 6px;">أ. احمد محمد علي محمود</div>
+                    <div class="sig-line" style="width: 170px; border-bottom: 1.5px dotted #000; margin: 4px 0 0 auto;"></div>
                 </div>
             </div>
 

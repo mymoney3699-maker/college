@@ -65,6 +65,7 @@ function fillRegistrarName() {
 // ─────────────────────────────────────────────────────────────
 function showSearchResults() {
     const majorSelect = document.getElementById('majorSelect');
+    const levelSelect = document.getElementById('levelSelect');
     const semesterTypeSelect = document.getElementById('semesterTypeSelect');
     const semesterYearInput = document.getElementById('semesterYearInput');
     const resultsTableContainer = document.getElementById('searchTableContainer');
@@ -72,13 +73,14 @@ function showSearchResults() {
     const resultsCountBadge = document.getElementById('resultsCountBadge');
 
     const departmentId = majorSelect ? majorSelect.value.trim() : '';
+    const levelId = levelSelect ? levelSelect.value.trim() : '';
     const semesterType = semesterTypeSelect ? semesterTypeSelect.value.trim() : '';
     const semesterYear = semesterYearInput ? semesterYearInput.value.trim() : '';
 
     if (resultsBody) {
         resultsBody.innerHTML = `
             <tr>
-                <td colspan="6" style="text-align: center; padding: 2rem; color: var(--primary, #307e92); font-weight: 700;">
+                <td colspan="7" style="text-align: center; padding: 2rem; color: var(--primary, #307e92); font-weight: 700;">
                     <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
                         <span class="material-symbols-outlined" style="animation: spin 1s linear infinite;">sync</span>
                         جاري جلب المواد الدراسية...
@@ -95,6 +97,7 @@ function showSearchResults() {
 
     const params = new URLSearchParams();
     if (departmentId) params.append('department_id', departmentId);
+    if (levelId) params.append('level_id', levelId);
     if (semesterType) params.append('semester_type', semesterType);
     if (semesterYear) params.append('semester_year', semesterYear);
 
@@ -136,14 +139,18 @@ function showSearchResults() {
 
                     html += `
                     <tr class="subject-row" style="border-bottom: 1px solid rgba(203, 213, 225, 0.4); transition: background 0.15s ease;">
-                        <td style="padding: 0.85rem 0.6rem; text-align: center; width: 140px; min-width: 120px; max-width: 160px;">
+                        <td style="padding: 0.85rem 0.6rem; text-align: center; width: 130px;">
                             <span style="display: inline-block; word-break: break-all; overflow-wrap: break-word; white-space: normal; background: rgba(2, 132, 199, 0.1); color: #0284c7; padding: 0.35rem 0.55rem; border-radius: 6px; border: 1px solid rgba(2, 132, 199, 0.25); font-family: monospace; font-weight: 800; font-size: 0.82rem; line-height: 1.3; max-width: 100%;">
                                 ${escapeHtml(c.code || '-')}
                             </span>
                         </td>
                         <td style="padding: 0.85rem 1rem;">
-                            <strong style="font-size: 0.95rem; display: block; color: #1e293b;">${escapeHtml(c.name)}</strong>
-                            <span style="font-size: 0.75rem; color: #64748b;">${escapeHtml(c.level || '')}</span>
+                            <strong style="font-size: 0.95rem; display: block; color: inherit;">${escapeHtml(c.name)}</strong>
+                        </td>
+                        <td style="padding: 0.85rem 0.75rem; text-align: center; width: 130px;">
+                            <span style="display: inline-block; background: rgba(48, 126, 146, 0.1); color: var(--primary, #307e92); padding: 0.25rem 0.6rem; border-radius: 6px; border: 1px solid rgba(48, 126, 146, 0.25); font-size: 0.82rem; font-weight: 700; white-space: nowrap;">
+                                ${escapeHtml(c.level || '-')}
+                            </span>
                         </td>
                         <td style="padding: 0.85rem 0.75rem; text-align: center; font-weight: 700; width: 90px;">
                             <span style="background: rgba(16, 185, 129, 0.1); color: #059669; padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.8rem; border: 1px solid rgba(16, 185, 129, 0.2); white-space: nowrap;">
@@ -171,7 +178,7 @@ function showSearchResults() {
                 if (resultsBody) {
                     resultsBody.innerHTML = `
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 2.5rem; color: #64748b; font-weight: 700;">
+                        <td colspan="7" style="text-align: center; padding: 2.5rem; color: #64748b; font-weight: 700;">
                             ℹ️ لا توجد مواد مطروحة تطابق معايير البحث المحددة.
                         </td>
                     </tr>
@@ -187,7 +194,7 @@ function showSearchResults() {
             if (resultsBody) {
                 resultsBody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 700;">
+                    <td colspan="7" style="text-align: center; padding: 2rem; color: #ef4444; font-weight: 700;">
                         ❌ حدث خطأ أثناء جلب البيانات. يرجى المحاولة لاحقاً.
                     </td>
                 </tr>
@@ -205,12 +212,18 @@ async function printPage() {
     const registrarName = fillRegistrarName();
 
     const majorSelect = document.getElementById('majorSelect');
+    const levelSelect = document.getElementById('levelSelect');
     const semesterTypeSelect = document.getElementById('semesterTypeSelect');
     const semesterYearInput = document.getElementById('semesterYearInput');
 
-    let deptName = 'جميع الأقسام والتخصصات';
+    let deptName = 'جميع الأقسام';
     if (majorSelect && majorSelect.selectedIndex > 0) {
         deptName = majorSelect.options[majorSelect.selectedIndex].text.replace(/^--\s*|\s*--$/g, '').trim();
+    }
+
+    let levelName = 'جميع المستويات';
+    if (levelSelect && levelSelect.selectedIndex > 0) {
+        levelName = levelSelect.options[levelSelect.selectedIndex].text.replace(/^--\s*|\s*--$/g, '').trim();
     }
 
     let seasonName = 'ربيع';
@@ -230,13 +243,13 @@ async function printPage() {
         currentCoursesData.forEach((c, idx) => {
             const inst = (c.instructors && c.instructors.length > 0) ? c.instructors.join('، ') : (c.instructor && c.instructor !== 'غير محدد' ? c.instructor : '—');
             const grp = (c.groups && c.groups.length > 0) ? c.groups.join('، ') : (c.group || 'الشعبة العامة');
-            const levelText = c.level ? ` (${c.level})` : '';
 
             rowsHtml += `
                 <tr>
                     <td style="padding: 6px 4px; border: 1px solid #000; text-align: center; font-weight: 800;">${idx + 1}</td>
                     <td style="padding: 6px 4px; border: 1px solid #000; text-align: center; font-family: monospace; font-weight: 900; font-size: 12px;">${escapeHtml(c.code || '-')}</td>
-                    <td style="padding: 6px 8px; border: 1px solid #000; text-align: right; font-weight: 800; font-size: 12.5px;">${escapeHtml(c.name)}${escapeHtml(levelText)}</td>
+                    <td style="padding: 6px 8px; border: 1px solid #000; text-align: right; font-weight: 800; font-size: 12.5px;">${escapeHtml(c.name)}</td>
+                    <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-weight: 700; font-size: 12px;">${escapeHtml(c.level || '-')}</td>
                     <td style="padding: 6px 4px; border: 1px solid #000; text-align: center; font-weight: 700;">${escapeHtml(c.credits)} ساعات</td>
                     <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-weight: 800;">${escapeHtml(c.department || 'عام')}</td>
                     <td style="padding: 6px 6px; border: 1px solid #000; text-align: center; font-size: 11.5px; font-weight: 700;">${escapeHtml(inst)}</td>
@@ -247,7 +260,7 @@ async function printPage() {
     } else {
         rowsHtml = `
             <tr>
-                <td colspan="7" style="padding: 24px; text-align: center; font-weight: 800; font-size: 13px; border: 1px solid #000;">
+                <td colspan="8" style="padding: 24px; text-align: center; font-weight: 800; font-size: 13px; border: 1px solid #000;">
                     لا توجد مواد مطروحة تطابق معايير البحث المحددة.
                 </td>
             </tr>
@@ -331,26 +344,32 @@ async function printPage() {
         color: #000000;
     }
     .report-meta-grid {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin: 10px 0 14px 0;
-        font-size: 12.5px;
-        font-weight: 700;
-        background: #ffffff;
+        display: flex !important;
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        margin: 8px 0 12px 0 !important;
+        padding: 6px 10px !important;
+        border: 1.5px solid #000000 !important;
+        background: #f8fafc !important;
+        font-size: 11.5px !important;
+        box-sizing: border-box !important;
+        width: 100% !important;
     }
     .meta-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
+        display: inline-flex !important;
+        align-items: center !important;
+        white-space: nowrap !important;
+        gap: 4px !important;
     }
     .meta-lbl {
-        font-weight: 700;
-        color: #000;
+        font-weight: 700 !important;
+        color: #000 !important;
     }
     .meta-val {
-        font-weight: 900;
-        color: #000;
+        font-weight: 900 !important;
+        color: #000 !important;
     }
     .courses-table {
         width: 100%;
@@ -452,15 +471,23 @@ async function printPage() {
             <div class="print-header-line" style="border-top: 1.5px solid #000; margin: 6px 0 10px; width: 100%; display: block;"></div>
             <div class="bf-title" style="font-size:16.5px;font-weight:900;color:#000;text-align:center;margin:4px 0 10px;">جدول المواد والمقررات الدراسية المطروحة</div>
 
-            <!-- شبكة بيانات الفلترة والتقرير -->
+            <!-- شبكة بيانات الفلترة والتقرير في صف أفقي واحد متناسق -->
             <div class="report-meta-grid">
                 <div class="meta-item">
-                    <span class="meta-lbl">القسم / التخصص:</span>
+                    <span class="meta-lbl">القسم:</span>
                     <span class="meta-val">${escapeHtml(deptName)}</span>
                 </div>
                 <div class="meta-item">
-                    <span class="meta-lbl">الفصل الدراسي:</span>
-                    <span class="meta-val">${escapeHtml(semesterFormatted)}</span>
+                    <span class="meta-lbl">المستوى الدراسي:</span>
+                    <span class="meta-val">${escapeHtml(levelName)}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-lbl">الفصل:</span>
+                    <span class="meta-val">${escapeHtml(seasonName)}</span>
+                </div>
+                <div class="meta-item">
+                    <span class="meta-lbl">السنة:</span>
+                    <span class="meta-val">${escapeHtml(yearVal)}</span>
                 </div>
                 <div class="meta-item">
                     <span class="meta-lbl">تاريخ التقرير:</span>
@@ -472,13 +499,14 @@ async function printPage() {
             <table class="courses-table">
                 <thead>
                     <tr>
-                        <th style="width: 35px;">#</th>
-                        <th style="width: 105px;">رمز المادة</th>
-                        <th>اسم المادة والمستوى</th>
-                        <th style="width: 80px;">الساعات</th>
-                        <th style="width: 140px;">التخصص</th>
-                        <th style="width: 140px;">الأستاذ المدرس</th>
-                        <th style="width: 120px;">الشعبة</th>
+                        <th style="width: 30px;">#</th>
+                        <th style="width: 85px;">رمز المادة</th>
+                        <th>اسم المادة</th>
+                        <th style="width: 90px;">المستوى الدراسي</th>
+                        <th style="width: 65px;">الساعات</th>
+                        <th style="width: 110px;">القسم</th>
+                        <th style="width: 130px;">الأستاذ المدرس</th>
+                        <th style="width: 90px;">الشعبة</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -549,7 +577,7 @@ function goBack() {
 document.addEventListener('DOMContentLoaded', function () {
     fetchActiveOfficials();
 
-    const searchInputs = ['majorSelect', 'semesterTypeSelect', 'semesterYearInput'];
+    const searchInputs = ['majorSelect', 'levelSelect', 'semesterTypeSelect', 'semesterYearInput'];
     searchInputs.forEach(id => {
         const elem = document.getElementById(id);
         if (elem) {
@@ -559,6 +587,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     showSearchResults();
                 }
             });
+            if (elem.tagName === 'SELECT') {
+                elem.addEventListener('change', function () {
+                    showSearchResults();
+                });
+            }
         }
     });
 

@@ -503,23 +503,23 @@
         <!-- قسم التوقيعات والاعتماد (توقيعان: الطالب على اليمين، مسؤول التسجيل والقبول على اليسار) -->
         <div class="info-box signatures-box">
             <div class="signatures-grid">
-                <div class="signature-item">
-                    <span class="signature-label">توقيع الطالب</span>
-                    <div class="signature-line"></div>
-                    <span class="signature-person">الاسم والتوقيع</span>
+                <div class="signature-item" style="text-align: center;">
+                    <span class="signature-person signature-highlight" style="font-size: 13.5px; font-weight: 900; display: block; margin-bottom: 3px;">{{ student.name }}</span>
+                    <span class="signature-label" style="font-size: 12px; font-weight: 800; color: #475569; display: block; margin-bottom: 18px;">توقيع الطالب المعني</span>
+                    <div class="signature-line" style="font-size: 11.5px; font-weight: 700;">التوقيع: ....................................</div>
                 </div>
-                <div class="signature-item">
-                    <span class="signature-label">اعتماد / توقيع مسؤول قسم التسجيل والقبول</span>
-                    <div class="signature-line"></div>
-                    <span class="signature-person signature-highlight" id="admissionOfficialName">
+                <div class="signature-item" style="text-align: center;">
+                    <span class="signature-person signature-highlight" id="admissionOfficialName" style="font-size: 13.5px; font-weight: 900; display: block; margin-bottom: 3px;">
                         {% if admission_official_name %}
                             {{ admission_official_name }}
                         {% elif registrar_official_name %}
                             {{ registrar_official_name }}
                         {% else %}
-                            رئيس قسم التسجيل والقبول
+                            أ. خديجة
                         {% endif %}
                     </span>
+                    <span class="signature-label" style="font-size: 12px; font-weight: 800; color: #475569; display: block; margin-bottom: 18px;">رئيس قسم التسجيل والقبول</span>
+                    <div class="signature-line" style="font-size: 11.5px; font-weight: 700;">التوقيع والختم: ....................................</div>
                 </div>
             </div>
         </div>

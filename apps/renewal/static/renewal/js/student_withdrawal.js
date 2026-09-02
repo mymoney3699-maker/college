@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (withdrawalForm) {
         withdrawalForm.addEventListener('submit', function (e) {
             e.preventDefault();
-            handleWithdrawalButtonClick(e);
+            e.stopPropagation();
         });
     }
 
@@ -144,6 +144,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (actionBtn) {
         actionBtn.addEventListener('click', function (e) {
             e.preventDefault();
+            e.stopPropagation();
             handleWithdrawalButtonClick(e);
         });
     }
@@ -219,6 +220,9 @@ function renderStudentCard(student) {
     const customReasonInput = document.getElementById('customReasonInput');
     const customReasonContainer = document.getElementById('customReasonContainer');
     const adminNotes = document.getElementById('adminNotes');
+    const withdrawalDateEl = document.getElementById('cardWithdrawalDate');
+    const withdrawalDateContainer = document.getElementById('cardWithdrawalDateContainer');
+    const withdrawalDateInput = document.getElementById('withdrawalDate');
 
     if (student.is_withdrawn) {
         // حالة الطالبة: مسحوبة ملف
@@ -227,6 +231,12 @@ function renderStudentCard(student) {
             statusBadge.className = 'status-badge status-withdrawn';
         }
         if (warningBanner) warningBanner.classList.remove('hidden');
+
+        if (student.withdrawal_date) {
+            if (withdrawalDateEl) withdrawalDateEl.textContent = student.withdrawal_date;
+            if (withdrawalDateContainer) withdrawalDateContainer.classList.remove('hidden');
+            if (withdrawalDateInput) withdrawalDateInput.value = student.withdrawal_date;
+        }
 
         // قفل حقول النموذج وتعبئتها بالبيانات المحفوظة
         if (reasonSelect) {
@@ -249,6 +259,8 @@ function renderStudentCard(student) {
             actionBtn.disabled = false;
         }
     } else {
+        if (withdrawalDateContainer) withdrawalDateContainer.classList.add('hidden');
+
         // حالة الطالبة: نشطة / منتظمة
         if (statusBadge) {
             statusBadge.textContent = student.status || 'منتظم';
@@ -491,7 +503,7 @@ async function fetchActiveOfficials() {
     }
 
     if (!cachedRegistrarName) cachedRegistrarName = window.OFFICIAL_GENERAL_REGISTRAR || 'أ. أحمد محمد علي محمود';
-    if (!cachedAdmissionHeadName) cachedAdmissionHeadName = window.OFFICIAL_ADMISSION_HEAD || 'أ. محمد علي عمر';
+    if (!cachedAdmissionHeadName) cachedAdmissionHeadName = window.OFFICIAL_ADMISSION_HEAD || 'أ. أميرة الشلادي';
 
     return { registrar: cachedRegistrarName, admissionHead: cachedAdmissionHeadName };
 }
@@ -501,8 +513,10 @@ function fillRegistrarName() {
 }
 
 function fillAdmissionHeadName() {
-    return cachedAdmissionHeadName || window.OFFICIAL_ADMISSION_HEAD || 'أ. محمد علي عمر';
+    return cachedAdmissionHeadName || window.OFFICIAL_ADMISSION_HEAD || 'أ. أميرة الشلادي';
 }
+
+let isPrintingNow = false;
 
 /**
  * 4. طباعة استمارة سحب الملف الرسمية بتنسيق الكلية المعتمد A4 عبر iframe خفي
@@ -513,12 +527,17 @@ async function printWithdrawalForm() {
         return;
     }
 
+    if (isPrintingNow) return;
+    isPrintingNow = true;
+    setTimeout(() => { isPrintingNow = false; }, 1500);
+
     await fetchActiveOfficials();
     const registrarName = fillRegistrarName();
     const admissionHeadName = fillAdmissionHeadName();
 
     const reason = currentStudent.withdrawal_reason || (document.getElementById('withdrawalReasonSelect') ? document.getElementById('withdrawalReasonSelect').value : 'ظروف شخصية');
     const notes = currentStudent.withdrawal_notes || (document.getElementById('adminNotes') ? document.getElementById('adminNotes').value : 'لا توجد ملاحظات إضافية');
+    const withdrawalDateVal = currentStudent.withdrawal_date || (document.getElementById('withdrawalDate') ? document.getElementById('withdrawalDate').value : '') || dateStr;
 
     // احتساب التاريخ التلقائي لليوم
     const now = new Date();
@@ -672,53 +691,37 @@ async function printWithdrawalForm() {
         line-height: 1.9;
         text-align: justify;
     }
-    .signatures-grid {
-        display: flex;
-        justify-content: space-between;
-        align-items: flex-start;
-        margin-top: 25px;
+    .signatures-row-3col {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr 1fr !important;
+        gap: 10px !important;
+        margin-top: 30px !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
     }
-    .sig-block {
-        text-align: center;
-        width: 30%;
-        font-size: 12.5px;
-        font-weight: 800;
-    }
-    .sig-dots {
-        margin-top: 28px;
-        white-space: nowrap;
-    }
-    .bf-signatures-container {
-        display: flex !important;
-        justify-content: flex-end !important;
-        margin-top: 20px !important;
-        page-break-inside: avoid !important;
-        break-inside: avoid !important;
-    }
-    .bf-sig-col {
+    .sig-col-box {
+        border: 1.5px solid #000 !important;
+        border-radius: 6px !important;
+        padding: 8px 6px !important;
         text-align: center !important;
-        width: 270px !important;
+        background: #fff !important;
         page-break-inside: avoid !important;
         break-inside: avoid !important;
-        display: block !important;
     }
-    .off-name {
-        font-size: 13.5px !important;
+    .sig-col-box .off-name {
+        font-size: 13px !important;
         font-weight: 900 !important;
         margin-bottom: 3px !important;
-        min-height: 18px !important;
         color: #000 !important;
     }
-    .off-pos {
-        font-size: 12.5px !important;
+    .sig-col-box .off-pos {
+        font-size: 11.5px !important;
         font-weight: 800 !important;
         color: #111 !important;
         margin-bottom: 16px !important;
     }
-    .off-sig {
-        font-size: 12px !important;
+    .sig-col-box .off-sig {
+        font-size: 11px !important;
         font-weight: 700 !important;
         color: #000 !important;
         white-space: nowrap !important;
@@ -727,7 +730,7 @@ async function printWithdrawalForm() {
         @page { size: A4 portrait; margin: 4mm; }
         html, body { width: 100%; height: 100%; }
         .print-page-frame { min-height: 275mm; border: 2px solid #000000; }
-        .signatures-grid, .bf-signatures-container, .bf-sig-col {
+        .signatures-row-3col, .sig-col-box {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
             -webkit-column-break-inside: avoid !important;
@@ -801,7 +804,9 @@ async function printWithdrawalForm() {
                 </tr>
                 <tr>
                     <td class="lbl-cell">سبب سحب الملف:</td>
-                    <td class="val-cell" colspan="3" style="font-weight: 800; color: #991b1b;">${escapeHtml(reason)}</td>
+                    <td class="val-cell" style="font-weight: 800; color: #991b1b;">${escapeHtml(reason)}</td>
+                    <td class="lbl-cell">تاريخ سحب الملف:</td>
+                    <td class="val-cell highlight" style="font-family: monospace; font-size: 13.5px; font-weight: 800; color: #000;">${escapeHtml(withdrawalDateVal)}</td>
                 </tr>
                 <tr>
                     <td class="lbl-cell">ملاحظات الإدارة:</td>
@@ -814,26 +819,23 @@ async function printWithdrawalForm() {
                 بناءً على طلب الطالبة المذكورة بياناتها أعلاه برغبتها في إنهاء دراستها وسحب ملفها، تم استكمال كافة إجراءات سحب الملف الأكاديمي، وتسليمها ملفها ومستنداتها الأصلية المودعة لدى مكتب المسجل العام بالكلية وتوثيق سحب الملف رسمياً بالمنظومة.
             </div>
 
-            <!-- تواقيع الاستلام والمسؤول المختص -->
-            <div class="signatures-grid">
-                <div class="sig-block">
-                    <div style="font-size: 13px; font-weight: 800; margin-bottom: 2px;">توقيع واستلام الطالبة</div>
-                    <div class="sig-dots" style="margin-top: 36px;">...........................................</div>
+            <!-- اعتماد التواقيع الثلاثة جنباً إلى جنب في صف أفقي واحد -->
+            <div class="signatures-row-3col">
+                <div class="sig-col-box">
+                    <div class="off-name">${escapeHtml(currentStudent.full_name || currentStudent.name || 'الطالب/ـة')}</div>
+                    <div class="off-pos">توقيع واستلام الطالب/ـة</div>
+                    <div class="off-sig">التوقيع: ....................................</div>
                 </div>
-                <div class="sig-block">
+                <div class="sig-col-box">
                     <div class="off-name">${escapeHtml(admissionHeadName)}</div>
                     <div class="off-pos">رئيس قسم التسجيل والقبول</div>
-                    <div class="sig-dots">التوقيع: ....................................</div>
+                    <div class="off-sig">التوقيع والختم: ....................................</div>
                 </div>
-            </div>
-        </div>
-
-        <!-- اعتماد التوقيع والختم للمسجل العام في أقصى اليسار -->
-        <div class="bf-signatures-container">
-            <div class="bf-sig-col">
-                <div class="off-name">${escapeHtml(registrarName)}</div>
-                <div class="off-pos">المسجل العام بالكلية</div>
-                <div class="off-sig">التوقيع والختم: ....................................</div>
+                <div class="sig-col-box">
+                    <div class="off-name">${escapeHtml(registrarName)}</div>
+                    <div class="off-pos">المسجل العام بالكلية</div>
+                    <div class="off-sig">التوقيع والختم: ....................................</div>
+                </div>
             </div>
         </div>
     </div>

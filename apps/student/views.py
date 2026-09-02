@@ -888,7 +888,7 @@ def term_result(request):
 @login_required
 def subject_inquiry(request):
     """صفحة استعلام عن مواد الفصل"""
-    from apps.renewal.models import Semester, Course, Department
+    from apps.renewal.models import Semester, Course, Department, Level
     student = get_student_for_user(request)
     active_sem = Semester.objects.filter(is_active=True).first()
     current_season = active_sem.type if active_sem else 'spring'
@@ -900,6 +900,7 @@ def subject_inquiry(request):
         'semesters': Semester.objects.all().order_by('-year', '-type'),
         'courses': Course.objects.filter(is_active=True).select_related('level').prefetch_related('department').order_by('code'),
         'departments': Department.objects.filter(is_active=True).order_by('name'),
+        'levels': Level.objects.all().order_by('number'),
         'current_season': current_season,
         'current_year': current_year,
     }

@@ -677,13 +677,27 @@ def show_results(request):
             request=request
         )
     except Exception as log_err:
-        print(f"⚠️ Error logging show_results activity: {log_err}")
+        logger.warning(f"⚠️ Error logging show_results activity: {log_err}")
+
+    exams_director_name = "د. فاطمة عمران الشريف"
+    try:
+        from apps.users.models import Official
+        exams_dir = Official.objects.filter(is_active=True).filter(
+            Q(position_key__in=['exams_director', 'exams_head', 'exams']) |
+            Q(position_name__icontains='مدير الدراسة والامتحانات') |
+            Q(position_name__icontains='الدراسة والامتحانات')
+        ).exclude(position_key='exams_coordinator').exclude(position_name__icontains='منسق').exclude(position_name__icontains='منسقة').first()
+        if exams_dir:
+            exams_director_name = exams_dir.get_full_name()
+    except Exception as e:
+        logger.warning(f"Error fetching exams director for show_results: {e}")
 
     context = {
         'departments': departments,
         'semesters': semesters,
         'levels': levels,
         'courses': courses,
+        'exams_director_name': exams_director_name,
     }
     return render(request, 'grades/show_results.html', context)
 
@@ -1926,11 +1940,39 @@ def get_courses_publish_status_api(request):
                 
             blocked_count = grade_qs.filter(is_blocked=True).count()
             
+            # تحديد التخصص / القسم الفعلي للمادة أو الطلاب المسجلين
+            course_depts = list(crs.department.values_list('name', flat=True))
+            if dep_id:
+                sel_dept = Department.objects.filter(id=dep_id).first()
+                dept_name = sel_dept.name if sel_dept else '-'
+            elif course_depts:
+                if len(course_depts) == 1:
+                    dept_name = course_depts[0]
+                elif len(course_depts) <= 2:
+                    dept_name = "، ".join(course_depts)
+                else:
+                    dept_name = f"{course_depts[0]} (+{len(course_depts)-1})"
+            elif all_student_ids:
+                from apps.student.models import Student
+                stu_depts = list(Student.objects.filter(id__in=all_student_ids).values_list('department__name', flat=True).distinct())
+                stu_depts = [d for d in stu_depts if d]
+                if len(stu_depts) == 1:
+                    dept_name = stu_depts[0]
+                elif stu_depts:
+                    dept_name = "، ".join(stu_depts[:2])
+                else:
+                    dept_name = 'عام'
+            else:
+                dept_name = 'عام'
+
+            full_depts = "، ".join(course_depts) if course_depts else dept_name
+            
             courses_data.append({
                 'course_id': crs.id,
                 'course_code': crs.code,
                 'course_name': crs.name,
-                'department_name': crs.department.name if crs.department else '-',
+                'department_name': dept_name,
+                'department_full': full_depts,
                 'level_number': crs.level.number if crs.level else '-',
                 'total_students': total_students,
                 'graded_count': graded_count,
@@ -3557,13 +3599,18 @@ def course_equivalence_page(request):
         if adm_obj:
             admission_head_name = adm_obj.get_full_name()
 
-        exams_obj = Official.objects.filter(is_active=True).filter(
-            Q(position_key='exams') | Q(position_name__icontains='امتحانات') | Q(position_name__icontains='الدراسة والامتحانات') | Q(position_name__icontains='الشؤون العلمية')
+        coord_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='exams_coordinator') |
+            Q(position_name__icontains='منسق') |
+            Q(position_name__icontains='منسقة')
         ).first()
-        if exams_obj:
-            exams_head_name = exams_obj.get_full_name()
+        if coord_obj:
+            exams_head_name = coord_obj.get_full_name()
+        if not exams_head_name:
+            exams_head_name = "أ. لبنى"
     except Exception as e:
         logger.warning(f"Error fetching officials in course_equivalence_page: {e}")
+        exams_head_name = "أ. لبنى"
 
     # تحديد التخصص السابق والتخصص الجديد بدقة تامة للعرض والطباعة
     previous_dept_name = ""
@@ -3789,13 +3836,18 @@ def equivalent_students(request):
         if adm_obj:
             admission_head_name = adm_obj.get_full_name()
 
-        exams_obj = Official.objects.filter(is_active=True).filter(
-            Q(position_key='exams') | Q(position_name__icontains='امتحانات') | Q(position_name__icontains='الدراسة والامتحانات') | Q(position_name__icontains='الشؤون العلمية')
+        coord_obj = Official.objects.filter(is_active=True).filter(
+            Q(position_key='exams_coordinator') |
+            Q(position_name__icontains='منسق') |
+            Q(position_name__icontains='منسقة')
         ).first()
-        if exams_obj:
-            exams_head_name = exams_obj.get_full_name()
+        if coord_obj:
+            exams_head_name = coord_obj.get_full_name()
+        if not exams_head_name:
+            exams_head_name = "أ. لبنى"
     except Exception as e:
         logger.warning(f"Error fetching officials in equivalent_students_view: {e}")
+        exams_head_name = "أ. لبنى"
 
     context = {
         'departments': departments,

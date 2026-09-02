@@ -1211,7 +1211,7 @@ window.addEventListener('afterprint', function() {
     restoreChartThemeAfterPrint();
 });
 
-// 🖨️ دالة الطباعة في الخلفية عبر Hidden Iframe بدون فتح نوافذ جديدة
+// 🖨️ دالة الطباعة في الخلفية عبر Hidden Iframe بدون فتح نوافذ جديدة وبدون أي تكرار
 function printViaHiddenIframe(htmlContent) {
     const oldIframe = document.getElementById('reportPrintHiddenIframe');
     if (oldIframe) oldIframe.remove();
@@ -1221,9 +1221,10 @@ function printViaHiddenIframe(htmlContent) {
     iframe.style.position = 'fixed';
     iframe.style.right = '-9999px';
     iframe.style.bottom = '-9999px';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
+    iframe.style.width = '1px';
+    iframe.style.height = '1px';
     iframe.style.border = '0';
+    iframe.style.opacity = '0';
     document.body.appendChild(iframe);
 
     const doc = iframe.contentWindow.document;
@@ -1231,7 +1232,14 @@ function printViaHiddenIframe(htmlContent) {
     doc.write(htmlContent);
     doc.close();
 
+    let hasPrinted = false;
+    let fallbackTimer = null;
+
     const triggerPrint = () => {
+        if (hasPrinted) return;
+        hasPrinted = true;
+        if (fallbackTimer) clearTimeout(fallbackTimer);
+
         setTimeout(() => {
             try {
                 iframe.contentWindow.focus();
@@ -1239,10 +1247,7 @@ function printViaHiddenIframe(htmlContent) {
             } catch (err) {
                 console.error("Print Error:", err);
             }
-            setTimeout(() => {
-                if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
-            }, 3000);
-        }, 350);
+        }, 200);
     };
 
     const images = doc.images;
@@ -1263,25 +1268,33 @@ function printViaHiddenIframe(htmlContent) {
                 };
             }
         }
-        setTimeout(triggerPrint, 1500);
+        fallbackTimer = setTimeout(triggerPrint, 1200);
     }
 }
 
 // دالة جلب توقيع المسؤولين من API
 async function fetchAdminOfficials() {
-    let registrarName = "أ. المسجل العام";
+    let registrarName = "أ. أحمد محمد علي محمود";
     let registrarPos = "المسجل العام بالكلية";
     try {
-        const res = await fetch('/users/api/officials/');
-        const data = await res.json();
-        if (data.success && Array.isArray(data.officials)) {
-            const reg = data.officials.find(o => 
-                (o.position_key && o.position_key.includes('registrar')) ||
-                (o.position && (o.position.includes('مسجل عام') || o.position.includes('المسجل العام')))
-            );
-            if (reg && reg.name) {
-                registrarName = reg.name;
+        if (window.OfficialsHelper) {
+            const reg = await window.OfficialsHelper.getOfficialAsync('registrar');
+            if (reg) {
+                registrarName = window.OfficialsHelper.buildName(reg);
                 if (reg.position) registrarPos = reg.position;
+            }
+        } else {
+            const res = await fetch('/users/api/officials/');
+            const data = await res.json();
+            if (data.success && Array.isArray(data.officials)) {
+                const reg = data.officials.find(o => 
+                    (o.position_key && o.position_key.includes('registrar')) ||
+                    (o.position && (o.position.includes('مسجل عام') || o.position.includes('المسجل العام')))
+                );
+                if (reg && reg.name) {
+                    registrarName = reg.name;
+                    if (reg.position) registrarPos = reg.position;
+                }
             }
         }
     } catch (e) {
@@ -1320,96 +1333,162 @@ window.printStatisticalReport = async function() {
         const count = deptCounts[idx] || 0;
         const pct = totalDeptStudents > 0 ? Math.round((count / totalDeptStudents) * 100) : 0;
         deptRowsHtml += `
-            <tr style="border-bottom: 1px solid #ddd; text-align: center;">
-                <td style="padding: 6px 10px; text-align: right; font-weight: bold;">${label}</td>
-                <td style="padding: 6px 10px;">${count}</td>
-                <td style="padding: 6px 10px;">${pct}%</td>
+            <tr style="border-bottom: 1px solid #cbd5e1; text-align: center;">
+                <td style="padding: 6px 8px; text-align: center; font-weight: 700;">${idx + 1}</td>
+                <td style="padding: 6px 10px; text-align: right; font-weight: 700;">${label}</td>
+                <td style="padding: 6px 8px; font-weight: 800;">${count}</td>
+                <td style="padding: 6px 8px; font-weight: 700;">${pct}%</td>
+                <td style="padding: 6px 8px; font-weight: 700; color: #047857;">معتمد ونشط</td>
             </tr>
         `;
     });
 
-    const html = `
-<!DOCTYPE html>
+    const currentDateStr = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const currentTimeStr = new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+
+    const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <title>التقرير الإحصائي والرسوم البيانية - لوحة تحكم مدير النظام</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/fonts.css">
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 0;
         }
-        @media print {
-            body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; }
-        }
-        body {
-            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-            background: #fff;
-            color: #000;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #ffffff !important;
+            color: #000000 !important;
             direction: rtl;
+            font-size: 12px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            padding: 12mm 15mm;
         }
         .print-sheet {
-            border: 2px solid #000;
-            padding: 22px 28px;
-            box-sizing: border-box;
-            background: #fff;
             width: 100%;
+            margin: 0 auto;
+            border: none !important;
+            box-shadow: none !important;
         }
-        .header-box {
+        .header-sec {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            direction: rtl;
+        }
+        .header-ar {
+            flex: 1;
             text-align: center;
-            margin-bottom: 12px;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #000;
+            font-weight: 800;
         }
-        .college-logo {
-            width: 75px;
-            height: 75px;
+        .header-logo {
+            flex: 0 0 90px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 8px;
+        }
+        .header-logo img {
+            max-height: 72px;
+            max-width: 72px;
             object-fit: contain;
             display: block;
-            margin: 0 auto 6px auto;
+            margin: 0 auto;
         }
-        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
-        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
-        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-en {
+            flex: 1;
+            text-align: center;
+            font-size: 9.5px;
+            line-height: 1.35;
+            color: #000;
+            direction: ltr;
+        }
         .divider-line {
-            border-bottom: 2px solid #000;
-            margin: 10px 0 12px 0;
             width: 100%;
+            margin: 8px 0 12px;
+            border-top: 1.5px solid #000;
         }
         .report-main-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 900;
             text-align: center;
-            margin: 8px 0 14px 0;
+            margin: 6px 0 10px;
+            color: #000;
+        }
+        .report-meta-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #fafafa;
         }
         .kpi-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 16px;
         }
-        .kpi-table th, .kpi-table td {
-            border: 1px solid #000;
-            padding: 7px 10px;
-            text-align: center;
-            font-size: 12px;
-        }
         .kpi-table th {
-            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            background: #f1f5f9;
             font-weight: 900;
+            text-align: center;
+            font-size: 11px;
+        }
+        .kpi-table td {
+            border: 1px solid #000;
+            padding: 7px 6px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 13.5px;
+        }
+        .section-title {
+            font-weight: 900;
+            font-size: 12.5px;
+            margin: 12px 0 6px;
+            color: #000;
         }
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 16px;
-            font-size: 12px;
-        }
-        .data-table th, .data-table td {
-            border: 1px solid #000;
-            padding: 6px 8px;
+            margin-bottom: 14px;
+            font-size: 11.5px;
         }
         .data-table th {
-            background: #f0f0f0;
-            font-weight: bold;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            background: #f1f5f9;
+            font-weight: 900;
+            text-align: center;
+        }
+        .data-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
         }
         .charts-container {
             display: flex;
@@ -1420,54 +1499,71 @@ window.printStatisticalReport = async function() {
         .chart-box {
             flex: 1;
             border: 1px solid #000;
-            padding: 10px;
+            border-radius: 4px;
+            padding: 8px;
             text-align: center;
         }
         .chart-img {
             max-width: 100%;
-            max-height: 220px;
+            max-height: 200px;
             object-fit: contain;
         }
         .signatures-area {
             display: flex;
-            justify-content: flex-end;
-            margin-top: 32px;
+            justify-content: space-between;
+            margin-top: 26px;
             page-break-inside: avoid;
+            padding: 0 10px;
         }
         .sig-card {
             text-align: center;
-            min-width: 190px;
+            min-width: 180px;
         }
     </style>
 </head>
 <body>
     <div class="print-sheet">
-        <div class="header-box">
-            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
-            <div class="header-title-1">دولة ليبيا</div>
-            <div class="header-title-2">وزارة التعليم التقني والفني</div>
-            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
-            <div class="divider-line"></div>
-            <div class="report-main-title">التقرير الإحصائي والرسوم البيانية للوحة تحكم مدير النظام</div>
+        <div class="header-sec">
+            <div class="header-ar">
+                <div style="font-size: 12.5px; font-weight: 900; margin-bottom: 1px;">دولة ليبيا</div>
+                <div style="font-size: 10.5px; font-weight: 800; margin-bottom: 1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size: 10.5px; font-weight: 800; margin-bottom: 1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size: 11.5px; font-weight: 900; margin-top: 1px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+            <div class="header-logo">
+                <img src="/static/images/شعار%20الكلية.jpeg" alt="شعار الكلية" onerror="this.style.display='none'">
+            </div>
+            <div class="header-en">
+                <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">State of Libya</div>
+                <div style="font-weight: 600; margin-bottom: 1px;">Government of National Unity</div>
+                <div style="font-weight: 600; margin-bottom: 1px;">Ministry of Technical Education</div>
+                <div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">Tripoli College of Science & Technology</div>
+            </div>
+        </div>
+
+        <div class="divider-line"></div>
+        <div class="report-main-title">التقرير الإحصائي والرسوم البيانية للوحة تحكم مدير النظام</div>
+        <div class="report-meta-box">
+            <div><span style="color:#555;">نوع التقرير:</span> تقرير بياني وإحصائي عام</div>
+            <div><span style="color:#555;">تاريخ الاستخراج:</span> ${currentDateStr} م</div>
+            <div><span style="color:#555;">وقت التقرير:</span> ${currentTimeStr}</div>
         </div>
 
         <table class="kpi-table">
             <thead>
                 <tr>
-                    <th>إجمالي الطلاب</th>
+                    <th>إجمالي الطلاب المقيدين</th>
                     <th>الكادر الأكاديمي والموظفون</th>
                     <th>المستخدمون النشطون</th>
-                    <th>الجلسات النشطة</th>
-                    <th>تاريخ الاستخراج</th>
+                    <th>الجلسات المفتوحة</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
-                    <td style="font-weight: bold; font-size: 14px;">{{ total_students|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ total_staff|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ active_users|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ active_sessions|default:0 }}</td>
-                    <td>${new Date().toLocaleDateString('ar-LY')}</td>
+                    <td>{{ total_students|default:0 }}</td>
+                    <td>{{ total_staff|default:0 }}</td>
+                    <td>{{ active_users|default:0 }}</td>
+                    <td>{{ active_sessions|default:0 }}</td>
                 </tr>
             </tbody>
         </table>
@@ -1475,24 +1571,26 @@ window.printStatisticalReport = async function() {
         <div class="charts-container">
             ${deptChartImg ? `
             <div class="chart-box">
-                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">توزيع الطلاب حسب الأقسام العلمية</div>
+                <div style="font-weight: 900; font-size: 12px; margin-bottom: 6px;">توزيع الطلاب حسب الأقسام العلمية</div>
                 <img src="${deptChartImg}" class="chart-img">
             </div>` : ''}
             ${actChartImg ? `
             <div class="chart-box">
-                <div style="font-weight: bold; font-size: 13px; margin-bottom: 8px;">إحصائيات العمليات والإجراءات</div>
+                <div style="font-weight: 900; font-size: 12px; margin-bottom: 6px;">إحصائيات العمليات والإجراءات</div>
                 <img src="${actChartImg}" class="chart-img">
             </div>` : ''}
         </div>
 
         ${deptRowsHtml ? `
-        <div style="font-weight: bold; font-size: 13px; margin-bottom: 6px;">جدول تفصيل توزيع الطلاب على الأقسام:</div>
+        <div class="section-title">📊 جدول تفصيل توزيع الطلاب على الأقسام العلمية:</div>
         <table class="data-table">
             <thead>
                 <tr>
+                    <th style="width: 50px; text-align: center;">#</th>
                     <th style="text-align: right;">القسم الأكاديمي</th>
                     <th style="text-align: center; width: 120px;">عدد الطلاب</th>
                     <th style="text-align: center; width: 100px;">النسبة</th>
+                    <th style="text-align: center; width: 120px;">حالة القسم</th>
                 </tr>
             </thead>
             <tbody>
@@ -1502,15 +1600,19 @@ window.printStatisticalReport = async function() {
 
         <div class="signatures-area">
             <div class="sig-card">
-                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
-                <div style="font-weight: 600; font-size: 12px; margin-bottom: 30px;">${registrarPos}</div>
-                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+                <div style="font-weight: 900; font-size: 12.5px; margin-bottom: 3px;">مدير مكتب التوثيق والمعلومات</div>
+                <div style="font-weight: 700; font-size: 11.5px; margin-bottom: 22px;">إدارة المنظومة وتقنية المعلومات</div>
+                <div style="font-size: 11px; font-weight: 700; color: #000;">التوقيع والختم: ....................................</div>
+            </div>
+            <div class="sig-card">
+                <div style="font-weight: 900; font-size: 12.5px; margin-bottom: 3px;">${registrarName}</div>
+                <div style="font-weight: 700; font-size: 11.5px; margin-bottom: 22px;">${registrarPos}</div>
+                <div style="font-size: 11px; font-weight: 700; color: #000;">التوقيع والختم: ....................................</div>
             </div>
         </div>
     </div>
 </body>
-</html>
-    `;
+</html>`;
 
     printViaHiddenIframe(html);
 };
@@ -1532,12 +1634,12 @@ window.printStandardReport = async function() {
         const count = deptCounts[idx] || 0;
         const pct = totalDeptStudents > 0 ? Math.round((count / totalDeptStudents) * 100) : 0;
         deptRowsHtml += `
-            <tr style="border-bottom: 1px solid #000; text-align: center;">
-                <td style="padding: 7px 10px; text-align: center;">${idx + 1}</td>
-                <td style="padding: 7px 10px; text-align: right; font-weight: bold;">${label}</td>
-                <td style="padding: 7px 10px;">${count}</td>
-                <td style="padding: 7px 10px;">${pct}%</td>
-                <td style="padding: 7px 10px;">معتمد ونشط</td>
+            <tr style="border-bottom: 1px solid #cbd5e1; text-align: center;">
+                <td style="padding: 7px 10px; text-align: center; font-weight: 700;">${idx + 1}</td>
+                <td style="padding: 7px 10px; text-align: right; font-weight: 700;">${label}</td>
+                <td style="padding: 7px 10px; font-weight: 800;">${count}</td>
+                <td style="padding: 7px 10px; font-weight: 700;">${pct}%</td>
+                <td style="padding: 7px 10px; font-weight: 700; color: #047857;">معتمد ونشط</td>
             </tr>
         `;
     });
@@ -1548,117 +1650,199 @@ window.printStandardReport = async function() {
     actLabels.forEach((act, idx) => {
         const c = actCounts[idx] || 0;
         actRowsHtml += `
-            <tr style="border-bottom: 1px solid #000; text-align: center;">
-                <td style="padding: 6px 10px; text-align: right; font-weight: bold;">${act}</td>
-                <td style="padding: 6px 10px;">${c} عملية</td>
+            <tr style="border-bottom: 1px solid #cbd5e1; text-align: center;">
+                <td style="padding: 6px 10px; text-align: right; font-weight: 700;">${act}</td>
+                <td style="padding: 6px 10px; font-weight: 800;">${c} عملية</td>
             </tr>
         `;
     });
 
-    const html = `
-<!DOCTYPE html>
+    const currentDateStr = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const currentTimeStr = new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+
+    const html = `<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <title>التقرير العادي للوحة تحكم مدير النظام</title>
+    <title>تقرير ملخص المؤشرات والبيانات - لوحة تحكم مدير النظام</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Cairo:wght@400;600;700;800;900&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/fonts.css">
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm;
+            margin: 0;
         }
-        @media print {
-            body { margin: 0; padding: 0; background: #fff !important; color: #000 !important; }
-        }
-        body {
-            font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-            background: #fff;
-            color: #000;
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            font-family: 'Cairo', 'Tajawal', 'Amiri', 'Segoe UI', Tahoma, sans-serif !important;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #ffffff !important;
+            color: #000000 !important;
             direction: rtl;
+            font-size: 12px;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            padding: 12mm 15mm;
         }
         .print-sheet {
-            border: 2px solid #000;
-            padding: 22px 28px;
-            box-sizing: border-box;
-            background: #fff;
             width: 100%;
+            margin: 0 auto;
+            border: none !important;
+            box-shadow: none !important;
         }
-        .header-box {
+        .header-sec {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            direction: rtl;
+        }
+        .header-ar {
+            flex: 1;
             text-align: center;
-            margin-bottom: 12px;
+            font-size: 11px;
+            line-height: 1.45;
+            color: #000;
+            font-weight: 800;
         }
-        .college-logo {
-            width: 75px;
-            height: 75px;
+        .header-logo {
+            flex: 0 0 90px;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 0 8px;
+        }
+        .header-logo img {
+            max-height: 72px;
+            max-width: 72px;
             object-fit: contain;
             display: block;
-            margin: 0 auto 6px auto;
+            margin: 0 auto;
         }
-        .header-title-1 { font-size: 15px; font-weight: 800; margin: 2px 0; }
-        .header-title-2 { font-size: 14px; font-weight: 800; margin: 2px 0; }
-        .header-title-3 { font-size: 14px; font-weight: 800; margin: 2px 0; }
+        .header-en {
+            flex: 1;
+            text-align: center;
+            font-size: 9.5px;
+            line-height: 1.35;
+            color: #000;
+            direction: ltr;
+        }
         .divider-line {
-            border-bottom: 2px solid #000;
-            margin: 10px 0 12px 0;
             width: 100%;
+            margin: 8px 0 12px;
+            border-top: 1.5px solid #000;
         }
         .report-main-title {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: 900;
             text-align: center;
-            margin: 8px 0 14px 0;
+            margin: 6px 0 10px;
+            color: #000;
+        }
+        .report-meta-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 6px 12px;
+            border: 1px solid #000;
+            border-radius: 4px;
+            margin-bottom: 14px;
+            font-size: 11px;
+            font-weight: 700;
+            background: #fafafa;
         }
         .kpi-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 16px;
         }
-        .kpi-table th, .kpi-table td {
-            border: 1px solid #000;
-            padding: 8px 10px;
-            text-align: center;
-            font-size: 12px;
-        }
         .kpi-table th {
-            background: #f0f0f0;
+            border: 1px solid #000;
+            padding: 6px 8px;
+            background: #f1f5f9;
             font-weight: 900;
+            text-align: center;
+            font-size: 11px;
+        }
+        .kpi-table td {
+            border: 1px solid #000;
+            padding: 8px 6px;
+            text-align: center;
+            font-weight: 800;
+            font-size: 13.5px;
+        }
+        .section-title {
+            font-weight: 900;
+            font-size: 12.5px;
+            margin: 12px 0 6px;
+            color: #000;
         }
         .data-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 18px;
-            font-size: 12px;
+            margin-bottom: 16px;
+            font-size: 11.5px;
         }
-        .data-table th, .data-table td {
+        .data-table th {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            background: #f1f5f9;
+            font-weight: 900;
+            text-align: center;
+        }
+        .data-table td {
             border: 1px solid #000;
             padding: 7px 10px;
         }
-        .data-table th {
-            background: #f0f0f0;
-            font-weight: bold;
-        }
         .signatures-area {
             display: flex;
-            justify-content: flex-end;
-            margin-top: 36px;
+            justify-content: space-between;
+            margin-top: 28px;
             page-break-inside: avoid;
+            padding: 0 10px;
         }
         .sig-card {
             text-align: center;
-            min-width: 190px;
+            min-width: 180px;
         }
     </style>
 </head>
 <body>
     <div class="print-sheet">
-        <div class="header-box">
-            <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" class="college-logo" onerror="this.style.display='none'">
-            <div class="header-title-1">دولة ليبيا</div>
-            <div class="header-title-2">وزارة التعليم التقني والفني</div>
-            <div class="header-title-3">كلية طرابلس للعلوم والتقنية</div>
-            <div class="divider-line"></div>
-            <div class="report-main-title">تقرير ملخص المؤشرات والبيانات للوحة تحكم مدير النظام</div>
+        <div class="header-sec">
+            <div class="header-ar">
+                <div style="font-size: 12.5px; font-weight: 900; margin-bottom: 1px;">دولة ليبيا</div>
+                <div style="font-size: 10.5px; font-weight: 800; margin-bottom: 1px;">حكومة الوحدة الوطنية</div>
+                <div style="font-size: 10.5px; font-weight: 800; margin-bottom: 1px;">وزارة التعليم التقني والفني</div>
+                <div style="font-size: 11.5px; font-weight: 900; margin-top: 1px;">كلية طرابلس للعلوم والتقنية</div>
+            </div>
+            <div class="header-logo">
+                <img src="/static/images/شعار%20الكلية.jpeg" alt="شعار الكلية" onerror="this.style.display='none'">
+            </div>
+            <div class="header-en">
+                <div style="font-size: 11px; font-weight: bold; margin-bottom: 1px;">State of Libya</div>
+                <div style="font-weight: 600; margin-bottom: 1px;">Government of National Unity</div>
+                <div style="font-weight: 600; margin-bottom: 1px;">Ministry of Technical Education</div>
+                <div style="font-size: 9.5px; font-weight: bold; margin-top: 1px;">Tripoli College of Science & Technology</div>
+            </div>
+        </div>
+
+        <div class="divider-line"></div>
+        <div class="report-main-title">تقرير ملخص المؤشرات والبيانات للوحة تحكم مدير النظام</div>
+        <div class="report-meta-box">
+            <div><span style="color:#555;">نوع التقرير:</span> تقرير دوري عام للمنظومة</div>
+            <div><span style="color:#555;">تاريخ الاستخراج:</span> ${currentDateStr} م</div>
+            <div><span style="color:#555;">وقت التقرير:</span> ${currentTimeStr}</div>
         </div>
 
         <table class="kpi-table">
@@ -1672,15 +1856,15 @@ window.printStandardReport = async function() {
             </thead>
             <tbody>
                 <tr>
-                    <td style="font-weight: bold; font-size: 14px;">{{ total_students|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ total_staff|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ active_users|default:0 }}</td>
-                    <td style="font-weight: bold; font-size: 14px;">{{ active_sessions|default:0 }}</td>
+                    <td>{{ total_students|default:0 }}</td>
+                    <td>{{ total_staff|default:0 }}</td>
+                    <td>{{ active_users|default:0 }}</td>
+                    <td>{{ active_sessions|default:0 }}</td>
                 </tr>
             </tbody>
         </table>
 
-        <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px;">أولاً: بيان تفصيلي بتوزيع الطلاب حسب الأقسام العلمية:</div>
+        <div class="section-title">أولاً: بيان تفصيلي بتوزيع الطلاب حسب الأقسام العلمية:</div>
         <table class="data-table">
             <thead>
                 <tr>
@@ -1692,12 +1876,12 @@ window.printStandardReport = async function() {
                 </tr>
             </thead>
             <tbody>
-                ${deptRowsHtml || '<tr><td colspan="5" style="text-align:center;">لا توجد بيانات</td></tr>'}
+                ${deptRowsHtml || '<tr><td colspan="5" style="text-align:center; padding:15px;">لا توجد بيانات متاحة</td></tr>'}
             </tbody>
         </table>
 
         ${actRowsHtml ? `
-        <div style="font-weight: 800; font-size: 13px; margin-bottom: 6px;">ثانياً: ملخص حركة العمليات والأنشطة بالمنظومة:</div>
+        <div class="section-title">ثانياً: ملخص حركة العمليات والأنشطة بالمنظومة:</div>
         <table class="data-table">
             <thead>
                 <tr>
@@ -1712,15 +1896,19 @@ window.printStandardReport = async function() {
 
         <div class="signatures-area">
             <div class="sig-card">
-                <div style="font-weight: 800; font-size: 13px; margin-bottom: 4px;">${registrarName}</div>
-                <div style="font-weight: 600; font-size: 12px; margin-bottom: 30px;">${registrarPos}</div>
-                <div style="border-bottom: 1.5px solid #000; width: 140px; margin: 0 auto;"></div>
+                <div style="font-weight: 900; font-size: 12.5px; margin-bottom: 3px;">مدير مكتب التوثيق والمعلومات</div>
+                <div style="font-weight: 700; font-size: 11.5px; margin-bottom: 22px;">إدارة المنظومة وتقنية المعلومات</div>
+                <div style="font-size: 11px; font-weight: 700; color: #000;">التوقيع والختم: ....................................</div>
+            </div>
+            <div class="sig-card">
+                <div style="font-weight: 900; font-size: 12.5px; margin-bottom: 3px;">${registrarName}</div>
+                <div style="font-weight: 700; font-size: 11.5px; margin-bottom: 22px;">${registrarPos}</div>
+                <div style="font-size: 11px; font-weight: 700; color: #000;">التوقيع والختم: ....................................</div>
             </div>
         </div>
     </div>
 </body>
-</html>
-    `;
+</html>`;
 
     printViaHiddenIframe(html);
 };
