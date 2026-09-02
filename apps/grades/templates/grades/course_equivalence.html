@@ -151,6 +151,7 @@
             </div>
         </div>
 
+        {% if not has_already_changed and student_eligibility.is_allowed %}
         <!-- اختيار التخصص الجديد -->
         <div class="group-box mb-6">
             <span class="group-title">اختيار التخصص المراد التحويل إليه</span>
@@ -159,7 +160,7 @@
                 <input type="hidden" name="search" value="{{ search_query }}" />
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div style="flex: 1;">
-                        <select id="newDepartmentSelect" name="new_department" onchange="this.form.submit()" class="filter-select {% if not is_equivalence_job_open or not student_eligibility.is_allowed %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 700; font-size: 0.95rem;" {% if not is_equivalence_job_open or not student_eligibility.is_allowed %}disabled title="{% if not student_eligibility.is_allowed %}{{ student_eligibility.error_message }}{% else %}{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}{% endif %}"{% endif %}>
+                        <select id="newDepartmentSelect" name="new_department" onchange="this.form.submit()" class="filter-select {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 700; font-size: 0.95rem;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %}>
                             <option value="">-- حدد القسم / التخصص الجديد --</option>
                             {% for dept in departments %}
                             {% if student.department and dept.id == student.department.id %}
@@ -261,52 +262,6 @@
         </div>
 
         <!-- زر اعتماد تغيير المسار وتنزيل المعافاة -->
-        {% if not student_eligibility.is_allowed %}
-        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 12px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <strong style="color: #991b1b; font-size: 1.05rem; display: flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-outlined" style="color: #dc2626; font-size: 22px;">block</span>
-                        اعتماد تغيير المسار والتخصص التلقائي
-                    </strong>
-                    <p style="color: #b91c1c; font-size: 0.9rem; margin: 0.25rem 0 0 0; font-weight: 700;">
-                        🛑 {{ student_eligibility.error_message }}
-                    </p>
-                </div>
-
-                <button type="button" disabled class="btn-confirm-transfer-prominent disabled-locked-btn" style="opacity: 0.45; cursor: not-allowed; pointer-events: none; filter: grayscale(35%); box-shadow: none;" title="{{ student_eligibility.error_message }}">
-                    <span class="material-symbols-outlined">block</span>
-                    <span>الاعتماد محظور (الحالة غير مستمرة)</span>
-                </button>
-            </div>
-        </div>
-        {% elif has_already_changed %}
-        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1.5px solid #86efac; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.08);">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
-                <div>
-                    <strong style="color: #15803d; font-size: 1.1rem; display: flex; align-items: center; gap: 6px;">
-                        <span class="material-symbols-outlined" style="color: #16a34a; font-size: 22px;">verified</span>
-                        تم اعتماد تغيير المسار ومعادلة المواد للطالب بنجاح
-                    </strong>
-                    <p style="color: #166534; font-size: 0.9rem; margin: 0.35rem 0 0 0; line-height: 1.5;">
-                        تم تسجيل الطالب رسمياً في قسم <strong>[{{ student.department.name|default:'الجديد' }}]</strong> (استنفد الحد المسموح به لتغيير المسار). يمكنك الآن طباعة التقرير الرسمي.
-                    </p>
-                </div>
-
-                <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
-                    <button type="button" disabled class="btn-confirm-transfer-prominent disabled-locked-btn" style="opacity: 0.45; cursor: not-allowed; pointer-events: none; filter: grayscale(35%); box-shadow: none;" title="🛑 لا يمكن إتمام العملية: تم استنفاد الحد المسموح به لتغيير المسار مسبقاً (مسموح بمرة واحدة فقط).">
-                        <span class="material-symbols-outlined">lock</span>
-                        <span>اعتماد وتنزيل المعادلة (مقفل)</span>
-                    </button>
-
-                    <button type="button" onclick="printEquivalenceReport();" class="btn-print-prominent" title="طباعة تقرير تغيير المسار والمعادلة المعتمد">
-                        <i class="fas fa-print" style="font-size: 1.1rem;"></i>
-                        <span>طباعة التقرير</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% else %}
         <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: #f0fdf4; border: 1px solid #86efac; border-radius: 12px; transition: all 0.3s ease;">
             <form id="equivalenceTransferForm" method="POST" action="{% url 'grades:course_equivalence' %}?search={{ search_query }}&new_department={{ selected_new_dept.id }}" data-student-name="{{ student.name|default:'التونسي' }}" data-department-name="{{ selected_new_dept.name|default:'إدارة أعمال' }}">
                 {% csrf_token %}
@@ -332,6 +287,51 @@
                     {% endif %}
                 </div>
             </form>
+        </div>
+        {% endif %}
+
+        {% elif has_already_changed %}
+        <!-- حالة الطالب استنفد تغيير المسار مسبقاً -->
+        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: linear-gradient(135deg, #fef2f2 0%, #fff1f2 100%); border: 1.5px solid #fca5a5; border-radius: 12px; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(239, 68, 68, 0.08);">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1.25rem;">
+                <div>
+                    <strong style="color: #991b1b; font-size: 1.1rem; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="color: #dc2626; font-size: 24px;">lock</span>
+                        العملية مغلقة: الطالب استنفد الحد المسموح به لتغيير المسار
+                    </strong>
+                    <p style="color: #7f1d1d; font-size: 0.95rem; margin: 0.35rem 0 0 0; line-height: 1.5;">
+                        سبق للطالب التحويل إلى قسم <strong>[{{ student.department.name|default:'الحالي' }}]</strong>، ووفقاً للائحة الأكاديمية لا يمكن تغيير المسار أكثر من مرة واحدة طوال فترة الدراسة.
+                    </p>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap;">
+                    <button type="button" onclick="printEquivalenceReport();" class="btn-print-prominent" title="طباعة تقرير تغيير المسار والمعادلة المعتمد للطالب">
+                        <i class="fas fa-print" style="font-size: 1.1rem;"></i>
+                        <span>طباعة تقرير المعادلة السابق</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {% elif not student_eligibility.is_allowed %}
+        <!-- حالة الطالب غير مستمر أو غير مؤهل أكاديمياً -->
+        <div class="group-box no-print" style="margin-top: 1rem; padding: 1.25rem; background: #fef2f2; border: 1.5px solid #ef4444; border-radius: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                <div>
+                    <strong style="color: #991b1b; font-size: 1.05rem; display: flex; align-items: center; gap: 6px;">
+                        <span class="material-symbols-outlined" style="color: #dc2626; font-size: 22px;">block</span>
+                        تغيير المسار محظور
+                    </strong>
+                    <p style="color: #b91c1c; font-size: 0.9rem; margin: 0.25rem 0 0 0; font-weight: 700;">
+                        🛑 {{ student_eligibility.error_message }}
+                    </p>
+                </div>
+
+                <button type="button" disabled class="btn-confirm-transfer-prominent disabled-locked-btn" style="opacity: 0.45; cursor: not-allowed; pointer-events: none; filter: grayscale(35%); box-shadow: none;" title="{{ student_eligibility.error_message }}">
+                    <span class="material-symbols-outlined">block</span>
+                    <span>الاعتماد محظور (الحالة غير مستمرة)</span>
+                </button>
+            </div>
         </div>
         {% endif %}
 

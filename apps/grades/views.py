@@ -3547,33 +3547,34 @@ def course_equivalence_page(request):
         passed_grades = Grade.objects.filter(student=student, is_passed=True).select_related('course')
         passed_course_ids = [g.course_id for g in passed_grades]
 
-        # 4. حساب المعادلة الآلية عند اختيار التخصص الجديد
-        if new_dept_id:
-            selected_new_dept = Department.objects.filter(id=new_dept_id).first()
+        # 4. حساب المعادلة الآلية عند اختيار التخصص الجديد (فقط للطلاب المسموح لهم بتغيير المسار)
+        if not has_already_changed and student_eligibility['is_allowed']:
+            if new_dept_id:
+                selected_new_dept = Department.objects.filter(id=new_dept_id).first()
 
-        if selected_new_dept:
-            eq_rules = CourseEquivalence.objects.filter(
-                source_course_id__in=passed_course_ids
-            ).filter(
-                Q(source_department=student.department) | Q(source_department__isnull=True)
-            ).filter(
-                Q(target_department=selected_new_dept) | Q(target_department__isnull=True)
-            ).select_related('source_department', 'target_department', 'source_course', 'target_course')
+            if selected_new_dept:
+                eq_rules = CourseEquivalence.objects.filter(
+                    source_course_id__in=passed_course_ids
+                ).filter(
+                    Q(source_department=student.department) | Q(source_department__isnull=True)
+                ).filter(
+                    Q(target_department=selected_new_dept) | Q(target_department__isnull=True)
+                ).select_related('source_department', 'target_department', 'source_course', 'target_course')
 
-            for eq in eq_rules:
-                equivalenced_courses.append({
-                    'source_course': eq.source_course,
-                    'target_course': eq.target_course,
-                    'notes': eq.notes,
-                    'is_equivalenced': True
-                })
+                for eq in eq_rules:
+                    equivalenced_courses.append({
+                        'source_course': eq.source_course,
+                        'target_course': eq.target_course,
+                        'notes': eq.notes,
+                        'is_equivalenced': True
+                    })
 
-            target_courses = Course.objects.filter(department=selected_new_dept).prefetch_related('department').order_by('code')
-            eq_target_ids = [eq.target_course_id for eq in eq_rules]
+                target_courses = Course.objects.filter(department=selected_new_dept).prefetch_related('department').order_by('code')
+                eq_target_ids = [eq.target_course_id for eq in eq_rules]
 
-            for c in target_courses:
-                if c.id not in eq_target_ids and c.id not in passed_course_ids:
-                    remaining_courses.append(c)
+                for c in target_courses:
+                    if c.id not in eq_target_ids and c.id not in passed_course_ids:
+                        remaining_courses.append(c)
 
     is_admin_user = request.user.is_authenticated and (
         request.user.is_superuser or 

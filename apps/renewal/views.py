@@ -5404,6 +5404,10 @@ def course_to_json(course):
     dept_name = " ، ".join([d.name for d in depts]) if depts else 'عام'
     primary_dept_id = dept_ids[0] if dept_ids else None
 
+    prereqs = list(course.prerequisites.all()) if (hasattr(course, 'prerequisites') and hasattr(course.prerequisites, 'all')) else []
+    prereq_codes = [p.code for p in prereqs if p.code]
+    prereq_str = " ، ".join([f"{p.name} ({p.code})" for p in prereqs if p.name and p.code]) if prereqs else ""
+
     return {
         'id': course.id,
         'name': course.name,
@@ -5421,8 +5425,10 @@ def course_to_json(course):
         'level_number': course.level.number if course.level else '',
         'is_active': course.is_active,
         'is_mandatory': course.is_mandatory,
-        'prerequisite_ids': list(course.prerequisites.values_list('id', flat=True)),
-        'prerequisites': [{'id': item.id, 'name': item.name, 'code': item.code} for item in course.prerequisites.all()],
+        'prerequisite': ", ".join(prereq_codes) if prereq_codes else None,
+        'prerequisite_name': prereq_str or None,
+        'prerequisite_ids': [p.id for p in prereqs],
+        'prerequisites': [{'id': item.id, 'name': item.name, 'code': item.code} for item in prereqs],
     }
 
 
@@ -6665,6 +6671,8 @@ def get_subjects_api(request):
                 'study_plan_name': course.study_plan.name if course.study_plan else '',
                 'is_active': course.is_active,
                 'is_mandatory': course.is_mandatory,
+                'prerequisite': ", ".join([p['code'] for p in prerequisites if p.get('code')]) or None,
+                'prerequisite_name': " ، ".join([f"{p['name']} ({p['code']})" for p in prerequisites if p.get('name') and p.get('code')]) or None,
                 'prerequisites': prerequisites,
                 'prerequisite_ids': [p.id for p in course.prerequisites.all()],
                 'plans': [course.study_plan_id] if course.study_plan_id else [1, 2]

@@ -181,7 +181,8 @@ function loadSubjects() {
                 level_number: c.level_number || 1,
                 is_active: c.is_active,
                 is_mandatory: c.is_mandatory,
-                prerequisite: c.prerequisites && c.prerequisites.length > 0 ? c.prerequisites.map(p => p.code).join(', ') : null,
+                prerequisite: c.prerequisite || (c.prerequisites && c.prerequisites.length > 0 ? c.prerequisites.map(p => p.code).join(', ') : null),
+                prerequisite_name: c.prerequisite_name || (c.prerequisites && c.prerequisites.length > 0 ? c.prerequisites.map(p => `${p.name} (${p.code})`).join(' ، ') : null),
                 prerequisites: c.prerequisites || [],
                 prerequisite_ids: c.prerequisite_ids || (c.prerequisites ? c.prerequisites.map(p => p.id) : []),
                 plans: c.plans || (c.study_plan_id ? [c.study_plan_id] : [1, 2])
@@ -250,7 +251,20 @@ function initPrerequisiteAutocomplete() {
         if (!query || query.length < 1) {
             resultsContainer.classList.add('hidden');
             resultsContainer.innerHTML = '';
+            if (this.dataset) {
+                this.dataset.prereqId = '';
+                this.dataset.prereqCode = '';
+            }
+            const cardPrereqEl = document.getElementById('cardPrereqText');
+            if (cardPrereqEl) {
+                cardPrereqEl.textContent = 'لا يوجد';
+            }
             return;
+        }
+        
+        const cardPrereqEl = document.getElementById('cardPrereqText');
+        if (cardPrereqEl && this.value.trim()) {
+            cardPrereqEl.textContent = this.value.trim();
         }
         
         // 🔍 الفلترة المرنة للمتطلبات السابقة:
@@ -314,6 +328,12 @@ function selectPrerequisite(id, code, name) {
     }
     resultsContainer.classList.add('hidden');
     resultsContainer.innerHTML = '';
+
+    // 🔥 تحديث المتطلب فورياً في البطاقة المعروضة بالأعلى إن وجدت
+    const cardPrereqEl = document.getElementById('cardPrereqText');
+    if (cardPrereqEl) {
+        cardPrereqEl.textContent = `${name} (${code})`;
+    }
 }
 
 // ============================================================
@@ -353,6 +373,106 @@ function showDescription() {
 }
 
 // ============================================================
+// استخراج المتطلب السابق للمادة بدقة ومرونة عالية
+// ============================================================
+function getSubjectPrerequisiteDisplay(subject) {
+    if (!subject) return 'لا يوجد';
+
+    // 1. فحص كائنات المتطلبات السابقة الممررة كـ Array [{id, name, code}]
+    if (subject.prerequisites && Array.isArray(subject.prerequisites) && subject.prerequisites.length > 0) {
+        const list = subject.prerequisites.map(p => {
+            if (p && p.name && p.code) return `${p.name} (${p.code})`;
+            if (p && p.name) return p.name;
+            if (p && p.code) {
+                const found = mockSubjects.find(sub => sub.code && sub.code.toUpperCase() === String(p.code).toUpperCase());
+                return found ? `${found.name} (${found.code})` : p.code;
+            }
+            if (p && typeof p === 'string' && p.trim()) return p.trim();
+            return '';
+        }).filter(Boolean);
+        if (list.length > 0) return list.join(' ، ');
+    }
+
+    // 2. فحص النص الجاهز لاسم المتطلب
+    if (subject.prerequisite_name && typeof subject.prerequisite_name === 'string' && subject.prerequisite_name.trim() && subject.prerequisite_name !== 'لا يوجد') {
+        return subject.prerequisite_name.trim();
+    }
+
+    // 3. فحص معرّفات المتطلبات السابقة prerequisite_ids ومطابقتها مع المواد المحملة
+    if (subject.prerequisite_ids && Array.isArray(subject.prerequisite_ids) && subject.prerequisite_ids.length > 0) {
+        const resolved = subject.prerequisite_ids.map(pid => {
+            const found = mockSubjects.find(sub => sub.id == pid);
+            return found ? `${found.name} (${found.code})` : null;
+        }).filter(Boolean);
+        if (resolved.length > 0) return resolved.join(' ، ');
+    }
+
+    // 4. فحص كود أو نص المتطلب السابق prerequisite
+    if (subject.prerequisite && typeof subject.prerequisite === 'string' && subject.prerequisite.trim() && subject.prerequisite !== 'لا يوجد') {
+        const raw = subject.prerequisite.trim();
+        if (raw.includes('-')) {
+            return raw;
+        }
+        const codes = raw.split(/[,،]+/).map(c => c.trim()).filter(Boolean);
+        const resolved = codes.map(codeStr => {
+            const found = mockSubjects.find(sub => sub.code && sub.code.toUpperCase() === codeStr.toUpperCase());
+            return found ? `${found.name} (${found.code})` : codeStr;
+        });
+        if (resolved.length > 0) return resolved.join(' ، ');
+    }
+
+    // 5. البحث في mockSubjects للمادة الحالية إذا لم تكن المتطلبات مرفقة بالكائن الممرر
+    if (subject.id || subject.code) {
+        const cached = mockSubjects.find(s => (subject.id && s.id == subject.id) || (subject.code && s.code && s.code.toUpperCase() === String(subject.code).toUpperCase()));
+        if (cached && cached !== subject) {
+            const cachedDisplay = getSubjectPrerequisiteDisplay(cached);
+            if (cachedDisplay !== 'لا يوجد') return cachedDisplay;
+        }
+    }
+
+    // 6. كحل بديل: قراءة القيمة الحالية من حقل المتطلب السابق في النموذج
+    const currentInput = document.getElementById('prerequisite');
+    if (currentInput && currentInput.value && currentInput.value.trim() && currentInput.value.trim() !== 'لا يوجد') {
+        return currentInput.value.trim();
+    }
+
+    return 'لا يوجد';
+}
+
+// ============================================================
+// استخراج المواد التي تفتحها هذه المادة
+// ============================================================
+function getSubjectOpensCourses(subject) {
+    if (!subject || (!subject.id && !subject.code)) return 'لا يوجد';
+    const subId = subject.id;
+    const subCode = (subject.code || '').toUpperCase();
+
+    const opens = mockSubjects.filter(c => {
+        if (c.id && subId && c.id == subId) return false;
+        if (c.code && subCode && c.code.toUpperCase() === subCode) return false;
+
+        if (subId && c.prerequisite_ids && Array.isArray(c.prerequisite_ids) && c.prerequisite_ids.includes(subId)) {
+            return true;
+        }
+        if (c.prerequisites && Array.isArray(c.prerequisites)) {
+            if (c.prerequisites.some(p => (subId && p.id == subId) || (subCode && p.code && p.code.toUpperCase() === subCode))) {
+                return true;
+            }
+        }
+        if (c.prerequisite && subCode) {
+            const raw = String(c.prerequisite).toUpperCase();
+            const codes = raw.split(/[,،\s-]+/).map(s => s.trim());
+            if (codes.includes(subCode)) return true;
+        }
+        return false;
+    });
+
+    return opens.length > 0 
+        ? opens.map(s => `${s.name} (${s.code})`).join(' ، ') 
+        : 'لا يوجد';
+}
+
+// ============================================================
 // عرض بطاقة تفاصيل المادة المختارة
 // ============================================================
 function showSelectedSubjectCard(subject) {
@@ -361,16 +481,8 @@ function showSelectedSubjectCard(subject) {
     
     if (!container || !cardBody) return;
     
-    let prereqName = 'لا يوجد';
-    if (subject.prerequisite) {
-        const found = mockSubjects.find(sub => sub.code === subject.prerequisite);
-        prereqName = found ? `${found.name} (${subject.prerequisite})` : subject.prerequisite;
-    }
-    
-    const opensCourses = mockSubjects.filter(sub => sub.prerequisite === subject.code);
-    const opensText = opensCourses.length > 0 
-        ? opensCourses.map(sub => `${sub.name} (${sub.code})`).join('، ')
-        : 'لا يوجد';
+    const prereqName = getSubjectPrerequisiteDisplay(subject);
+    const opensText = getSubjectOpensCourses(subject);
     
     // استخراج وعرض كافة التخصصات المرتبطة بالمادة
     let deptNames = [];
@@ -419,11 +531,11 @@ function showSelectedSubjectCard(subject) {
             </div>
             <div class="subject-detail-item" style="color: #00796b;">
                 <strong>المتطلب السابق:</strong>
-                <span>${escapeHtml(prereqName)}</span>
+                <span id="cardPrereqText" style="font-weight: 700;">${escapeHtml(prereqName)}</span>
             </div>
             <div class="subject-detail-item" style="color: #b59b66;">
                 <strong>المواد التي تفتحها:</strong>
-                <span>${escapeHtml(opensText)}</span>
+                <span id="cardOpensText">${escapeHtml(opensText)}</span>
             </div>
         </div>
         <div class="subject-detail-badges">
@@ -435,7 +547,7 @@ function showSelectedSubjectCard(subject) {
             </span>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 15px;">
-            <button id="btnEditSubjectCard" onclick="window.selectSubjectToEdit('${escapeHtml(subject.code)}')" class="btn-card-edit" style="width: 100%;">
+            <button id="btnEditSubjectCard" onclick="window.selectSubjectToEdit('${escapeHtml(subject.code)}', ${subject.id || 'null'})" class="btn-card-edit" style="width: 100%;">
                 <span class="material-symbols-outlined">edit_note</span> تعديل المادة
             </button>
         </div>
@@ -529,8 +641,8 @@ function selectSubjectToEdit(code, id = null) {
     if (id) {
         subject = mockSubjects.find(c => c.id == id);
     }
-    if (!subject) {
-        subject = mockSubjects.find(c => c.code === code);
+    if (!subject && code) {
+        subject = mockSubjects.find(c => c.code && c.code.toUpperCase() === String(code).toUpperCase());
     }
     if (!subject) return;
     
@@ -560,16 +672,41 @@ function selectSubjectToEdit(code, id = null) {
     const plan2Cb = document.getElementById('plan2Checkbox');
     
     if (prereqInput) {
-        if (subject.prerequisite) {
-            const found = mockSubjects.find(c => c.code === subject.prerequisite);
-            prereqInput.value = found ? `${found.code} - ${found.name}` : subject.prerequisite;
-            prereqInput.dataset.prereqId = subject.prerequisite_id || '';
-            prereqInput.dataset.prereqCode = subject.prerequisite || '';
-        } else {
-            prereqInput.value = '';
-            prereqInput.dataset.prereqId = '';
-            prereqInput.dataset.prereqCode = '';
+        let pId = '';
+        let pCode = '';
+        let pText = '';
+        
+        if (subject.prerequisites && Array.isArray(subject.prerequisites) && subject.prerequisites.length > 0) {
+            const firstP = subject.prerequisites[0];
+            pId = firstP.id || '';
+            pCode = firstP.code || '';
+            pText = `${firstP.code} - ${firstP.name}`;
+        } else if (subject.prerequisite_ids && Array.isArray(subject.prerequisite_ids) && subject.prerequisite_ids.length > 0) {
+            pId = subject.prerequisite_ids[0];
+            const found = mockSubjects.find(c => c.id == pId);
+            if (found) {
+                pCode = found.code;
+                pText = `${found.code} - ${found.name}`;
+            }
+        } else if (subject.prerequisite) {
+            const raw = String(subject.prerequisite).trim();
+            if (raw.includes('-')) {
+                pText = raw;
+                const matchCode = raw.split(/[-–]/)[0].trim();
+                const found = mockSubjects.find(c => c.code && c.code.toUpperCase() === matchCode.toUpperCase());
+                pId = found ? found.id : '';
+                pCode = matchCode;
+            } else {
+                const found = mockSubjects.find(c => c.code && c.code.toUpperCase() === raw.toUpperCase());
+                pId = found ? found.id : '';
+                pCode = found ? found.code : raw;
+                pText = found ? `${found.code} - ${found.name}` : raw;
+            }
         }
+
+        prereqInput.value = pText;
+        prereqInput.dataset.prereqId = pId || '';
+        prereqInput.dataset.prereqCode = pCode || '';
     }
     
     if (creditHoursSelect) creditHoursSelect.value = subject.credits || '';
@@ -652,6 +789,13 @@ function saveSubjectData() {
     let prerequisite_ids = [];
     if (prerequisiteId) {
         prerequisite_ids.push(parseInt(prerequisiteId));
+    } else if (prerequisiteInput && prerequisiteInput.value && prerequisiteInput.value.trim()) {
+        const val = prerequisiteInput.value.trim();
+        const codeMatch = val.split(/[-–\s]/)[0].trim().toUpperCase();
+        const found = mockSubjects.find(c => (c.code && c.code.toUpperCase() === codeMatch) || c.name === val);
+        if (found) {
+            prerequisite_ids.push(found.id);
+        }
     }
     
     const study_plan_id = selectedPlans.length > 0 ? selectedPlans[0] : 1;
@@ -713,11 +857,20 @@ function saveSubjectData() {
             showToastMessage(data.message || '✅ تم حفظ المادة بنجاح', false);
             loadSubjects(); // إعادة تحميل المواد
             
-            const displayData = (data.course && data.course.name) ? data.course : {
-                id: existingSubject ? existingSubject.id : null,
-                name: name,
-                code: code.toUpperCase(),
-                credits: parseInt(credits),
+            // إعداد المتطلبات السابقة للعرض والتحديث الفوري
+            const updatedPrereqs = prerequisite_ids.map(pid => {
+                const found = mockSubjects.find(m => m.id === pid);
+                return found ? { id: found.id, name: found.name, code: found.code } : { id: pid, name: '', code: '' };
+            });
+
+            const savedId = (data.course && data.course.id) ? data.course.id : (existingSubject ? existingSubject.id : currentSelectedCourseId);
+            currentSelectedCourseId = savedId;
+
+            const displayData = {
+                id: savedId,
+                name: (data.course && data.course.name) ? data.course.name : name,
+                code: (data.course && data.course.code) ? data.course.code : code.toUpperCase(),
+                credits: (data.course && data.course.credits) ? data.course.credits : parseInt(credits),
                 department_id: parseInt(departmentId),
                 department_ids: deptIds,
                 department_name: window.getSelectedDepartmentIds ? 
@@ -726,9 +879,21 @@ function saveSubjectData() {
                 level_number: parseInt(levelId),
                 is_active: status === 'active',
                 is_mandatory: type === 'mandatory',
-                prerequisite: prerequisiteInput?.value || null,
+                prerequisite_ids: (data.course && data.course.prerequisite_ids && data.course.prerequisite_ids.length > 0) ? data.course.prerequisite_ids : prerequisite_ids,
+                prerequisites: (data.course && data.course.prerequisites && data.course.prerequisites.length > 0) ? data.course.prerequisites : updatedPrereqs,
+                prerequisite: (data.course && data.course.prerequisite) ? data.course.prerequisite : (prerequisiteInput?.value || null),
+                prerequisite_name: (data.course && data.course.prerequisite_name) ? data.course.prerequisite_name : null,
                 plans: selectedPlans
             };
+
+            // تحديث العنصر في mockSubjects فوراً
+            const idx = mockSubjects.findIndex(c => (savedId && c.id === savedId) || (c.code && c.code.toUpperCase() === displayData.code));
+            if (idx !== -1) {
+                mockSubjects[idx] = { ...mockSubjects[idx], ...displayData };
+            } else {
+                mockSubjects.push(displayData);
+            }
+
             showSelectedSubjectCard(displayData);
         } else {
             showToastMessage(data.error || '❌ حدث خطأ أثناء الحفظ', true);
