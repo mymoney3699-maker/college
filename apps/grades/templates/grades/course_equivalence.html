@@ -76,7 +76,7 @@
             <form method="GET" action="{% url 'grades:course_equivalence' %}" class="search-form" style="display: flex; gap: 0.75rem; align-items: center; margin-top: 0.5rem; position: relative;">
                 <div style="flex: 1; position: relative;">
                     <input type="text" id="searchEquivalenceInput" name="search" value="{{ search_query }}" placeholder="أدخل رقم القيد أو اسم الطالب للبحث..." autocomplete="off" required class="filter-input {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem 1rem; border-radius: 8px; border: 1.5px solid #cbd5e1; font-weight: 600;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %} />
-                    <input type="hidden" id="selectedStudentIdInput" name="student_id" value="" />
+                    <input type="hidden" id="selectedStudentIdInput" name="student_id" value="{% if student %}{{ student.student_id|default:student.id }}{% endif %}" />
                     <!-- قائمة الاقتراحات التفاعلية اللحظية أثناء الكتابة -->
                     <div id="studentSearchResultsDropdown" class="autocomplete-dropdown" style="display: none; position: absolute; top: calc(100% + 4px); right: 0; left: 0; background: #ffffff; border: 1.5px solid #307e92; border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,0.18); z-index: 2000; max-height: 290px; overflow-y: auto;"></div>
                 </div>
@@ -220,8 +220,11 @@
         <div class="group-box mb-6">
             <span class="group-title">اختيار التخصص المراد التحويل إليه</span>
 
-            <form method="GET" action="{% url 'grades:course_equivalence' %}" style="margin-top: 0.5rem;">
-                <input type="hidden" name="search" value="{{ search_query }}" />
+            <form id="departmentSelectForm" method="GET" action="{% url 'grades:course_equivalence' %}" style="margin-top: 0.5rem;">
+                <input type="hidden" name="search" value="{{ search_query|default:student.student_id }}" />
+                {% if student %}
+                <input type="hidden" name="student_id" value="{{ student.student_id|default:student.id }}" />
+                {% endif %}
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div style="flex: 1;">
                         <select id="newDepartmentSelect" name="new_department" onchange="this.form.submit()" class="filter-select {% if not is_equivalence_job_open %}job-disabled-input{% endif %}" style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 700; font-size: 0.95rem;" {% if not is_equivalence_job_open %}disabled title="{{ equivalence_job_message|default:'خدمة معادلة المواد وتغيير المسار غير مفعلة حالياً' }}"{% endif %}>

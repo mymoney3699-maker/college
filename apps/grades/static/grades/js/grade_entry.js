@@ -1267,7 +1267,6 @@ function showToast(message, typeOrIsError = false) {
             timer: 3500,
             timerProgressBar: true,
             showCloseButton: true,
-            backdrop: false,
             didOpen: (toast) => {
                 toast.addEventListener('mouseenter', Swal.stopTimer);
                 toast.addEventListener('mouseleave', Swal.resumeTimer);

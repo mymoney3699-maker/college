@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% load permissions_tags %}
+{% load l10n %}
 
 {% block title %}بيانات الطالب | نظام كلية طرابلس{% endblock %}
 
@@ -546,7 +547,7 @@
                                     <label class="field-label">النسبة المئوية %</label>
                                     <input type="text" name="qualification_percentage" id="qualification_percentage" readonly disabled class="is-locked"
                                         placeholder="النسبة المئوية"
-                                        value="{% if student and student.qualification_percentage %}{{ student.qualification_percentage }}{% endif %}">
+                                        value="{% if student and student.qualification_percentage %}{{ student.qualification_percentage|unlocalize }}{% endif %}">
                                 </div>
                             </div>
                         </div>

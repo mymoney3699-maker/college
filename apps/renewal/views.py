@@ -299,7 +299,7 @@ def students_page(request):
     # ============================================================
     
     departments_data = []
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     
     for dept in departments:
         if current_semester:
@@ -491,7 +491,7 @@ def students_page(request):
         semesters_data.append({'level': i, 'name': f'الفصل {i}', 'count': count})
     
     departments_data = []
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     for dept in departments:
         if current_semester:
             count = EnrollmentRenewal.objects.filter(
@@ -672,9 +672,12 @@ def student_data(request):
             percentage = request.POST.get('qualification_percentage')
             if percentage:
                 try:
-                    student.qualification_percentage = float(percentage)
-                except ValueError:
+                    clean_perc = str(percentage).replace(',', '.').replace('٫', '.').strip()
+                    student.qualification_percentage = float(clean_perc)
+                except (ValueError, TypeError):
                     student.qualification_percentage = None
+            else:
+                student.qualification_percentage = None
 
             q_date = request.POST.get('qualification_date')
             if q_date:
@@ -951,7 +954,14 @@ def edit_student(request, student_id):
             student.qualification_grade = request.POST.get('qualification_grade', '')
             
             percentage = request.POST.get('qualification_percentage')
-            student.qualification_percentage = float(percentage) if percentage else None
+            if percentage:
+                try:
+                    clean_perc = str(percentage).replace(',', '.').replace('٫', '.').strip()
+                    student.qualification_percentage = float(clean_perc)
+                except (ValueError, TypeError):
+                    student.qualification_percentage = None
+            else:
+                student.qualification_percentage = None
             
             if request.FILES.get('photo'):
                 student.photo = request.FILES.get('photo')
@@ -5399,7 +5409,7 @@ def department_to_json(department):
 
 
 def course_to_json(course):
-    depts = list(course.department.all()) if (hasattr(course, 'department') and hasattr(course.department, 'all')) else []
+    depts = list(course.department.filter(is_active=True)) if (hasattr(course, 'department') and hasattr(course.department, 'filter')) else []
     dept_ids = [d.id for d in depts]
     dept_name = " ، ".join([d.name for d in depts]) if depts else 'عام'
     primary_dept_id = dept_ids[0] if dept_ids else None
@@ -5679,7 +5689,7 @@ def department_list_view(request):
     if getattr(request.user, 'role', None) == 'academic_dept' and getattr(request.user, 'department', None):
         return redirect('renewal:department_detail', dept_code=request.user.department.code)
 
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     departments_data = []
     
     for dept in departments:
@@ -5724,9 +5734,9 @@ def department_detail_view(request, dept_code):
     if getattr(request.user, 'role', None) == 'academic_dept' and getattr(request.user, 'department', None):
         if department.id != request.user.department.id:
             return redirect('renewal:department_detail', dept_code=request.user.department.code)
-        all_departments = Department.objects.filter(id=request.user.department.id)
+        all_departments = Department.objects.filter(id=request.user.department.id, is_active=True)
     else:
-        all_departments = Department.objects.all().order_by('name')
+        all_departments = Department.objects.filter(is_active=True).order_by('name')
     
     # 1. إحصائيات ووظائف هيئة التدريس والموظفين التابعين للقسم
     from apps.faculty.models import Professor, CourseAssignment, DepartmentStaff
@@ -6198,13 +6208,15 @@ def subject_data_api(request):
 
     from apps.faculty.models import CourseAssignment
 
-    courses_qs = Course.objects.filter(is_active=True).select_related('level').prefetch_related('department')
+    courses_qs = Course.objects.filter(is_active=True).filter(
+        Q(department__isnull=True) | Q(department__is_active=True)
+    ).select_related('level').prefetch_related('department').distinct()
 
     if is_valid_filter(department_id):
         if str(department_id).isdigit():
-            courses_qs = courses_qs.filter(department__id=int(department_id))
+            courses_qs = courses_qs.filter(department__id=int(department_id), department__is_active=True)
         else:
-            courses_qs = courses_qs.filter(department__name__icontains=str(department_id).strip())
+            courses_qs = courses_qs.filter(department__name__icontains=str(department_id).strip(), department__is_active=True)
 
     if is_valid_filter(level_id):
         if str(level_id).isdigit():
@@ -6250,7 +6262,7 @@ def subject_data_api(request):
 
         sem_name = f"{semester_obj.get_type_display()} {semester_obj.year}" if semester_obj else "الفصل الحالي"
 
-        depts = list(c.department.all())
+        depts = list(c.department.filter(is_active=True))
         dept_names = " ، ".join([d.name for d in depts]) if depts else "عام"
         first_dept_id = depts[0].id if depts else None
 
@@ -6649,7 +6661,7 @@ def get_subjects_api(request):
                     'code': prereq.code
                 })
             
-            depts = list(course.department.all())
+            depts = list(course.department.filter(is_active=True))
             dept_ids = [d.id for d in depts]
             dept_name = " ، ".join([d.name for d in depts]) if depts else "عام"
             primary_dept_id = dept_ids[0] if dept_ids else None
@@ -8225,7 +8237,7 @@ def dashboard(request):
 
     # 5. توزيع الطلاب حسب الأقسام والتخصصات
     departments_data = []
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     for dept in departments:
         dept_total = all_students_qs.filter(department=dept).count()
         dept_active = all_students_qs.filter(department=dept, student_status__name='منتظم').count()
@@ -9546,7 +9558,7 @@ def student_tracking(request):
     صفحة متابعة السجل الأكاديمي للطالب - Dynamic Database Integration
     تتيح تتبع ومراجعة كامل الملف الأكاديمي والتايم لاين للمواد والإنجاز الأكاديمي.
     """
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     levels = Level.objects.all().order_by('name')
     
     # 1. الاستعلام عن كائنات الطلاب
@@ -10075,7 +10087,7 @@ def plan_add_course_view(request, plan_id):
     plan = get_object_or_404(StudyPlan, pk=plan_id)
 
     if request.method == 'GET':
-        departments = Department.objects.all().order_by('name')
+        departments = Department.objects.filter(is_active=True).order_by('name')
         levels = Level.objects.all().order_by('number')
         
         # جلب كافة المواد المتاحة كمتطلبات سابقة
@@ -10222,7 +10234,7 @@ def plan_add_course_view(request, plan_id):
 @login_required
 def _build_students_gpa_dataset(request):
     """دالة مساعدة لبناء وتصفية بيانات كشف الطلاب حسب المعدل"""
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     levels = Level.objects.all().order_by('name')
     
     # 1. الاستعلام الأساسي مع تحسين الأداء
@@ -10664,7 +10676,7 @@ def process_student_withdrawal_api(request):
 @login_required
 def file_withdrawal_archive(request):
     """صفحة أرشيف سحب الملفات والفلترة المتقدمة"""
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     semesters = Semester.objects.all().order_by('-year', '-id')
     years = sorted(list(set(Semester.objects.values_list('year', flat=True))), reverse=True)
     if not years:
@@ -10891,7 +10903,8 @@ def plans_display_view(request):
                     }
                 
                 prereqs = [f"{p.name} ({p.code})" for p in course.prerequisites.all()]
-                depts_str = ", ".join(d.name for d in course.department.all()) if course.department.exists() else "عام"
+                active_depts = course.department.filter(is_active=True)
+                depts_str = ", ".join(d.name for d in active_depts) if active_depts.exists() else "عام"
                 
                 levels_map[lvl_num]['courses'].append({
                     'id': course.id,
@@ -10982,11 +10995,11 @@ def plans_manage_view(request):
     dept_id = request.GET.get('department_id') or request.GET.get('department')
     status_filter = request.GET.get('status')
 
-    departments = Department.objects.all().order_by('name')
+    departments = Department.objects.filter(is_active=True).order_by('name')
     plans = StudyPlan.objects.all().order_by('name')
 
     if is_valid_filter(dept_id):
-        plan_ids = Course.objects.filter(department__id=dept_id).values_list('study_plan_id', flat=True).distinct()
+        plan_ids = Course.objects.filter(department__id=dept_id, department__is_active=True).values_list('study_plan_id', flat=True).distinct()
         plans = plans.filter(id__in=plan_ids)
 
     plans_list = []
@@ -11002,7 +11015,7 @@ def plans_manage_view(request):
 
         depts_map = {}
         for c in courses:
-            for dept in c.department.all():
+            for dept in c.department.filter(is_active=True):
                 depts_map[dept.id] = dept.name
 
         dept_objs = [{'id': d_id, 'name': d_name} for d_id, d_name in depts_map.items()]

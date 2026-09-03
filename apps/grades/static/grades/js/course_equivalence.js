@@ -900,7 +900,7 @@ function initStudentSearchAutocomplete() {
                             e.stopPropagation();
                             const stId = this.getAttribute('data-student-id');
                             if (stId) {
-                                window.location.href = `/grades/course-equivalence/?student_id=${encodeURIComponent(stId)}`;
+                                window.location.href = `/grades/course-equivalence/?student_id=${encodeURIComponent(stId)}&search=${encodeURIComponent(stId)}`;
                             }
                         });
                     });

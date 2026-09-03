@@ -70,10 +70,10 @@ def send_student_grade_email(student, course, semester, midterm_grade, final_gra
             recipient_list=[student_email],
             fail_silently=False,
         )
-        print(f"📧 [نجاح الإرسال] تم إرسال بريد إلكتروني بنجاح إلى الطالب {student.name} ({student_email}) لمادة {course.name}")
+        print(f"[EMAIL] [نجاح الإرسال] تم إرسال بريد إلكتروني بنجاح إلى الطالب {student.name} ({student_email}) لمادة {course.name}")
         return True
     except Exception as e:
-        print(f"⚠️ [تحذير البريد] تعذر إرسال بريد للطالب {getattr(student, 'name', '')}: {e}")
+        print(f"[WARN] [تحذير البريد] تعذر إرسال بريد للطالب {getattr(student, 'name', '')}: {e}")
         return False
 
 
@@ -96,7 +96,7 @@ def send_grade_submission_alert_to_college(course, semester, user, period="midte
         group_name = group.name if group else (getattr(course, 'student_group_name', 'كافة المجموعات') if course else '—')
         dept_name = department.name if department else (course.department.first().name if course and hasattr(course, 'department') and course.department.exists() else '—')
 
-        subject = f"🔔 [إشعار اعتماد ورصد درجات] مادة: {crs_name} | {sem_name}"
+        subject = f"[NOTIF] [إشعار اعتماد ورصد درجات] مادة: {crs_name} | {sem_name}"
 
         body = f"""السلام عليكم ورحمة الله وبركاته،
 
@@ -126,9 +126,9 @@ def send_grade_submission_alert_to_college(course, semester, user, period="midte
             recipient_list=[official_email],
             fail_silently=True,
         )
-        print(f"📧 [إشعار الكلية] تم إرسال إشعار رصد الدرجات بنجاح إلى البريد الرسمي: {official_email} لمادة {crs_name}")
+        print(f"[EMAIL] [إشعار الكلية] تم إرسال إشعار رصد الدرجات بنجاح إلى البريد الرسمي: {official_email} لمادة {crs_name}")
 
-        # 🔔 توليد إشعار فوري داخل المنظومة في مركز الإشعارات لقسم الدراسة والامتحانات والمسجل
+        # [NOTIF] توليد إشعار فوري داخل المنظومة في مركز الإشعارات لقسم الدراسة والامتحانات والمسجل
         try:
             from apps.student.models import Notification
             Notification.objects.create(
@@ -141,11 +141,11 @@ def send_grade_submission_alert_to_college(course, semester, user, period="midte
                 is_read=False
             )
         except Exception as notif_err:
-            print(f"⚠️ In-app notification creation error: {notif_err}")
+            print(f"[WARN] In-app notification creation error: {notif_err}")
 
         return True
     except Exception as e:
-        print(f"⚠️ [إشعار الكلية] خطأ أثناء إرسال إشعار رصد الدرجات: {e}")
+        print(f"[WARN] [إشعار الكلية] خطأ أثناء إرسال إشعار رصد الدرجات: {e}")
         return False
 
 
@@ -198,7 +198,7 @@ def get_filters_api(request):
         group_id = request.GET.get('group_id')
         department_id = request.GET.get('department_id') or request.GET.get('specialty_id')
 
-        print(f"🔍 DEBUG: get_filters_api GET params -> semester_id={semester_id}, course_id={course_id}, level_id={level_id}, group_id={group_id}, department_id={department_id}")
+        print(f"[SEARCH] DEBUG: get_filters_api GET params -> semester_id={semester_id}, course_id={course_id}, level_id={level_id}, group_id={group_id}, department_id={department_id}")
 
         from apps.faculty.models import Professor, CourseAssignment
         
@@ -284,7 +284,7 @@ def get_filters_api(request):
                 professors_qs = Professor.objects.filter(is_active=True)
                 
             professors_data = [{'id': p.id, 'name': p.full_name, 'email': p.email} for p in professors_qs]
-            print(f"📊 تم إرجاع {len(professors_data)} أستاذ")
+            print(f"[STATS] تم إرجاع {len(professors_data)} أستاذ")
         
         # ============================================================
         # 3. إرجاع الاستجابة النهائية
@@ -301,7 +301,7 @@ def get_filters_api(request):
         })
         
     except Exception as e:
-        print(f"❌ خطأ في get_filters_api: {str(e)}")
+        print(f"[ERROR] خطأ في get_filters_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -398,7 +398,7 @@ def get_students_for_grades_api(request):
             return JsonResponse({'success': False, 'message': 'الرجاء اختيار الفصل الدراسي والمادة أولاً'})
         
         # تم تجاوز وتجاهل معلمة professor_id تماماً لمنع إخفاء طلاب المجموعة عند تباين إسنادات الأساتذة
-        print(f"\n🔍 [GRADES API] Incoming Params -> sem_id={sem_id}, crs_id={crs_id}, dep_id={dep_id}, grp_id={grp_id}, lvl_id={lvl_id} (professor_id is safely bypassed)")
+        print(f"\n[SEARCH] [GRADES API] Incoming Params -> sem_id={sem_id}, crs_id={crs_id}, dep_id={dep_id}, grp_id={grp_id}, lvl_id={lvl_id} (professor_id is safely bypassed)")
         
         # الاستعلام المباشر والتشخيص المنطقي للطلاب المعتمد حصراً على المادة والمجموعة والفصل
         students_list = []
@@ -408,30 +408,30 @@ def get_students_for_grades_api(request):
 
             # أ. الطلاب المربوطون بالمجموعة عبر FK
             direct_grp_students = Student.objects.filter(Q(group_id=grp_id) | Q(group__id=grp_id))
-            print(f"📊 [GRADES API] Step 1 - Student.group_id == {grp_id} count: {direct_grp_students.count()}")
+            print(f"[STATS] [GRADES API] Step 1 - Student.group_id == {grp_id} count: {direct_grp_students.count()}")
             
             # ب. الطلاب عبر العلاقات المتاحة M2M إن وجدت
             m2m_ids = set()
             try:
                 g_obj = Group.objects.filter(id=grp_id).first()
                 if g_obj:
-                    print(f"📊 [GRADES API] Group #{grp_id} info: name='{g_obj.name}', dept_id={g_obj.department_id}, level_id={g_obj.level_id}")
+                    print(f"[STATS] [GRADES API] Group #{grp_id} info: name='{g_obj.name}', dept_id={g_obj.department_id}, level_id={g_obj.level_id}")
                     if hasattr(g_obj, 'students'):
                         m2m_ids = set(g_obj.students.values_list('id', flat=True))
-                        print(f"📊 [GRADES API] Step 2 - Group.students M2M count: {len(m2m_ids)}")
+                        print(f"[STATS] [GRADES API] Step 2 - Group.students M2M count: {len(m2m_ids)}")
             except Exception as e:
-                print(f"⚠️ [GRADES API] Group lookup error: {e}")
+                print(f"[WARN] [GRADES API] Group lookup error: {e}")
 
             # ج. التسجيلات المباشرة للمادة والمجموعة في CourseRegistration
             reg_ids = set(CourseRegistration.objects.filter(course_id=crs_id, student__group_id=grp_id).values_list('student_id', flat=True))
-            print(f"📊 [GRADES API] Step 3 - CourseRegistration (course={crs_id}, group={grp_id}) count: {len(reg_ids)}")
+            print(f"[STATS] [GRADES API] Step 3 - CourseRegistration (course={crs_id}, group={grp_id}) count: {len(reg_ids)}")
 
             all_ids = set(direct_grp_students.values_list('id', flat=True)).union(m2m_ids).union(reg_ids)
-            print(f"📊 [GRADES API] Step 4 - Combined unique Student IDs for group={grp_id}: {len(all_ids)}")
+            print(f"[STATS] [GRADES API] Step 4 - Combined unique Student IDs for group={grp_id}: {len(all_ids)}")
 
             # Fallback: إذا كانت مجموعة المعرفات فارغة تماماً، تجربة الجلب بقسم ومستوى المجموعة
             if not all_ids:
-                print("⚠️ [GRADES API] Combined IDs empty! Executing Group Dept/Level Fallback...")
+                print("[WARN] [GRADES API] Combined IDs empty! Executing Group Dept/Level Fallback...")
                 g_obj = Group.objects.filter(id=grp_id).first()
                 if g_obj:
                     fallback_grp_qs = Student.objects.all()
@@ -440,13 +440,13 @@ def get_students_for_grades_api(request):
                     if g_obj.level_id:
                         fallback_grp_qs = fallback_grp_qs.filter(level_id=g_obj.level_id)
                     all_ids = set(fallback_grp_qs.values_list('id', flat=True))
-                    print(f"📊 [GRADES API] Fallback Student count by Group Dept/Level: {len(all_ids)}")
+                    print(f"[STATS] [GRADES API] Fallback Student count by Group Dept/Level: {len(all_ids)}")
 
             stu_qs = Student.objects.filter(id__in=all_ids).select_related('department', 'level', 'group').order_by('student_id')
             
             # عند اختيار مجموعة محددة (group_id)، يتم إرجاع جميع طلاب المجموعة صراحة ودون التقييد بشرط level_id للطالب
             students_list = list(stu_qs)
-            print(f"📊 [GRADES API] Step 5 - Final students_list count returned for group={grp_id}: {len(students_list)}")
+            print(f"[STATS] [GRADES API] Step 5 - Final students_list count returned for group={grp_id}: {len(students_list)}")
         else:
             registrations = CourseRegistration.objects.filter(
                 course_id=crs_id,
@@ -459,7 +459,7 @@ def get_students_for_grades_api(request):
                 registrations = registrations.filter(student__level_id=lvl_id)
                 
             students_list = [reg.student for reg in registrations]
-            print(f"📊 [GRADES API] Non-group CourseRegistration count: {len(students_list)}")
+            print(f"[STATS] [GRADES API] Non-group CourseRegistration count: {len(students_list)}")
 
             if not students_list:
                 fallback_qs = Student.objects.all()
@@ -468,7 +468,7 @@ def get_students_for_grades_api(request):
                 if lvl_id:
                     fallback_qs = fallback_qs.filter(level_id=lvl_id)
                 students_list = list(fallback_qs.select_related('department', 'level', 'group').order_by('student_id'))
-                print(f"📊 [GRADES API] Non-group Fallback students count: {len(students_list)}")
+                print(f"[STATS] [GRADES API] Non-group Fallback students count: {len(students_list)}")
         
         # جلب الدرجات المسجلة للمادة والفصل الدراسي
         grades_dict = {}
@@ -516,7 +516,7 @@ def get_students_for_grades_api(request):
         })
     
     except Exception as e:
-        print(f"❌ خطأ: {str(e)}")
+        print(f"[ERROR] خطأ: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -528,7 +528,7 @@ def save_grades_api(request):
     """API: حظر الحفظ والتعديل اليدوي الفردي للدرجات"""
     return JsonResponse({
         'success': False,
-        'error': '❌ الإدخال والتعديل اليدوي للدرجات مقفل في هذه المنظومة! يرجى استخدام خيار "رفع ملف CSV / Excel" حصراً لإدخال وتحديث درجات الطلاب.'
+        'error': '[ERROR] الإدخال والتعديل اليدوي للدرجات مقفل في هذه المنظومة! يرجى استخدام خيار "رفع ملف CSV / Excel" حصراً لإدخال وتحديث درجات الطلاب.'
     }, status=403)
     
     try:
@@ -645,7 +645,7 @@ def save_grades_api(request):
         
         return JsonResponse({
             'success': True,
-            'message': f'✅ تم حفظ {saved_count} درجة',
+            'message': f'[OK] تم حفظ {saved_count} درجة',
             'saved_count': saved_count,
             'errors': errors
         })
@@ -666,7 +666,7 @@ def show_results(request):
     levels = Level.objects.all().order_by('number')
     courses = Course.objects.filter(is_active=True).order_by('code')
     
-    # 🛡️ تسجيل نشاط تصفح واستعراض نتائج الطلاب في سجل الأحداث
+    # [SEC] تسجيل نشاط تصفح واستعراض نتائج الطلاب في سجل الأحداث
     try:
         log_activity(
             user=request.user,
@@ -677,7 +677,7 @@ def show_results(request):
             request=request
         )
     except Exception as log_err:
-        logger.warning(f"⚠️ Error logging show_results activity: {log_err}")
+        logger.warning(f"[WARN] Error logging show_results activity: {log_err}")
 
     exams_director_name = "د. فاطمة عمران الشريف"
     try:
@@ -733,7 +733,7 @@ def get_results_api(request):
             )
         
         # ... باقي الكود كما هو
-            print(f"📊 بعد البحث: {grades.count()}")
+            print(f"[STATS] بعد البحث: {grades.count()}")
         
         # حساب المعدل التراكمي
         student_gpas = {}
@@ -778,7 +778,7 @@ def get_results_api(request):
         })
     
     except Exception as e:
-        print(f"❌ خطأ: {str(e)}")
+        print(f"[ERROR] خطأ: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({
@@ -1043,7 +1043,7 @@ def get_student_transcript_api(request):
         })
     
     except Exception as e:
-        print(f"❌ خطأ: {str(e)}")
+        print(f"[ERROR] خطأ: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({
@@ -1172,10 +1172,10 @@ def import_excel_grades_api(request):
         # فحص حالات القفل والاعتماد حسب الفترة بشكل مستقل
         if period == 'midterm':
             if Grade.objects.filter(course_id=course_id, semester_id=semester_id, is_midterm_locked=True).exists():
-                return JsonResponse({'success': False, 'message': '⚠️ لا يمكن الاستيراد! درجات النصفي معتمدة ومقفلة 🔒'})
+                return JsonResponse({'success': False, 'message': '[WARN] لا يمكن الاستيراد! درجات النصفي معتمدة ومقفلة 🔒'})
         elif period == 'final':
             if Grade.objects.filter(course_id=course_id, semester_id=semester_id, is_final_locked=True).exists():
-                return JsonResponse({'success': False, 'message': '⚠️ لا يمكن الاستيراد! درجات النهائي معتمدة ومقفلة 🔒'})
+                return JsonResponse({'success': False, 'message': '[WARN] لا يمكن الاستيراد! درجات النهائي معتمدة ومقفلة 🔒'})
         
         from apps.student.models import Student
         from django.db.models import Q
@@ -1207,7 +1207,7 @@ def import_excel_grades_api(request):
                 rows_data.append(list(r) if r else [])
         
         if not rows_data or len(rows_data) < 2:
-            return JsonResponse({'success': False, 'message': '⚠️ الملف فارغ أو لا يحتوي على صفوف بيانات'})
+            return JsonResponse({'success': False, 'message': '[WARN] الملف فارغ أو لا يحتوي على صفوف بيانات'})
         
         # قراءة الهيدر (الصف الأول) لتحديد مواضع الأعمدة ديناميكياً
         first_row = rows_data[0] if rows_data else []
@@ -1335,12 +1335,12 @@ def import_excel_grades_api(request):
         if not students_data:
             return JsonResponse({
                 'success': False,
-                'message': '⚠️ لم يتم العثور على أي طالب من أرقام القيد المذكورة في الملف داخل قاعدة البيانات'
+                'message': '[WARN] لم يتم العثور على أي طالب من أرقام القيد المذكورة في الملف داخل قاعدة البيانات'
             })
             
         students_data.sort(key=lambda x: str(x['student_id']))
         
-        # 🛡️ توثيق عملية استيراد كشف الدرجات من Excel في سجل الأحداث بالتفصيل
+        # [SEC] توثيق عملية استيراد كشف الدرجات من Excel في سجل الأحداث بالتفصيل
         try:
             crs_obj = Course.objects.filter(id=course_id).first()
             sem_obj = Semester.objects.filter(id=semester_id).first()
@@ -1355,7 +1355,7 @@ def import_excel_grades_api(request):
                 request=request
             )
 
-            # 📧 إرسال إشعار بريد إلكتروني رسمي لإدارة الكلية وقسم الدراسة والامتحانات
+            # [EMAIL] إرسال إشعار بريد إلكتروني رسمي لإدارة الكلية وقسم الدراسة والامتحانات
             send_grade_submission_alert_to_college(
                 course=crs_obj,
                 semester=sem_obj,
@@ -1365,7 +1365,7 @@ def import_excel_grades_api(request):
                 action_name=f"استيراد وتعبئة كشف درجات {period}"
             )
         except Exception as log_err:
-            print(f"⚠️ Log activity / Mail alert error in import_excel: {log_err}")
+            print(f"[WARN] Log activity / Mail alert error in import_excel: {log_err}")
 
         return JsonResponse({
             'success': True,
@@ -1374,7 +1374,7 @@ def import_excel_grades_api(request):
         })
     
     except Exception as e:
-        print(f"❌ خطأ في استيراد Excel: {str(e)}")
+        print(f"[ERROR] خطأ في استيراد Excel: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -1419,7 +1419,7 @@ def approve_and_lock_grades_api(request):
                     action_type="اعتماد وقفل درجة النصفي"
                 )
             
-            # 🛡️ توثيق اعتماد وقفل النصفي في سجل الأحداث وإرسال إشعار بريدي للكلية
+            # [SEC] توثيق اعتماد وقفل النصفي في سجل الأحداث وإرسال إشعار بريدي للكلية
             try:
                 user_disp = f"المستخدِم ({request.user.get_full_name() or request.user.username})"
                 log_activity(
@@ -1440,7 +1440,7 @@ def approve_and_lock_grades_api(request):
                     action_name="اعتماد وقفل درجات امتحان النصفي"
                 )
             except Exception as e:
-                print(f"⚠️ Log / Mail error in lock midterm: {e}")
+                print(f"[WARN] Log / Mail error in lock midterm: {e}")
 
             return JsonResponse({
                 'success': True,
@@ -1462,7 +1462,7 @@ def approve_and_lock_grades_api(request):
                     action_type="اعتماد وقفل درجة النهائي"
                 )
                 
-            # 🛡️ توثيق اعتماد وقفل النهائي في سجل الأحداث وإرسال إشعار بريدي للكلية
+            # [SEC] توثيق اعتماد وقفل النهائي في سجل الأحداث وإرسال إشعار بريدي للكلية
             try:
                 user_disp = f"المستخدِم ({request.user.get_full_name() or request.user.username})"
                 log_activity(
@@ -1483,7 +1483,7 @@ def approve_and_lock_grades_api(request):
                     action_name="اعتماد وقفل درجات امتحان النهائي وحساب النتائج"
                 )
             except Exception as e:
-                print(f"⚠️ Log / Mail error in lock final: {e}")
+                print(f"[WARN] Log / Mail error in lock final: {e}")
 
             return JsonResponse({
                 'success': True,
@@ -1522,7 +1522,7 @@ def publish_grades_api(request):
         if unlocked_midterm or unlocked_final:
             return JsonResponse({
                 'success': False,
-                'message': '⚠️ لا يمكن ترحيل النتائج إلا بعد اعتماد وقفل النصفي والنهائي معاً 🔒'
+                'message': '[WARN] لا يمكن ترحيل النتائج إلا بعد اعتماد وقفل النصفي والنهائي معاً 🔒'
             })
 
         # إنشاء سجلات الإشعارات للطالب وإرسال الإيميل
@@ -1556,7 +1556,7 @@ def publish_grades_api(request):
         
         return JsonResponse({
             'success': True,
-            'message': '🚀 تم ترحيل ونشر الكشف بنجاح لصفحة عرض النتائج!'
+            'message': '[START] تم ترحيل ونشر الكشف بنجاح لصفحة عرض النتائج!'
         })
     
     except Exception as e:
@@ -1745,16 +1745,16 @@ def export_excel_grades_api(request):
         
         return JsonResponse({
             'success': True,
-            'message': f'✅ تم تصدير كشف {len(students_list)} طالب وإرساله إلى {email if email else "البريد"}'
+            'message': f'[OK] تم تصدير كشف {len(students_list)} طالب وإرساله إلى {email if email else "البريد"}'
         })
     
     except Exception as e:
         error_msg = str(e)
-        print(f"❌ خطأ في التصدير والإرسال: {error_msg}")
+        print(f"[ERROR] خطأ في التصدير والإرسال: {error_msg}")
         if '535' in error_msg or 'BadCredentials' in error_msg or 'AuthenticationError' in error_msg:
             return JsonResponse({
                 'success': False,
-                'message': '❌ فشل إرسال البريد: كلمة مرور التطبيق (App Password) لإيميل Gmail غير صحيحة أو منتهية الصلاحية.'
+                'message': '[ERROR] فشل إرسال البريد: كلمة مرور التطبيق (App Password) لإيميل Gmail غير صحيحة أو منتهية الصلاحية.'
             })
         return JsonResponse({'success': False, 'message': f'فشل إرسال البريد: {error_msg}'})
 
@@ -1820,7 +1820,7 @@ def publish_grades_api(request):
 
         status_text = "تم اعتماد ونشر نتائج المادة للطلاب بنجاح 🟢" if is_published else "تم إيقاف نشر نتائج المادة وعودتها قيد المراجعة 🟡"
         
-        # 🛡️ توثيق نشر/إيقاف نشر النتائج في سجل الأحداث
+        # [SEC] توثيق نشر/إيقاف نشر النتائج في سجل الأحداث
         try:
             from apps.users.utils import log_activity
             crs_obj = Course.objects.filter(id=course_id).first()
@@ -1846,7 +1846,7 @@ def publish_grades_api(request):
         })
     
     except Exception as e:
-        print(f"❌ خطأ في publish_grades_api: {str(e)}")
+        print(f"[ERROR] خطأ في publish_grades_api: {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)})
 
 
@@ -1987,7 +1987,7 @@ def get_courses_publish_status_api(request):
         })
         
     except Exception as e:
-        print(f"❌ خطأ في get_courses_publish_status_api: {str(e)}")
+        print(f"[ERROR] خطأ في get_courses_publish_status_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -2444,7 +2444,7 @@ def get_student_results_api(request):
             s = grade.student
             is_blocked = getattr(grade, 'is_blocked', False)
             reason_str = getattr(grade, 'block_reason', None) or "تجاوز نسبة الغياب الورقي"
-            block_msg = f"⚠️ تم حجب نتيجة هذه المادة ({reason_str}) - يرجى مراجعة قسم الدراسة والامتحانات." if is_blocked else ""
+            block_msg = f"[WARN] تم حجب نتيجة هذه المادة ({reason_str}) - يرجى مراجعة قسم الدراسة والامتحانات." if is_blocked else ""
             
             is_pub = getattr(grade, 'is_published', False) or getattr(grade, 'is_midterm_published', False) or getattr(grade, 'is_final_published', False)
             pub_msg = "لم يتم نشر نتائج هذه المادة بعد من قِبل إدارة الكنترول" if not is_pub else ""
@@ -2468,7 +2468,7 @@ def get_student_results_api(request):
             if appeal_status == 'under_review':
                 appeal_msg = "⏳ جاري مراجعة الطعن وتعديل الدرجة"
             elif appeal_status == 'completed':
-                appeal_msg = "✅ تم قبول الطعن وتعديل الدرجة"
+                appeal_msg = "[OK] تم قبول الطعن وتعديل الدرجة"
             elif appeal_status == 'pending':
                 appeal_msg = "📝 يوجد طعن مسجل قيد الانتظار"
 
@@ -2520,7 +2520,7 @@ def get_student_results_api(request):
         })
 
     except Exception as e:
-        print(f"❌ خطأ في get_student_results_api: {str(e)}")
+        print(f"[ERROR] خطأ في get_student_results_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -2648,7 +2648,7 @@ def get_control_holds_students_api(request):
         })
         
     except Exception as e:
-        print(f"❌ خطأ في get_control_holds_students_api: {str(e)}")
+        print(f"[ERROR] خطأ في get_control_holds_students_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -2697,7 +2697,7 @@ def toggle_block_grade_api(request):
         grade.updated_by = request.user
         grade.save()
 
-        # 🛡️ تسجيل العملية في سجل الأحداث والتدقيق
+        # [SEC] تسجيل العملية في سجل الأحداث والتدقيق
         action_type = 'block_result' if grade.is_blocked else 'unblock_result'
         student_name = grade.student.name if (grade.student and hasattr(grade.student, 'name')) else f"الطالب #{student_db_id}"
         course_name = grade.course.name if (grade.course and hasattr(grade.course, 'name')) else f"المادة #{course_id}"
@@ -2713,9 +2713,9 @@ def toggle_block_grade_api(request):
                 request=request
             )
         except Exception as log_err:
-            print(f"⚠️ Error logging block_result activity: {log_err}")
+            print(f"[WARN] Error logging block_result activity: {log_err}")
         
-        status_msg = f"تم حجب نتيجة المادة للمعني بنجاح ({grade.block_reason}) 🔒" if grade.is_blocked else "تم فك حجب نتيجة المادة بنجاح ✅"
+        status_msg = f"تم حجب نتيجة المادة للمعني بنجاح ({grade.block_reason}) 🔒" if grade.is_blocked else "تم فك حجب نتيجة المادة بنجاح [OK]"
         
         return JsonResponse({
             'success': True,
@@ -2726,7 +2726,7 @@ def toggle_block_grade_api(request):
         })
         
     except Exception as e:
-        print(f"❌ خطأ في toggle_block_grade_api: {str(e)}")
+        print(f"[ERROR] خطأ في toggle_block_grade_api: {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)})
 
 
@@ -2841,7 +2841,7 @@ def get_appeals_api(request):
             'count': len(appeals_data)
         })
     except Exception as e:
-        print(f"❌ خطأ في get_appeals_api: {str(e)}")
+        print(f"[ERROR] خطأ في get_appeals_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -2909,7 +2909,7 @@ def create_appeal_api(request):
             appeal.reviewed_by = request.user
             appeal.save()
 
-        # 🛡️ توثيق تقديم/إثبات طعن جديد في سجل الأحداث
+        # [SEC] توثيق تقديم/إثبات طعن جديد في سجل الأحداث
         try:
             from apps.users.utils import log_activity
             log_activity(
@@ -2923,7 +2923,7 @@ def create_appeal_api(request):
         except Exception:
             pass
 
-        # 🔔 إشعار فوري للطالب بتسجيل الطعن وتوجيهه لكشف الدرجات
+        # [NOTIF] إشعار فوري للطالب بتسجيل الطعن وتوجيهه لكشف الدرجات
         try:
             from apps.student.models import Notification
             Notification.create_notification(
@@ -2936,7 +2936,7 @@ def create_appeal_api(request):
                 target_role='student'
             )
         except Exception as notif_err:
-            print(f"⚠️ Error creating appeal notification: {notif_err}")
+            print(f"[WARN] Error creating appeal notification: {notif_err}")
 
         return JsonResponse({
             'success': True,
@@ -2944,7 +2944,7 @@ def create_appeal_api(request):
             'message': 'تم إثبات وتسجيل الطعن الورقي للطلب بنجاح 📝'
         })
     except Exception as e:
-        print(f"❌ خطأ في create_appeal_api: {str(e)}")
+        print(f"[ERROR] خطأ في create_appeal_api: {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)})
 
 
@@ -2973,12 +2973,12 @@ def update_appeal_status_api(request):
 
         status_msg_map = {
             'under_review': 'تم قبول الطعن وبدء المراجعة والتعديل ⏳',
-            'completed': 'تم قبول الطعن واعتماد تعديل الدرجة بنجاح ✅',
-            'rejected': 'تم رفض الطعن ❌',
+            'completed': 'تم قبول الطعن واعتماد تعديل الدرجة بنجاح [OK]',
+            'rejected': 'تم رفض الطعن [ERROR]',
             'pending': 'تم إرجاع الطعن إلى قيد الانتظار 📝',
         }
 
-        # 🛡️ توثيق تغيير حالة الطعن في سجل الأحداث
+        # [SEC] توثيق تغيير حالة الطعن في سجل الأحداث
         try:
             from apps.users.utils import log_activity
             log_activity(
@@ -2992,13 +2992,13 @@ def update_appeal_status_api(request):
         except Exception:
             pass
 
-        # 🔔 إشعار فوري للطالب بتحديث حالة طعنه مع رابط مباشر لصفحة النتيجة
+        # [NOTIF] إشعار فوري للطالب بتحديث حالة طعنه مع رابط مباشر لصفحة النتيجة
         try:
             from apps.student.models import Notification
             status_title_map = {
                 'under_review': '⏳ قبول وبدء مراجعة وتعديل الطعن',
-                'completed': '✅ تم قبول الطعن واعتماد التعديل',
-                'rejected': '❌ مراجعة طعن النتيجة',
+                'completed': '[OK] تم قبول الطعن واعتماد التعديل',
+                'rejected': '[ERROR] مراجعة طعن النتيجة',
                 'pending': '📝 متابعة طعن النتيجة',
             }
             status_desc_map = {
@@ -3020,7 +3020,7 @@ def update_appeal_status_api(request):
                 target_role='student'
             )
         except Exception as notif_err:
-            print(f"⚠️ Error creating appeal status notification: {notif_err}")
+            print(f"[WARN] Error creating appeal status notification: {notif_err}")
 
         return JsonResponse({
             'success': True,
@@ -3030,7 +3030,7 @@ def update_appeal_status_api(request):
             'message': status_msg_map.get(new_status, 'تم تحديث حالة الطعن بنجاح')
         })
     except Exception as e:
-        print(f"❌ خطأ في update_appeal_status_api: {str(e)}")
+        print(f"[ERROR] خطأ في update_appeal_status_api: {str(e)}")
         return JsonResponse({'success': False, 'message': str(e)})
 
 
@@ -3135,7 +3135,7 @@ def update_appeal_grade_api(request):
             reason=f"قبول طعن النتيجة ورصد الدرجة المعدلة (#{appeal.id})"
         )
 
-        # 🛡️ توثيق البت في الطعن وتعديل الدرجة في سجل الأحداث
+        # [SEC] توثيق البت في الطعن وتعديل الدرجة في سجل الأحداث
         try:
             from apps.users.utils import log_activity
             log_activity(
@@ -3149,13 +3149,13 @@ def update_appeal_grade_api(request):
         except Exception:
             pass
 
-        # 🔔 إشعار فوري للطالب باعتماد قبول الطعن وتعديل الدرجة مع رابط مباشر لكشف الدرجات
+        # [NOTIF] إشعار فوري للطالب باعتماد قبول الطعن وتعديل الدرجة مع رابط مباشر لكشف الدرجات
         try:
             from apps.student.models import Notification
             grade_info = f"المجموع: {grade.total_grade} ({grade.get_grade_letter()})"
             Notification.create_notification(
                 student=appeal.student,
-                title=f"✅ قبول وتعديل طعن: {appeal.course.name}",
+                title=f"[OK] قبول وتعديل طعن: {appeal.course.name}",
                 message=f"تم قبول طعنك في مقرر ({appeal.course.name}) وتعديل ورصد الدرجة في كشفك الأكاديمي بنجاح [{grade_info}].",
                 notification_type='grade_appeal',
                 icon='fact_check',
@@ -3163,7 +3163,7 @@ def update_appeal_grade_api(request):
                 target_role='student'
             )
         except Exception as notif_err:
-            print(f"⚠️ Error creating appeal grade completion notification: {notif_err}")
+            print(f"[WARN] Error creating appeal grade completion notification: {notif_err}")
 
         return JsonResponse({
             'success': True,
@@ -3176,7 +3176,7 @@ def update_appeal_grade_api(request):
             'message': 'تم حفظ وتعديل الدرجة ورصدها بنجاح 🟢 وتحديث كشف الطالب وسجله الأكاديمي تلقائياً'
         })
     except Exception as e:
-        print(f"❌ خطأ في update_appeal_grade_api: {str(e)}")
+        print(f"[ERROR] خطأ في update_appeal_grade_api: {str(e)}")
         import traceback
         traceback.print_exc()
         return JsonResponse({'success': False, 'message': str(e)})
@@ -3196,7 +3196,7 @@ def course_equivalence_rules(request):
 
     if request.method == 'POST':
         if not has_execution_perm(request.user, 'renewal.add_courseequivalence', 'renewal.change_courseequivalence', 'add_courseequivalence', 'change_courseequivalence'):
-            error_msg = '⚠️ غير مصرح لك بإضافة أو تعديل قواعد المعادلة (صلاحيات العرض فقط).'
+            error_msg = '[WARN] غير مصرح لك بإضافة أو تعديل قواعد المعادلة (صلاحيات العرض فقط).'
         else:
             rule_id = request.POST.get('rule_id')
             src_dept_id = request.POST.get('source_department')
@@ -3209,15 +3209,15 @@ def course_equivalence_rules(request):
             target_department = Department.objects.filter(id=tgt_dept_id).first() if tgt_dept_id else None
 
             if not source_id or not target_id:
-                error_msg = '⚠️ يرجى اختيار المادة الأصلية والمادة المكافئة.'
+                error_msg = '[WARN] يرجى اختيار المادة الأصلية والمادة المكافئة.'
             elif source_id == target_id and source_department == target_department:
-                error_msg = '⚠️ لا يمكن اختيار نفس المادة ونفس التخصص كقاعدة معادلة لنفسها.'
+                error_msg = '[WARN] لا يمكن اختيار نفس المادة ونفس التخصص كقاعدة معادلة لنفسها.'
             else:
                 source_course = Course.objects.filter(id=source_id).first()
                 target_course = Course.objects.filter(id=target_id).first()
 
                 if not source_course or not target_course:
-                    error_msg = '⚠️ المادة المختارة غير موجودة في النظام.'
+                    error_msg = '[WARN] المادة المختارة غير موجودة في النظام.'
                 else:
                     existing_query = CourseEquivalence.objects.filter(
                         source_department=source_department,
@@ -3231,7 +3231,7 @@ def course_equivalence_rules(request):
                     if existing_query.exists():
                         src_name = source_department.name if source_department else 'عام'
                         tgt_name = target_department.name if target_department else 'عام'
-                        error_msg = f'⚠️ قاعدة المعادلة بين {source_course.code} ({src_name}) و {target_course.code} ({tgt_name}) مسجلة مسبقاً.'
+                        error_msg = f'[WARN] قاعدة المعادلة بين {source_course.code} ({src_name}) و {target_course.code} ({tgt_name}) مسجلة مسبقاً.'
                     else:
                         if rule_id:
                             rule = CourseEquivalence.objects.filter(id=rule_id).first()
@@ -3243,7 +3243,7 @@ def course_equivalence_rules(request):
                                 rule.notes = notes
                                 rule.save()
 
-                                # 🛡️ توثيق تعديل قاعدة معادلة في سجل الأحداث
+                                # [SEC] توثيق تعديل قاعدة معادلة في سجل الأحداث
                                 try:
                                     from apps.users.utils import log_activity
                                     log_activity(
@@ -3257,9 +3257,9 @@ def course_equivalence_rules(request):
                                 except Exception:
                                     pass
 
-                                messages.success(request, f'✅ تم تعديل قاعدة المعادلة بنجاح: {source_course.code} ⬅️ {target_course.code}')
+                                messages.success(request, f'[OK] تم تعديل قاعدة المعادلة بنجاح: {source_course.code} ⬅️ {target_course.code}')
                             else:
-                                error_msg = '⚠️ لم يتم العثور على قاعدة المعادلة المراد تعديلها.'
+                                error_msg = '[WARN] لم يتم العثور على قاعدة المعادلة المراد تعديلها.'
                         else:
                             CourseEquivalence.objects.create(
                                 source_department=source_department,
@@ -3269,7 +3269,7 @@ def course_equivalence_rules(request):
                                 notes=notes
                             )
                             
-                            # 🛡️ توثيق إضافة قاعدة معادلة في سجل الأحداث
+                            # [SEC] توثيق إضافة قاعدة معادلة في سجل الأحداث
                             try:
                                 from apps.users.utils import log_activity
                                 log_activity(
@@ -3283,7 +3283,7 @@ def course_equivalence_rules(request):
                             except Exception:
                                 pass
 
-                            messages.success(request, f'✅ تم إضافة قاعدة المعادلة بنجاح: {source_course.code} ⬅️ {target_course.code}')
+                            messages.success(request, f'[OK] تم إضافة قاعدة المعادلة بنجاح: {source_course.code} ⬅️ {target_course.code}')
 
     rules = CourseEquivalence.objects.select_related('source_department', 'target_department', 'source_course', 'target_course').all().order_by('-created_at')
     if selected_source_dept:
@@ -3313,7 +3313,7 @@ def delete_course_equivalence_rule(request, rule_id):
     target_code = rule.target_course.code
     rule.delete()
     
-    # 🛡️ توثيق حذف قاعدة معادلة في سجل الأحداث
+    # [SEC] توثيق حذف قاعدة معادلة في سجل الأحداث
     try:
         from apps.users.utils import log_activity
         log_activity(
@@ -3424,7 +3424,7 @@ def process_student_track_change(student, target_dept, user):
     academic_rec.calculate_cumulative_record()
     academic_rec.save()
 
-    # 5. 🛡️ تسجيل في سجل الأنشطة (Audit Log)
+    # 5. [SEC] تسجيل في سجل الأنشطة (Audit Log)
     try:
         log_activity(
             user=user,
@@ -3456,7 +3456,11 @@ def course_equivalence_page(request):
     departments = Department.objects.filter(is_active=True).order_by('name')
     active_semester = Semester.objects.filter(is_active=True).first()
     search_query = request.GET.get('search', '').strip()
-    new_dept_id = request.GET.get('new_department', '').strip()
+    selected_student_id = request.GET.get('student_id', '').strip() or request.POST.get('student_id', '').strip()
+    new_dept_id = request.GET.get('new_department', '').strip() or request.POST.get('new_department', '').strip() or request.POST.get('target_department', '').strip()
+
+    if not search_query and selected_student_id:
+        search_query = selected_student_id
 
     student = None
     passed_grades = []
@@ -3467,8 +3471,6 @@ def course_equivalence_page(request):
     level_warning = None
     limit_warning = None
     selected_new_dept = None
-
-    selected_student_id = request.GET.get('student_id', '').strip()
     matching_students = []
 
     # 1. البحث الدقيق أو المرن عن الطالب
@@ -3502,6 +3504,10 @@ def course_equivalence_page(request):
     student_eligibility = {'is_allowed': True, 'status_category': 'none', 'error_message': None, 'allow_reports': True}
     is_withdrawn = False
     if student:
+        if not search_query:
+            search_query = student.student_id or str(student.id)
+        if not selected_student_id:
+            selected_student_id = student.student_id or str(student.id)
         from apps.student.utils import check_student_academic_eligibility
         student_eligibility = check_student_academic_eligibility(student, action_type='major_change')
         st_status_name = student.student_status.name if student.student_status else ""
@@ -3518,12 +3524,12 @@ def course_equivalence_page(request):
     if student:
         has_already_changed = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) >= 1)
         if has_already_changed:
-            limit_warning = "⚠️ تنبيه: الطالب استنفد الحد المسموح به لتغيير المسار (مسموح بمرة واحدة فقط)."
+            limit_warning = "[WARN] تنبيه: الطالب استنفد الحد المسموح به لتغيير المسار (مسموح بمرة واحدة فقط)."
 
     # 3. اعتماد تغيير المسار وتحديث سجل الطالب عبر POST
     if request.method == 'POST' and student:
         if not has_execution_perm(request.user, 'renewal.add_courseequivalence', 'renewal.change_courseequivalence', 'add_courseequivalence', 'change_courseequivalence'):
-            messages.error(request, '🛑 غير مصرح لك باعتماد المعادلة وتغيير المسار (صلاحيات العرض فقط).')
+            messages.error(request, '[STOP] غير مصرح لك باعتماد المعادلة وتغيير المسار (صلاحيات العرض فقط).')
         elif not is_equivalence_job_open:
             messages.error(request, equivalence_job_message)
         elif not student_eligibility['is_allowed']:
@@ -3533,7 +3539,7 @@ def course_equivalence_page(request):
             target_dept_id = request.POST.get('target_department')
             if action == 'confirm_transfer' and target_dept_id:
                 if has_already_changed:
-                    messages.error(request, "🛑 عذراً: هذا الطالب قام بتغيير مساره وتخصصه مسبقاً (مسموح بمرة واحدة فقط طوال فترة الدراسة).")
+                    messages.error(request, "[STOP] عذراً: هذا الطالب قام بتغيير مساره وتخصصه مسبقاً (مسموح بمرة واحدة فقط طوال فترة الدراسة).")
                 else:
                     target_dept = Department.objects.filter(id=target_dept_id).first()
                     if target_dept:
@@ -3542,7 +3548,7 @@ def course_equivalence_page(request):
                         try:
                             res = process_student_track_change(student, target_dept, request.user)
                             
-                            # 🛡️ توثيق تغيير المسار ومعادلة المواد للطالب في سجل الأحداث
+                            # [SEC] توثيق تغيير المسار ومعادلة المواد للطالب في سجل الأحداث
                             try:
                                 from apps.users.utils import log_activity
                                 log_activity(
@@ -3557,17 +3563,17 @@ def course_equivalence_page(request):
                                 pass
 
                             has_already_changed = True
-                            limit_warning = "⚠️ تنبيه: الطالب استنفد الحد المسموح به لتغيير المسار (مسموح بمرة واحدة فقط)."
+                            limit_warning = "[WARN] تنبيه: الطالب استنفد الحد المسموح به لتغيير المسار (مسموح بمرة واحدة فقط)."
                             messages.success(
                                 request, 
-                                f'✅ تم اعتماد تغيير المسار بنجاح للطالب ({student.student_id}) من قسم ({res["old_dept_name"]}) إلى ({res["target_dept_name"]}). تم إسقاط وحذف تسجيلات مواد التخصص القديم بالكامل، والملف جاهز لتنزيل مواد التخصص الجديد.'
+                                f'[OK] تم اعتماد تغيير المسار بنجاح للطالب ({student.student_id}) من قسم ({res["old_dept_name"]}) إلى ({res["target_dept_name"]}). تم إسقاط وحذف تسجيلات مواد التخصص القديم بالكامل، والملف جاهز لتنزيل مواد التخصص الجديد.'
                             )
                         except ValidationError as e:
                             err_msg = e.messages[0] if hasattr(e, 'messages') and e.messages else str(e)
                             messages.error(request, err_msg)
                         except Exception as e:
                             logger.error(f"Error during track change for student {student.student_id}: {e}", exc_info=True)
-                            messages.error(request, f"❌ حدث خطأ أثناء اعتماد تغيير المسار: {str(e)}")
+                            messages.error(request, f"[ERROR] حدث خطأ أثناء اعتماد تغيير المسار: {str(e)}")
 
     # 4. التحقق الأكاديمي والجدول الزمني للطالب
     if student:
@@ -3576,7 +3582,7 @@ def course_equivalence_page(request):
         
         if not is_early and student.level and any(term in student_level_name for term in ['الثالث', 'الرابع', '3', '4', 'Third', 'Fourth']):
             can_auto_transfer = False
-            level_warning = "⚠️ تنبيه: الطالب في فصل أعلى من الثاني - لا يجوز تغيير المسار أوتوماتيكياً بل يتطلب موافقة مجلس الكلية."
+            level_warning = "[WARN] تنبيه: الطالب في فصل أعلى من الثاني - لا يجوز تغيير المسار أوتوماتيكياً بل يتطلب موافقة مجلس الكلية."
         else:
             can_auto_transfer = True
 
@@ -4019,7 +4025,7 @@ def professor_grade_email_reply_api(request):
 
         return JsonResponse({
             'success': True,
-            'message': f'✅ تم استلام رد الأستاذ ({notif.title}) وتوليد الإشعار الإداري بنجاح',
+            'message': f'[OK] تم استلام رد الأستاذ ({notif.title}) وتوليد الإشعار الإداري بنجاح',
             'notification_id': notif.id,
             'title': notif.title,
             'link': notif.link
