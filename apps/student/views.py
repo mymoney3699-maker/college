@@ -664,7 +664,8 @@ def my_notifications(request):
         return redirect('renewal:notifications')
         
     qs = Notification.objects.filter(
-        Q(student=student) | Q(target_role__in=['all', 'student'])
+        Q(student=student) |
+        (Q(student__isnull=True) & Q(target_role__in=['all', 'student']) & Q(notification_type='general'))
     ).order_by('-created_at')
     
     unread_count = qs.filter(is_read=False).count()
@@ -685,9 +686,11 @@ def mark_notifications_read(request):
     if request.method == 'POST':
         student = get_student_for_user(request)
         if student:
-            Notification.objects.filter(student=student, is_read=False).update(is_read=True)
-        else:
-            Notification.objects.filter(is_read=False).update(is_read=True)
+            Notification.objects.filter(
+                Q(student=student) |
+                (Q(student__isnull=True) & Q(target_role__in=['all', 'student']) & Q(notification_type='general')),
+                is_read=False
+            ).update(is_read=True)
         return JsonResponse({'success': True, 'message': 'تم تحديد جميع الإشعارات كمقروءة'})
     return JsonResponse({'success': False, 'error': 'Invalid method'}, status=400)
 

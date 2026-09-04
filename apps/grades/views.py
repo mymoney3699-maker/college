@@ -23,7 +23,7 @@ from apps.users.permissions import (
 )
 
 from apps.renewal.models import Department, Semester, Course, Level, Group, CourseRegistration, CourseEquivalence
-from apps.student.models import Student
+from apps.student.models import Student, StudentStatus
 from .models import Grade, GradeConfiguration, GradeNotification, GradeHistory, GradeAppeal
 
 
@@ -2025,14 +2025,14 @@ def academic_status(request):
 
     departments = Department.objects.filter(is_active=True).order_by('name')
     semesters_qs = Semester.objects.all().order_by('-year', '-type')
+    student_statuses = StudentStatus.objects.all().order_by('id')
 
     # ① جلب جميع الطلاب بدون أي تقييد بسنة أو فصل
     students_qs = Student.objects.all().select_related(
-    'department', 'level', 'student_status'
-).order_by('name', 'father_name')
+        'department', 'level', 'student_status'
+    ).order_by('name', 'father_name')
 
     # ② بناء خريطة: student_id → آخر EnrollmentRenewal
-    #    نجلب كل السجلات دفعة واحدة لتجنب N+1 queries
     from apps.renewal.models import EnrollmentRenewal
     
     all_renewals = (
@@ -2084,6 +2084,15 @@ def academic_status(request):
                 semester_display = f"{source_sem.get_type_display()} {source_sem.year}"
             except Exception:
                 semester_display = f"{source_sem.type} {source_sem.year}"
+        elif s.enrollment_semester or s.current_semester:
+            sem_name = s.current_semester or s.enrollment_semester
+            semester_display = str(sem_name)
+            if 'ربيع' in sem_name:
+                semester_type = 'spring'
+            elif 'خريف' in sem_name:
+                semester_type = 'fall'
+            if s.enrollment_date:
+                semester_year = str(s.enrollment_date.year)
 
         # حالة الطالب من student_status FK
         raw_status = s.student_status.name if s.student_status else 'منتظم'
@@ -2105,7 +2114,7 @@ def academic_status(request):
             'status':          raw_status,
         })
 
-    # ⑤ بيانات الفلاتر (الأقسام والفصول) — تُستخدم في JS فقط للفلترة
+    # ⑤ بيانات الفلاتر (الأقسام والفصول والحالات)
     departments_list = list(departments.values('id', 'name'))
 
     semesters_list = []
@@ -2121,14 +2130,16 @@ def academic_status(request):
             'display_name': f"{display} {sem.year}",
         })
 
+    statuses_list = list(student_statuses.values('id', 'name'))
+
     context = {
         'students_json':    json.dumps(students_data,    ensure_ascii=False),
         'semesters_json':   json.dumps(semesters_list,   ensure_ascii=False),
         'departments_json': json.dumps(departments_list, ensure_ascii=False),
+        'statuses_json':    json.dumps(statuses_list,    ensure_ascii=False),
+        'student_statuses': student_statuses,
     }
     return render(request, 'grades/academic_status.html', context)
-    """عرض الحالات الأكاديمية وقيد الطلاب"""
-    return render(request, 'grades/academic_status.html')
 
 
 @login_required

@@ -95,11 +95,15 @@ function departmentManager() {
         editId: null,
         isLoading: false,
         editProfessorAssignments: [], // 🔥 قائمة تكليفات الأستاذ في وضع التعديل
+        showDeleteConfirmModal: false,
+        deletePendingAssignmentId: null,
+        deletePendingIndex: null,
+        deleteConfirmMessage: '',
         
         newProfessor: { 
             name: '', 
             email: '', 
-            subjects: [{ course_id: '', level_id: '', group_id: '' }] 
+            subjects: [{ department_id: '', level_id: '', course_id: '', group_id: '' }] 
         },
         newStaff: { name: '', email: '', role: '' },
 
@@ -173,13 +177,9 @@ function departmentManager() {
                             };
                         });
                         
-                        // اختيار أول قسم
-                        const firstDept = this.departments[0];
-                        this.selectedDept = firstDept.id;
-                        console.log('✅ Selected department:', firstDept.name);
-                        
-                        // جلب بيانات القسم
-                        this.loadDepartmentData(this.selectedDept);
+                        // عدم اختيار قسم تلقائياً والبدء بـ "-- كل الأقسام --"
+                        this.selectedDept = '';
+                        console.log('✅ Default state: All departments');
                     } else {
                         console.warn('⚠️ No departments found in database');
                     }
@@ -240,6 +240,9 @@ function departmentManager() {
             console.log('🔄 Department changed to:', this.selectedDept);
             if (this.selectedDept) {
                 this.loadDepartmentData(this.selectedDept);
+                if (this.newProfessor && this.newProfessor.subjects && this.newProfessor.subjects[0]) {
+                    this.newProfessor.subjects[0].department_id = this.selectedDept;
+                }
             }
         },
 
@@ -281,19 +284,107 @@ function departmentManager() {
             }).join(' | ');
         },
 
+        getFilteredCourses(subject) {
+            if (!this.courses || this.courses.length === 0) return [];
+            const deptId = subject && subject.department_id ? Number(subject.department_id) : (this.selectedDept ? Number(this.selectedDept) : null);
+            const levelId = subject && subject.level_id ? Number(subject.level_id) : null;
+
+            return this.courses.filter(course => {
+                // فحص التخصص
+                if (deptId) {
+                    const hasDept = (course.department_ids && course.department_ids.includes(deptId)) ||
+                                    (course.department_id && Number(course.department_id) === deptId);
+                    if (!hasDept) return false;
+                }
+                // فحص المستوى
+                if (levelId) {
+                    const matchLevel = (course.level_id && Number(course.level_id) === levelId) ||
+                                       (course.level_number && Number(course.level_number) === levelId);
+                    if (!matchLevel) return false;
+                }
+                return true;
+            });
+        },
+
+        getFilteredGroups(subject) {
+            if (!this.groups || this.groups.length === 0) return [];
+            const deptId = subject && subject.department_id ? Number(subject.department_id) : (this.selectedDept ? Number(this.selectedDept) : null);
+            const levelId = subject && subject.level_id ? Number(subject.level_id) : null;
+            const activeYear = String(window.ACTIVE_ACADEMIC_YEAR || '').trim();
+            const activeSemType = String(window.ACTIVE_SEMESTER_TYPE || '').trim();
+
+            let filtered = this.groups;
+
+            // فلترة حسب القسم
+            if (deptId) {
+                filtered = filtered.filter(g => g.department_id && Number(g.department_id) === deptId);
+            }
+
+            // فلترة حسب المستوى
+            if (levelId) {
+                filtered = filtered.filter(g => g.level_id && Number(g.level_id) === levelId);
+            }
+
+            // 🔥 قصر المجموعات حصرياً على السنة الدراسية المفعلة في النظام
+            if (activeYear) {
+                const yearMatched = filtered.filter(g => String(g.academic_year || '').trim() === activeYear);
+                if (yearMatched.length > 0) {
+                    if (activeSemType) {
+                        const semMatched = yearMatched.filter(g => String(g.semester || '').trim() === activeSemType);
+                        if (semMatched.length > 0) return semMatched;
+                    }
+                    return yearMatched;
+                }
+            }
+
+            return filtered;
+        },
+
+        onSubjectDeptChange(index) {
+            const subj = this.newProfessor.subjects[index];
+            if (!subj) return;
+            const validCourses = this.getFilteredCourses(subj);
+            if (subj.course_id && !validCourses.some(c => String(c.id) === String(subj.course_id))) {
+                subj.course_id = '';
+            }
+            const validGroups = this.getFilteredGroups(subj);
+            if (subj.group_id && !validGroups.some(g => String(g.id) === String(subj.group_id))) {
+                subj.group_id = '';
+            }
+        },
+
+        onSubjectLevelChange(index) {
+            const subj = this.newProfessor.subjects[index];
+            if (!subj) return;
+            const validCourses = this.getFilteredCourses(subj);
+            if (subj.course_id && !validCourses.some(c => String(c.id) === String(subj.course_id))) {
+                subj.course_id = '';
+            }
+            const validGroups = this.getFilteredGroups(subj);
+            if (subj.group_id && !validGroups.some(g => String(g.id) === String(subj.group_id))) {
+                subj.group_id = '';
+            }
+        },
+
         onCourseSelect(index) {
             const subj = this.newProfessor.subjects[index];
             if (!subj || !subj.course_id) return;
 
             const course = this.courses.find(c => String(c.id) === String(subj.course_id));
-            if (course && course.level_id && !subj.level_id) {
-                subj.level_id = course.level_id;
-            } else if (this.levels.length > 0 && !subj.level_id) {
-                subj.level_id = this.levels[0].id;
+            if (course) {
+                if (!subj.level_id && course.level_id) {
+                    subj.level_id = course.level_id;
+                }
+                if (!subj.department_id && course.department_ids && course.department_ids.length > 0) {
+                    subj.department_id = course.department_ids.includes(Number(this.selectedDept))
+                        ? this.selectedDept
+                        : course.department_ids[0];
+                }
             }
 
-            if (this.groups.length > 0 && !subj.group_id) {
-                subj.group_id = this.groups[0].id;
+            const validGroups = this.getFilteredGroups(subj);
+            if (validGroups.length > 0 && !subj.group_id) {
+                subj.group_id = validGroups[0].id;
             }
         },
 
@@ -303,13 +394,23 @@ function departmentManager() {
                 this.showNotification('warning', window.ADD_INSTRUCTOR_MESSAGE || '⚠️ عذراً، خدمة إسناد وإضافة المواد موقوفة حالياً في جدول الوظائف.');
                 return;
             }
-            this.newProfessor.subjects.push({ course_id: '', level_id: '', group_id: '' });
+            this.newProfessor.subjects.push({
+                department_id: this.selectedDept || '',
+                level_id: '',
+                course_id: '',
+                group_id: ''
+            });
         },
 
         removeSubject(index) {
             this.newProfessor.subjects.splice(index, 1);
             if (this.newProfessor.subjects.length === 0) {
-                this.newProfessor.subjects.push({ course_id: '', level_id: '', group_id: '' });
+                this.newProfessor.subjects.push({
+                    department_id: this.selectedDept || '',
+                    level_id: '',
+                    course_id: '',
+                    group_id: ''
+                });
             }
         },
 
@@ -345,15 +446,18 @@ function departmentManager() {
                         if (course && course.level_id) levelId = course.level_id;
                         else if (this.levels.length > 0) levelId = this.levels[0].id;
                     }
-                    if (!groupId && this.groups.length > 0) {
-                        groupId = this.groups[0].id;
+                    if (!groupId) {
+                        const filteredG = this.getFilteredGroups(subj);
+                        if (filteredG.length > 0) groupId = filteredG[0].id;
+                        else if (this.groups.length > 0) groupId = this.groups[0].id;
                     }
 
                     if (levelId && groupId) {
                         validSubjects.push({
                             course_id: subj.course_id,
                             level_id: levelId,
-                            group_id: groupId
+                            group_id: groupId,
+                            department_id: subj.department_id || this.selectedDept
                         });
                     }
                 }
@@ -535,7 +639,7 @@ function departmentManager() {
                         this.newProfessor = {
                             name: prof.name,
                             email: prof.email || '',
-                            subjects: [{ course_id: '', level_id: '', group_id: '' }]
+                            subjects: [{ department_id: this.selectedDept || '', level_id: '', course_id: '', group_id: '' }]
                         };
                         
                         this.editProfessorAssignments = prof.assigned_courses || [];
@@ -577,10 +681,29 @@ function departmentManager() {
         },
 
         // ============================================================
-        // 🗑️ حذف مادة مسندة / تكليف مع إشعار فوري وتحديث المجاميع
+        // 🗑️ حذف مادة مسندة / تكليف مع نافذة تأكيد JS مخصصة وإشعار فوري
         // ============================================================
-        async deleteAssignment(assignmentId, index) {
-            if (!confirm('هل أنت متأكد من حذف هذا التكليف؟')) return;
+        openDeleteConfirmModal(assignmentId, index, courseName = '') {
+            this.deletePendingAssignmentId = assignmentId;
+            this.deletePendingIndex = index;
+            this.deleteConfirmMessage = courseName 
+                ? `هل أنت متأكد من حذف تكليف مادة (${courseName}) نهائياً من سجل الأستاذ؟`
+                : 'هل أنت متأكد من حذف هذا التكليف الدراسي نهائياً؟';
+            this.showDeleteConfirmModal = true;
+        },
+
+        cancelDeleteAssignment() {
+            this.showDeleteConfirmModal = false;
+            this.deletePendingAssignmentId = null;
+            this.deletePendingIndex = null;
+            this.deleteConfirmMessage = '';
+        },
+
+        async confirmDeleteAssignment() {
+            if (!this.deletePendingAssignmentId) return;
+            const assignmentId = this.deletePendingAssignmentId;
+            const index = this.deletePendingIndex;
+            this.showDeleteConfirmModal = false;
             
             try {
                 const response = await fetch('/faculty/api/assignment/delete/', {
@@ -594,7 +717,11 @@ function departmentManager() {
                 
                 const data = await response.json();
                 if (data.success) {
-                    this.editProfessorAssignments.splice(index, 1);
+                    if (index !== null && index !== undefined && this.editProfessorAssignments[index]) {
+                        this.editProfessorAssignments.splice(index, 1);
+                    } else {
+                        this.editProfessorAssignments = this.editProfessorAssignments.filter(a => a.assignment_id !== assignmentId);
+                    }
                     this.showNotification('success', data.message || '🗑️ تم حذف تكليف المادة بنجاح');
                     await this.loadDepartmentData(this.selectedDept);
                 } else {
@@ -603,13 +730,22 @@ function departmentManager() {
             } catch (error) {
                 console.error('❌ Error deleting assignment:', error);
                 this.showNotification('error', '❌ حدث خطأ في الاتصال أثناء حذف التكليف');
+            } finally {
+                this.deletePendingAssignmentId = null;
+                this.deletePendingIndex = null;
             }
+        },
+
+        deleteAssignment(assignmentId, index) {
+            const item = this.editProfessorAssignments[index];
+            const courseName = item ? (item.course_name || item.course_code || '') : '';
+            this.openDeleteConfirmModal(assignmentId, index, courseName);
         },
 
         // ============================================================
         // ➕ إسناد مادة مفردة عبر AJAX
         // ============================================================
-        async addSingleAssignment(professorId, courseId, levelId, groupId) {
+        async addSingleAssignment(professorId, courseId, levelId, groupId, departmentId = null) {
             try {
                 if (!levelId) {
                     const c = this.courses.find(course => course.id == courseId);
@@ -617,7 +753,8 @@ function departmentManager() {
                     else if (this.levels.length > 0) levelId = this.levels[0].id;
                 }
                 if (!groupId && this.groups.length > 0) {
-                    groupId = this.groups[0].id;
+                    const filteredG = this.getFilteredGroups({ department_id: departmentId || this.selectedDept, level_id: levelId });
+                    groupId = filteredG.length > 0 ? filteredG[0].id : this.groups[0].id;
                 }
 
                 const response = await fetch('/faculty/api/assignment/add/', {
@@ -630,7 +767,7 @@ function departmentManager() {
                         professor_id: professorId,
                         instructor_id: professorId,
                         course_id: courseId,
-                        department_id: this.selectedDept,
+                        department_id: departmentId || this.selectedDept,
                         level_id: levelId,
                         group_id: groupId
                     })
@@ -669,16 +806,30 @@ function departmentManager() {
 
                 try {
                     const newSubjects = this.newProfessor.subjects.filter(
-                        s => s.course_id && s.level_id && s.group_id
+                        s => s.course_id
                     );
                     
                     let addedCount = 0;
                     for (const subject of newSubjects) {
+                        let levelId = subject.level_id;
+                        let groupId = subject.group_id;
+                        if (!levelId) {
+                            const c = this.courses.find(course => course.id == subject.course_id);
+                            if (c && c.level_id) levelId = c.level_id;
+                            else if (this.levels.length > 0) levelId = this.levels[0].id;
+                        }
+                        if (!groupId) {
+                            const filteredG = this.getFilteredGroups(subject);
+                            if (filteredG.length > 0) groupId = filteredG[0].id;
+                            else if (this.groups.length > 0) groupId = this.groups[0].id;
+                        }
+
                         const success = await this.addSingleAssignment(
                             this.editId,
                             subject.course_id,
-                            subject.level_id,
-                            subject.group_id
+                            levelId,
+                            groupId,
+                            subject.department_id || this.selectedDept
                         );
                         if (success) addedCount++;
                     }
@@ -757,7 +908,11 @@ function departmentManager() {
         cancelEditInForm() {
             this.editId = null;
             this.editProfessorAssignments = [];
-            this.newProfessor = { name: '', email: '', subjects: [{ course_id: '', level_id: '', group_id: '' }] };
+            this.newProfessor = { 
+                name: '', 
+                email: '', 
+                subjects: [{ department_id: this.selectedDept || '', level_id: '', course_id: '', group_id: '' }] 
+            };
             this.newStaff = { name: '', email: '', role: '' };
             this.updateJobPermissionState();
         },

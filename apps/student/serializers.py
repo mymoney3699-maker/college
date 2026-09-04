@@ -36,6 +36,8 @@ def serialize_student_profile(student):
         'passport_number': getattr(student, 'passport_number', '-') or '-',
         'phone': getattr(student, 'phone', None) or getattr(student, 'phone_number', None) or '-',
         'email': getattr(student, 'email', None) or (student.user.email if hasattr(student, 'user') and student.user else '-'),
+        'gender': getattr(student, 'gender', 'M') or 'M',
+        'gender_display': student.get_gender_display() if hasattr(student, 'get_gender_display') else ('ذكر' if getattr(student, 'gender', 'M') == 'M' else 'أنثى'),
         'department': {
             'id': dept.id if dept else None,
             'name': dept.name if dept else '-',

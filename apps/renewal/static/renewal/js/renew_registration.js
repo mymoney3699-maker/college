@@ -581,7 +581,7 @@ async function printPage() {
     }
     html, body {
         width: 100%;
-        height: auto;
+        height: 100%;
         margin: 0;
         padding: 0;
         background: #ffffff !important;
@@ -592,12 +592,18 @@ async function printPage() {
     }
     .print-page-frame {
         width: 100%;
-        min-height: auto;
+        min-height: 284mm;
         margin: 0 auto;
-        padding: 20px 24px;
+        padding: 16px 22px 20px 22px;
         border: 2px solid #000000;
         background: #ffffff;
         box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .print-content-top {
+        width: 100%;
         display: block;
     }
     .bf-header {
@@ -696,8 +702,8 @@ async function printPage() {
         display: flex !important;
         justify-content: space-between !important;
         align-items: flex-end !important;
-        margin-top: 35px !important;
-        padding: 0 10px !important;
+        margin-top: auto !important;
+        padding: 20px 10px 0 10px !important;
         width: 100% !important;
         box-sizing: border-box !important;
         page-break-inside: avoid !important;
@@ -732,10 +738,28 @@ async function printPage() {
         white-space: nowrap !important;
     }
     @media print {
-        @page { size: A4 portrait; margin: 4mm; }
-        html, body { width: 100%; height: auto; }
-        .print-page-frame { min-height: auto; border: 2px solid #000000; }
-        .bf-signatures-container,
+        @page { size: A4 portrait; margin: 5mm; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #ffffff !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        .print-page-frame {
+            min-height: 284mm !important;
+            border: 2px solid #000000 !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+            box-sizing: border-box !important;
+        }
+        .bf-signatures-container {
+            margin-top: auto !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            -webkit-column-break-inside: avoid !important;
+        }
         .bf-sig-col {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -746,6 +770,7 @@ async function printPage() {
 </head>
 <body>
     <div class="print-page-frame">
+        <div class="print-content-top">
         <!-- 1. الترويسة الرسمية ثنائية اللغة المعتمدة -->
         <div class="print-header-section" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;direction:rtl;">
             <!-- اليمين: العربية -->
@@ -813,6 +838,7 @@ async function printPage() {
                 ${rowsHtml}
             </tbody>
         </table>
+        </div>
 
         <!-- 4. اعتماد التوقيع والختم: مرن ينزل مباشرة تحت الجدول -->
         <div class="bf-signatures-container">

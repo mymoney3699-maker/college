@@ -54,9 +54,21 @@ from django.conf import settings
 from django.urls import reverse
 
 
+def get_local_network_ip():
+    """الحصول على الآيبي الحقيقي للجهاز على الشبكة المحلية ليعمل مسح الـ QR من الهواتف"""
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return '127.0.0.1'
+
+
 def get_student_verification_qr_url(student, request=None):
     """
-    بناء رابط التحقق الإلكتروني المباشر للطالب ديناميكياً بناءً على request.get_host() الفعلي
+    بناء رابط التحقق الإلكتروني المباشر للطالب ديناميكياً مع استبدال 127.0.0.1 بآيبي الشبكة الحقيقي ليعمل من الهواتف
     """
     student_id = getattr(student, 'student_id', None) or str(student.pk)
     
@@ -64,13 +76,28 @@ def get_student_verification_qr_url(student, request=None):
     if request and hasattr(request, 'get_host'):
         scheme = request.scheme if hasattr(request, 'scheme') else 'http'
         host = request.get_host()
-        base_url = f"{scheme}://{host}"
     else:
         site_domain = getattr(settings, 'SITE_DOMAIN', None)
         if site_domain:
-            base_url = site_domain.rstrip('/')
+            parts = site_domain.rstrip('/').split('://')
+            scheme = parts[0] if len(parts) > 1 else 'http'
+            host = parts[-1]
         else:
-            base_url = "http://127.0.0.1:8000"
+            scheme = 'http'
+            host = "127.0.0.1:8000"
+
+    # 🔥 إذا كان المضيف 127.0.0.1 أو localhost، استبدله بآيبي الجهاز الفعلي على الشبكة المحلية
+    # لأن 127.0.0.1 بالنسبة للهاتف تعني الهاتف نفسه فيرفض الاتصال (ERR_CONNECTION_REFUSED)
+    host_parts = host.split(':')
+    host_name = host_parts[0]
+    port_str = f":{host_parts[1]}" if len(host_parts) > 1 else ":8000"
+
+    if host_name in ['127.0.0.1', 'localhost', '0.0.0.0']:
+        local_ip = get_local_network_ip()
+        if local_ip and local_ip != '127.0.0.1':
+            host = f"{local_ip}{port_str}"
+
+    base_url = f"{scheme}://{host}"
     
     # استخدام مفتاح الـ qr_key الفريد أو التوقيع الأمني
     sig = getattr(student, 'qr_key', None)

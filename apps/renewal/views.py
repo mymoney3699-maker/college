@@ -686,12 +686,14 @@ def student_data(request):
             student.birth_place = PlaceOfBirth.objects.get(id=request.POST.get('birth_place'))
             
             gender_val = request.POST.get('gender')
-            if gender_val and str(gender_val).isdigit():
-                student.gender = Gender.objects.filter(id=int(gender_val)).first() or Gender.objects.first()
-            elif gender_val:
-                student.gender = Gender.objects.filter(name=gender_val).first() or Gender.objects.first()
+            if gender_val in ['M', 'F']:
+                student.gender = gender_val
+            elif str(gender_val) in ['1', 'أنثى']:
+                student.gender = 'F'
+            elif str(gender_val) in ['2', 'ذكر']:
+                student.gender = 'M'
             else:
-                student.gender = Gender.objects.first()
+                student.gender = 'M'
 
             student.nationality = nationality
             student.department = Department.objects.get(id=request.POST.get('department'))
@@ -725,19 +727,19 @@ def student_data(request):
                 student.generate_qr_code()
                 student.save(update_fields=['qr_code', 'qr_code_data'])
 
-            username_parts = [p for p in [student.name, student.father_name, student.last_name] if p]
-            base_username = "".join(username_parts).replace(" ", "").lower()
+            username_parts = [p.strip() for p in [student.name, student.father_name, student.grandfather_name, student.last_name] if p and p.strip()]
+            base_username = " ".join(username_parts)
             username = base_username
             counter = 1
             while User.objects.filter(username=username).exists():
-                username = f"{base_username}{counter}"
+                username = f"{base_username} {counter}"
                 counter += 1
             
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults={
                     'first_name': student.name,
-                    'last_name': student.father_name,
+                    'last_name': " ".join([p.strip() for p in [student.father_name, student.grandfather_name, student.last_name] if p and p.strip()]),
                     'email': student.email or '',
                     'phone': student.phone or '',
                     'role': 'student',
@@ -905,10 +907,12 @@ def edit_student(request, student_id):
             student.birth_place = PlaceOfBirth.objects.get(id=request.POST.get('birth_place'))
             
             gender_val = request.POST.get('gender')
-            if gender_val and str(gender_val).isdigit():
-                student.gender = Gender.objects.filter(id=int(gender_val)).first() or student.gender
-            elif gender_val:
-                student.gender = Gender.objects.filter(name=gender_val).first() or student.gender
+            if gender_val in ['M', 'F']:
+                student.gender = gender_val
+            elif str(gender_val) in ['1', 'أنثى']:
+                student.gender = 'F'
+            elif str(gender_val) in ['2', 'ذكر']:
+                student.gender = 'M'
 
             student.nationality = nationality
             
@@ -1807,7 +1811,8 @@ def search_student_api(request):
         data = []
         for student in students[:20]:
             if hasattr(student, 'generate_qr_code'):
-                need_regen = not student.qr_code or not student.qr_code_data or '10.125.88.177' in (student.qr_code_data or '')
+                current_qr_data = getattr(student, 'qr_code_data', '') or ''
+                need_regen = not student.qr_code or not current_qr_data or '127.0.0.1' in current_qr_data or '10.125.88.177' in current_qr_data
                 if need_regen:
                     try:
                         student.generate_qr_code(request=request, force_regenerate=True)
@@ -1858,8 +1863,9 @@ def search_student_api(request):
                 'birth_date': student.birth_date.strftime('%Y-%m-%d') if student.birth_date else '',
                 'birth_place_id': student.birth_place.id if student.birth_place else '',
                 'birth_place_name': str(student.birth_place) if student.birth_place else '',
-                'gender_id': student.gender.id if student.gender else '',
-                'gender_name': str(student.gender) if student.gender else '',
+                'gender': student.gender,
+                'gender_id': student.gender,
+                'gender_name': student.get_gender_display() if hasattr(student, 'get_gender_display') else ('ذكر' if student.gender == 'M' else 'أنثى'),
                 'blood_type': student.blood_type or '',
                 'nationality_id': student.nationality.id if student.nationality else '',
                 'nationality_name': str(student.nationality) if student.nationality else '',
@@ -4719,6 +4725,10 @@ def get_student_courses_api(request, student_id, semester_id):
         from apps.student.models import Student
         from apps.renewal.models import Semester
         
+        student = Student.objects.filter(id=student_id).select_related('department', 'level').first()
+        if not student:
+            return JsonResponse({'success': False, 'error': 'الطالب غير موجود'})
+
         if not semester_id or semester_id == 0:
             semester = Semester.objects.filter(is_active=True).first()
         else:
@@ -4745,7 +4755,7 @@ def get_student_courses_api(request, student_id, semester_id):
         total_credits = 0
         for reg in registrations:
             level_num = reg.course.level.number if (reg.course and reg.course.level) else 0
-            student_level_num = reg.student.level.number if (reg.student and reg.student.level) else 0
+            student_level_num = reg.student.level.number if (reg.student and reg.student.level) else (student.level.number if student.level else 0)
             is_repeated = (level_num > 0 and student_level_num > 0 and level_num < student_level_num) or (reg.attempt_number > 1)
             credits = reg.course.credits if reg.course else 0
             total_credits += credits
@@ -4769,11 +4779,14 @@ def get_student_courses_api(request, student_id, semester_id):
                 'registration_date': reg.registration_date.strftime('%Y-%m-%d') if reg.registration_date else ''
             })
         
+        full_name = student.get_full_name().strip()
+        full_name = " ".join(full_name.split())
+        
         return JsonResponse({
             'success': True,
             'courses': data,
-            'student_name': student.get_full_name() if student else '',
-            'student_id': student.student_id if student else '',
+            'student_name': full_name or student.name,
+            'student_id': student.student_id or str(student.id),
             'department_name': student.department.name if (student and student.department) else '',
             'level_name': student.level.name if (student and student.level) else (f"المستوى {student.level.number}" if (student and student.level) else ''),
             'semester_name': (semester.get_type_display() + " " + str(semester.year)) if semester else '',
@@ -5103,8 +5116,9 @@ def search_student_by_name_or_id_api(request):
                 'birth_date': student.birth_date.strftime('%Y-%m-%d') if student.birth_date else '',
                 'birth_place_id': student.birth_place.id if student.birth_place else '',
                 'birth_place_name': str(student.birth_place) if student.birth_place else '',
-                'gender_id': student.gender.id if student.gender else '',
-                'gender_name': str(student.gender) if student.gender else '',
+                'gender': student.gender,
+                'gender_id': student.gender,
+                'gender_name': student.get_gender_display() if hasattr(student, 'get_gender_display') else ('ذكر' if student.gender == 'M' else 'أنثى'),
                 'blood_type': student.blood_type or '',
                 'blood_type_name': student.blood_type or '',
                 'nationality_id': student.nationality.id if student.nationality else '',
@@ -11480,8 +11494,9 @@ def non_libyan_students_api(request):
                     'nationality_name': student.nationality.name if getattr(student, 'nationality', None) else '',
                     'passport_number': getattr(student, 'passport_number', '') or '',
                     'national_id': getattr(student, 'national_id', '') or '',
-                    'gender': student.gender.name if getattr(student, 'gender', None) else '',
-                    'gender_id': student.gender.id if getattr(student, 'gender', None) else None,
+                    'gender': student.get_gender_display() if hasattr(student, 'get_gender_display') else ('ذكر' if getattr(student, 'gender', None) == 'M' else 'أنثى'),
+                    'gender_code': student.gender if getattr(student, 'gender', None) else '',
+                    'gender_id': student.gender if getattr(student, 'gender', None) else '',
                     'department_id': student.department.id if getattr(student, 'department', None) else None,
                     'department_name': student.department.name if getattr(student, 'department', None) else '',
                     'level_id': student.level.id if getattr(student, 'level', None) else None,
@@ -11850,14 +11865,23 @@ def get_scoped_notifications_queryset(user):
             Q(link__icontains='suspended')
         )
 
-    # 4. الطالب (Student)
+    # 4. الطالب (Student) - إشعارات الطالب الشخصية فقط والإعلانات العامة بدون أي إشعار يخص طالب آخر
     if role == 'student' or getattr(user, 'is_student', False) or hasattr(user, 'student'):
+        from apps.student.models import Student
         student_obj = getattr(user, 'student', None)
+        if not student_obj:
+            student_obj = Student.objects.filter(user=user).first()
+        if not student_obj and user.email:
+            student_obj = Student.objects.filter(email=user.email).first()
+        if not student_obj:
+            student_obj = Student.objects.filter(student_id=user.username).first()
+
         if student_obj:
             return Notification.objects.filter(
-                Q(student=student_obj) | Q(target_role__in=['student', 'all'])
+                Q(student=student_obj) |
+                (Q(student__isnull=True) & Q(target_role__in=['student', 'all']) & Q(notification_type='general'))
             )
-        return Notification.objects.filter(target_role__in=['student', 'all'])
+        return Notification.objects.none()
 
     # 5. أعضاء هيئة التدريس (Teacher / Faculty)
     if role in ['teacher', 'faculty', 'professor', 'أستاذ', 'عضو هيئة تدريس']:

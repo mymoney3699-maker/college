@@ -29,7 +29,7 @@ def sections(request):
     """
     صفحة إدارة الأقسام - تجهيز البيانات للـ Frontend
     """
-    courses_qs = Course.objects.filter(is_active=True).prefetch_related('department')
+    courses_qs = Course.objects.filter(is_active=True).prefetch_related('department').select_related('level')
     courses = []
     for c in courses_qs:
         dept_ids = list(c.department.values_list('id', flat=True))
@@ -37,13 +37,19 @@ def sections(request):
             'id': c.id,
             'name': c.name,
             'code': c.code,
+            'level_id': c.level_id,
+            'level_number': c.level.number if c.level else None,
             'department_id': dept_ids[0] if dept_ids else None,
             'department_ids': dept_ids,
         })
-    levels = Level.objects.all().values('id', 'number', 'name')
+    levels = Level.objects.all().order_by('number').values('id', 'number', 'name')
     
-    # 🔥 ببساطة: جلب كل المجموعات (بدون is_active)
-    groups = Group.objects.all().values('id', 'name', 'department_id')
+    active_semester = Semester.objects.filter(is_active=True).first()
+    active_year = str(active_semester.year) if active_semester else ''
+    active_semester_type = active_semester.type if active_semester else ''
+
+    # 🔥 جلب كل المجموعات مع ربطها بالأقسام والمستويات والسنة الدراسية والفصل
+    groups = Group.objects.all().values('id', 'name', 'department_id', 'level_id', 'academic_year', 'semester')
     
     departments = Department.objects.filter(is_active=True).values('id', 'name', 'code')
     
@@ -69,6 +75,8 @@ def sections(request):
         'levels_data': json.dumps(list(levels), cls=DjangoJSONEncoder),
         'groups_data': json.dumps(list(groups), cls=DjangoJSONEncoder),
         'departments_data': json.dumps(list(departments), cls=DjangoJSONEncoder),
+        'active_academic_year': active_year,
+        'active_semester_type': active_semester_type,
         'is_add_instructor_open': instructor_info['is_add_instructor_open'],
         'add_instructor_message': instructor_info['add_instructor_message'],
         'is_add_staff_open': staff_info['is_add_staff_open'],
@@ -827,10 +835,9 @@ def get_levels_api(request):
 
 @login_required
 def get_groups_api(request):
-    """API: جلب جميع المجموعات"""
+    """API: جلب المجموعات مع بيانات القسم والمستوى والسنة المفعلة"""
     try:
-        # 🔥 بدون is_active
-        groups = Group.objects.all().values('id', 'name', 'department_id')
+        groups = Group.objects.all().values('id', 'name', 'department_id', 'level_id', 'academic_year', 'semester')
         return JsonResponse({
             'success': True,
             'groups': list(groups)

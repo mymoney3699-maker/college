@@ -13,8 +13,19 @@ import hmac
 import hashlib
 
 
+def get_default_network_ip():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(('8.8.8.8', 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return ip
+    except Exception:
+        return '127.0.0.1'
+
 # 🎯 الثابت العام الموحد لعنوان الخادم عبر كامل تطبيق الطلاب
-SERVER_BASE_URL = getattr(settings, 'SITE_DOMAIN', 'http://127.0.0.1:8000')
+_local_ip = get_default_network_ip()
+SERVER_BASE_URL = getattr(settings, 'SITE_DOMAIN', None) or f'http://{_local_ip}:8000'
 
 
 
@@ -168,10 +179,15 @@ class Student(models.Model):
     birth_date = models.DateField(verbose_name="تاريخ الميلاد")
     birth_place = models.ForeignKey(PlaceOfBirth, on_delete=models.PROTECT, verbose_name="مكان الميلاد")
     GENDER_CHOICES = [
-        ('ذكر', 'ذكر'),
-        ('أنثى', 'أنثى'),
+        ('M', 'ذكر'),
+        ('F', 'أنثى'),
     ]
-    gender = models.ForeignKey(Gender, on_delete=models.PROTECT, verbose_name="الجنس")
+    gender = models.CharField(
+        max_length=1,
+        choices=GENDER_CHOICES,
+        default='M',
+        verbose_name="الجنس"
+    )
     
     BLOOD_TYPE_CHOICES = [
         ('A+', 'A+'),
@@ -276,6 +292,10 @@ class Student(models.Model):
     @property
     def full_name(self):
         return self.get_full_name()
+
+    @property
+    def gender_display(self):
+        return self.get_gender_display()
 
     @property
     def is_graduated(self):

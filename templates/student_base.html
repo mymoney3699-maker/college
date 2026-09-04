@@ -168,9 +168,7 @@
                             <div id="profileMenu" class="header-profile-dropdown hidden">
                                 <div class="header-profile-dropdown-header">
                                     <div class="header-profile-dropdown-label">حساب الطالب</div>
-                                    <div class="header-profile-dropdown-name">{% if student.name %}{{ student.name }}{%
-                                        elif student_name %}{{ student_name }}{% elif user.get_full_name %}{{
-                                        user.get_full_name }}{% else %}{{ user.username }}{% endif %}</div>
+                                    <div class="header-profile-dropdown-name">{% if student.full_name %}{{ student.full_name }}{% elif student.name %}{{ student.name }}{% elif user.student.full_name %}{{ user.student.full_name }}{% elif user.get_full_name %}{{ user.get_full_name }}{% elif student_name %}{{ student_name }}{% else %}{{ user.username }}{% endif %}</div>
                                 </div>
                                 <div style="padding: 4px 0;">
                                     <a href="{% url 'student:my_profile' %}" class="header-profile-dropdown-item">

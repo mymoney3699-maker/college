@@ -443,7 +443,7 @@ function toggleSubRow(button) {
     const semesterId = window.currentSemesterId;
     let url = '';
     if (isDownloaded) {
-        url = `/renewal/api/student-courses/${studentId}/${semesterId}/`;
+        url = `/renewal/api/student-courses/${studentId}/${semesterId || 0}/`;
     } else {
         url = `/renewal/api/preview-materials/?student_ids=${studentId}`;
         if (document.getElementById('levelSelect')?.value) {

@@ -385,12 +385,8 @@
                                 <label class="field-label">الجنس</label>
                                 <select name="gender" id="gender" required disabled class="is-locked">
                                     <option value="">-- اختر الجنس --</option>
-                                    {% for g in genders %}
-                                    <option value="{{ g.id }}" {% if student and student.gender_id == g.id %}selected{% endif %}>{{ g.name }}</option>
-                                    {% empty %}
-                                    <option value="2" {% if student and student.gender_id == 2 %}selected{% endif %}>ذكر</option>
-                                    <option value="1" {% if student and student.gender_id == 1 %}selected{% endif %}>أنثى</option>
-                                    {% endfor %}
+                                    <option value="M" {% if student and student.gender == "M" or student and student.gender_id == 2 %}selected{% endif %}>ذكر</option>
+                                    <option value="F" {% if student and student.gender == "F" or student and student.gender_id == 1 %}selected{% endif %}>أنثى</option>
                                 </select>
                             </div>
                             <div>

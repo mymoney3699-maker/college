@@ -1,8 +1,19 @@
-# apps/users/models.py
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 from django.db import models
 
 class User(AbstractUser):
+    username_validator = RegexValidator(
+        regex=r'^[\w.@+\-\s]+$',
+        message='أدخل اسم مستخدم صالحاً. قد يحتوي هذا الحقل على أحرف، أرقام، مسافات، ورموز @/./+/-/_ فقط.'
+    )
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=[username_validator],
+        verbose_name="اسم المستخدم",
+        help_text="مطلوب. 150 حرفاً أو أقل. الأحرف والأرقام والمسافات والرموز @/./+/-/_ فقط."
+    )
     
     ROLE_CHOICES = [
         ('admin', 'مدير النظام'),

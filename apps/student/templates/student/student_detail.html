@@ -92,7 +92,7 @@
                         </div>
                         <div>
                             <label class="field-label">الجنس</label>
-                            <input type="text" class="readonly-field" readonly value="{{ student.gender.name }}">
+                            <input type="text" class="readonly-field" readonly value="{{ student.get_gender_display|default:'-' }}">
                         </div>
                         <div>
                             <label class="field-label">الحالة الاجتماعية</label>

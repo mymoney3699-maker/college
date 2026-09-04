@@ -36,9 +36,9 @@
                 <label class="field-label">حالة القيد الأكاديمية</label>
                 <select id="filter-status">
                     <option value="الكل">كل الحالات الأكاديمية</option>
-                    <option value="منتظم">منتظم / مستمر</option>
-                    <option value="إيقاف قيد">إيقاف قيد / مؤجل</option>
-                    <option value="مفصول">مفصول أكاديمياً</option>
+                    {% for st in student_statuses %}
+                        <option value="{{ st.name }}">{{ st.name }}</option>
+                    {% endfor %}
                 </select>
             </div>
         </div>
@@ -70,7 +70,7 @@
     <section id="report-container" class="report-section hidden">
 
         <div class="print-btn-wrapper no-print">
-            <button onclick="window.print()" class="btn-print">
+            <button onclick="triggerOfficialPrint()" class="btn-print">
                 <span class="material-symbols-outlined btn-icon-small">print</span>
                 طباعة سجل الحالات الأكاديمية (PDF)
             </button>
@@ -446,6 +446,38 @@
             display: block !important;
         }
     }
+
+    /* ألوان شارات الحالات الأكاديمية الإضافية */
+    .academic-status-page .status-withdrawn {
+        background-color: #fee2e2;
+        color: #b91c1c;
+        border-color: #fca5a5;
+    }
+    .academic-status-page .status-graduated {
+        background-color: #e0e7ff;
+        color: #4338ca;
+        border-color: #c7d2fe;
+    }
+    .academic-status-page .status-new {
+        background-color: #e0f2fe;
+        color: #0369a1;
+        border-color: #bae6fd;
+    }
+    html.dark .academic-status-page .status-withdrawn {
+        background-color: rgba(185, 28, 28, 0.2);
+        color: #fca5a5;
+        border-color: rgba(185, 28, 28, 0.4);
+    }
+    html.dark .academic-status-page .status-graduated {
+        background-color: rgba(67, 56, 202, 0.2);
+        color: #a5b4fc;
+        border-color: rgba(67, 56, 202, 0.4);
+    }
+    html.dark .academic-status-page .status-new {
+        background-color: rgba(3, 105, 161, 0.2);
+        color: #7dd3fc;
+        border-color: rgba(3, 105, 161, 0.4);
+    }
 </style>
 {% endblock %}
 
@@ -454,12 +486,13 @@
     {
         "students": {{ students_json|safe }},
         "semesters": {{ semesters_json|safe }},
-        "departments": {{ departments_json|safe }}
+        "departments": {{ departments_json|safe }},
+        "statuses": {{ statuses_json|safe }}
     }
 </script>
 <script>
     window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.2.0"></script>
-<script src="{% static 'grades/js/academic_status.js' %}?v=1.0.6"></script>
+<script src="{% static 'grades/js/academic_status.js' %}?v=1.1.0"></script>
 {% endblock %}

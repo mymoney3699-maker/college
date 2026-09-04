@@ -516,18 +516,15 @@ function selectStudent(student) {
     if (student.birth_place_id) setVal('birth_place', student.birth_place_id);
     
     // الجنس
-    if (student.gender_id) {
-        setVal('gender', student.gender_id);
-    } else if (student.gender_name) {
-        const gSelect = document.getElementById('gender');
-        if (gSelect) {
-            for (let opt of gSelect.options) {
-                if (opt.text.trim() === String(student.gender_name).trim() || opt.value === String(student.gender_name).trim()) {
-                    opt.selected = true;
-                    break;
-                }
-            }
-        }
+    const genderVal = student.gender || student.gender_id || student.gender_name;
+    if (genderVal === 'M' || genderVal === 'F') {
+        setVal('gender', genderVal);
+    } else if (String(genderVal) === '2' || String(genderVal).trim() === 'ذكر') {
+        setVal('gender', 'M');
+    } else if (String(genderVal) === '1' || String(genderVal).trim() === 'أنثى') {
+        setVal('gender', 'F');
+    } else {
+        setVal('gender', 'M');
     }
 
     // فصيلة الدم

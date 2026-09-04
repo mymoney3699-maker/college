@@ -1,8 +1,8 @@
 // ========================================================
-// منظومة حصر وتدقيق الحالات الأكاديمية للطلاب - Academic Status JS v1.0.4
+// منظومة حصر وتدقيق الحالات الأكاديمية للطلاب - Academic Status JS v1.1.0
 // ========================================================
 
-console.log('✅ academic_status.js v1.0.4 loaded successfully');
+console.log('✅ academic_status.js v1.1.0 loaded successfully');
 
 let reportRequested = false;
 
@@ -27,10 +27,15 @@ function normalizeAr(text) {
 }
 
 function getStatusBadgeClass(status) {
-    if (status === 'منتظم') return 'status-active';
-    if (status === 'إيقاف قيد') return 'status-suspended';
-    if (status === 'مفصول') return 'status-dismissed';
-    return '';
+    if (!status) return 'status-active';
+    const s = normalizeAr(status);
+    if (s.includes('منتظم') || s.includes('نشط') || s.includes('مستمر')) return 'status-active';
+    if (s.includes('موقوف') || s.includes('ايقاف') || s.includes('موجل') || s.includes('تاجيل')) return 'status-suspended';
+    if (s.includes('سحب') || s.includes('مسحوب')) return 'status-withdrawn';
+    if (s.includes('اخلاء') || s.includes('خريج') || s.includes('تخرج')) return 'status-graduated';
+    if (s.includes('مفصول') || s.includes('فصل')) return 'status-dismissed';
+    if (s.includes('جديد')) return 'status-new';
+    return 'status-active';
 }
 
 function getCurrentDateFormatted() {
@@ -59,12 +64,49 @@ if (academicDataEl) {
         window.databaseStudents = data.students || [];
         window.databaseSemesters = data.semesters || [];
         window.databaseDepartments = data.departments || [];
+        window.databaseStatuses = data.statuses || [];
     } catch (e) {
         console.error('Error parsing academic-data JSON:', e);
     }
 }
 
 const academicStatusDatabase = window.databaseStudents || [];
+
+// مزامنة قائمة الحالات في القائمة المنسدلة للتأكد من وجود كافة الحالات الفعلية
+function syncStatusDropdown() {
+    const statusSelect = document.getElementById('filter-status');
+    if (!statusSelect) return;
+
+    const existingValues = new Set(Array.from(statusSelect.options).map(o => o.value.trim()));
+
+    // إضافة الحالات القادمة من قاعدة البيانات
+    if (window.databaseStatuses && Array.isArray(window.databaseStatuses)) {
+        window.databaseStatuses.forEach(st => {
+            const name = typeof st === 'string' ? st.trim() : (st.name ? st.name.trim() : '');
+            if (name && !existingValues.has(name)) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                statusSelect.appendChild(opt);
+                existingValues.add(name);
+            }
+        });
+    }
+
+    // وأيضاً الحالات الموجودة بالفعل لدى الطلاب
+    if (academicStatusDatabase && Array.isArray(academicStatusDatabase)) {
+        academicStatusDatabase.forEach(st => {
+            const name = st.status ? st.status.trim() : '';
+            if (name && !existingValues.has(name)) {
+                const opt = document.createElement('option');
+                opt.value = name;
+                opt.textContent = name;
+                statusSelect.appendChild(opt);
+                existingValues.add(name);
+            }
+        });
+    }
+}
 
 // استخراج التقرير
 function generateStatusReport() {
@@ -77,7 +119,7 @@ function generateStatusReport() {
 
     const semTypeFilter  = semTypeSelect  ? semTypeSelect.value.trim()  : 'الكل';
     const semYearFilter  = semYearInput   ? semYearInput.value.trim()   : '';
-    const statusFilter   = statusSelect   ? statusSelect.value          : 'الكل';
+    const statusFilter   = statusSelect   ? statusSelect.value.trim()   : 'الكل';
     const searchReg  = searchRegInput  ? searchRegInput.value.trim().toLowerCase()  : '';
     const searchName = searchNameInput ? searchNameInput.value.trim() : '';
 
@@ -93,16 +135,48 @@ function generateStatusReport() {
 
     // فلترة البيانات محلياً
     const filteredStudents = academicStatusDatabase.filter(student => {
-        if (semTypeFilter !== 'الكل' && student.semester_type !== semTypeFilter) return false;
-        if (semYearFilter && String(student.semester_year) !== String(semYearFilter)) return false;
-        if (statusFilter !== 'الكل' && student.status !== statusFilter) return false;
-        if (searchReg && !String(student.id).toLowerCase().includes(searchReg)) return false;
+        // فلترة نوع الفصل
+        if (semTypeFilter !== 'الكل') {
+            const stSemType = (student.semester_type || '').trim().toLowerCase();
+            if (stSemType !== semTypeFilter.toLowerCase()) {
+                // فحص إضافي في نص الموسم
+                const normSeason = normalizeAr(student.season || student.semester || '');
+                const targetSeason = semTypeFilter === 'spring' ? 'ربيع' : (semTypeFilter === 'fall' ? 'خريف' : semTypeFilter);
+                if (!normSeason.includes(normalizeAr(targetSeason))) return false;
+            }
+        }
+
+        // فلترة السنة
+        if (semYearFilter) {
+            const stYear = String(student.semester_year || '').trim();
+            const normSeason = String(student.season || student.semester || '');
+            if (stYear !== semYearFilter && !normSeason.includes(semYearFilter)) {
+                return false;
+            }
+        }
+
+        // فلترة حالة القيد
+        if (statusFilter !== 'الكل') {
+            const normFilter = normalizeAr(statusFilter);
+            const normStatus = normalizeAr(student.status || '');
+            if (normStatus !== normFilter && !normStatus.includes(normFilter)) {
+                return false;
+            }
+        }
+
+        // فلترة رقم القيد
+        if (searchReg && !String(student.id || '').toLowerCase().includes(searchReg)) {
+            return false;
+        }
+
+        // فلترة اسم الطالب
         if (searchName) {
             const normQ = normalizeAr(searchName);
             const words = normQ.split(' ').filter(Boolean);
-            const normName = normalizeAr(student.name);
+            const normName = normalizeAr(student.name || '');
             if (!words.every(w => normName.includes(w))) return false;
         }
+
         return true;
     });
 
@@ -136,12 +210,12 @@ function generateStatusReport() {
                 <tr class="student-row">
                     <td class="cell-id">${escapeHtml(student.id)}</td>
                     <td class="cell-name">${escapeHtml(student.name)}</td>
-                    <td class="cell-major">${escapeHtml(student.major)}</td>
+                    <td class="cell-major">${escapeHtml(student.major || student.department_name || '—')}</td>
                     <td class="cell-semester">${escapeHtml(levelVal)}</td>
                     <td class="cell-season">${escapeHtml(seasonVal)}</td>
                     <td>
                         <span class="status-badge ${badgeClass}">
-                            ${escapeHtml(student.status)}
+                            ${escapeHtml(student.status || '—')}
                         </span>
                     </td>
                 </tr>
@@ -287,7 +361,7 @@ function _renderDropdown(container, students, mode) {
     } else {
         container.innerHTML = students.map(s => `
             <div class="transcript-autocomplete-item"
-                 onclick="window.selectStatusStudent('${s.reg_num}')">
+                 onclick="window.selectStatusStudent('${escapeHtml(s.reg_num)}')">
                 <span class="tac-name">${escapeHtml(s.name)}</span>
                 <span class="tac-reg">${escapeHtml(s.reg_num)} &bull; ${escapeHtml(s.major)}</span>
             </div>
@@ -337,6 +411,8 @@ window.selectStatusStudent = function(regNum) {
 
 // تهيئة الأحداث عند تحميل DOM
 document.addEventListener('DOMContentLoaded', () => {
+    syncStatusDropdown();
+
     const semTypeSelect  = document.getElementById('filter-semester-type');
     const semYearInput   = document.getElementById('filter-semester-year');
     const statusSelect   = document.getElementById('filter-status');

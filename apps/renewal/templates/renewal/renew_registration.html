@@ -219,10 +219,10 @@
 
         .print-page-frame {
             border: 2px solid #000000 !important;
-            padding: 22px 28px !important;
+            padding: 16px 22px 20px 22px !important;
             margin: 0 auto !important;
             width: 100% !important;
-            min-height: 275mm !important;
+            min-height: 284mm !important;
             box-sizing: border-box !important;
             background: #ffffff !important;
             color: #000000 !important;
@@ -231,7 +231,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
             display: flex !important;
             flex-direction: column !important;
-            justify-content: flex-start !important;
+            justify-content: space-between !important;
         }
 
         .print-header-section {
@@ -642,7 +642,7 @@
             </div>
 
             <!-- 4. صندوق التوقيع الرسمي (المسجل العام وقسم التسجيل والقبول) -->
-            <div class="print-signatures-row" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 30px; page-break-inside: avoid;">
+            <div class="print-signatures-row" style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: auto !important; padding-top: 20px; page-break-inside: avoid;">
                 <div class="print-signature-box" style="text-align: center; width: 250px;">
                     <span class="off-name" style="display: block; font-size: 13.5px; font-weight: 900; margin-bottom: 3px;">{{ admission_official_name|default:'أ. أميرة الشلادي' }}</span>
                     <span class="off-pos" style="display: block; font-size: 12px; font-weight: 800; color: #111; margin-bottom: 16px;">رئيس قسم التسجيل والقبول</span>
@@ -678,5 +678,5 @@
     }
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/renew_registration.js' %}?v=2.5.0"></script>
+<script src="{% static 'renewal/js/renew_registration.js' %}?v=2.5.1"></script>
 {% endblock %}
