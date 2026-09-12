@@ -2033,6 +2033,9 @@ def admin_dashboard_print(request):
     return render(request, 'users/print_dashboard.html', context)
 
 
+
+
+
 @login_required
 @user_passes_test(lambda u: u.role == 'admin')
 def add_user(request):
@@ -2181,6 +2184,13 @@ def get_redirect_url_based_on_role(user):
         except Exception:
             pass
 
+    # 1.5 المسجل العام -> لوحة تحكم المسجل العام
+    if hasattr(user, 'role') and user.role == 'general_registrar':
+        try:
+            return reverse('users:general_registrar_dashboard')
+        except Exception:
+            pass
+
     # 2. مدير الدراسة والامتحانات (Exam Director) -> لوحة تحكم مدير الدراسة والامتحانات
     if hasattr(user, 'role') and user.role.lower() in ['exam_director', 'مدير الدراسة والامتحانات', 'مدير ادارة الدراسة والامتحانات']:
         try:
@@ -2264,7 +2274,12 @@ def get_redirect_url_based_on_role(user):
                 return reverse('renewal:graduates_dashboard')
             except Exception:
                 pass
-        elif role in ['general_registrar', 'registrar', 'staff', 'employee']:
+        elif role == 'general_registrar':
+            try:
+                return reverse('users:general_registrar_dashboard')
+            except Exception:
+                pass
+        elif role in ['registrar', 'staff', 'employee']:
             try:
                 return reverse('renewal:dashboard')
             except Exception:
@@ -2512,3 +2527,97 @@ def api_toggle_official_status(request, official_id):
         return JsonResponse({'success': True, 'message': f'✅ تم {status_text} المسؤول "{official.official_name}" بنجاح'})
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
+
+
+
+# ============================================================
+# لوحة تحكم المسجل العام المستقلة
+# ============================================================
+@login_required
+def general_registrar_dashboard(request):
+    """لوحة تحكم المسجل العام - إحصائيات حقيقية وفعلية 100% من قاعدة البيانات"""
+    from apps.renewal.models import Department, StudyPlan, Course, Semester, Level
+    from apps.faculty.models import Professor
+    from apps.users.models import ActivityLog
+    from django.db.models import Count, Sum
+    import json
+
+    # 1. إحصائيات حقيقية عامة
+    total_departments = Department.objects.filter(is_active=True).count()
+    total_plans = StudyPlan.objects.filter(is_active=True).count()
+    total_courses = Course.objects.count()
+    total_active_courses = Course.objects.filter(is_active=True).count()
+    total_professors = Professor.objects.filter(is_active=True).count()
+    total_semesters = Semester.objects.count()
+    current_semester = Semester.objects.filter(is_active=True).first()
+
+    # إجمالي الساعات المعتمدة للمواد بالكامل
+    total_credits = Course.objects.aggregate(total=Sum('credits'))['total'] or 0
+
+    # قواعد المعادلة
+    total_rules = 0
+    try:
+        from apps.grades.models import CourseEquivalenceRule
+        total_rules = CourseEquivalenceRule.objects.count()
+    except Exception:
+        pass
+
+    # 2. حساب عدد المقررات الحقيقي لكل قسم علمي من قاعدة البيانات
+    dept_labels = []
+    dept_counts = []
+    dept_table_data = []
+
+    active_departments = Department.objects.filter(is_active=True).order_by('id')
+    for d in active_departments:
+        # حساب المواد المرتبطة بهذا القسم فعلياً
+        courses_count = Course.objects.filter(department=d).distinct().count()
+        # حساب أساتذة القسم فعلياً
+        prof_count = Professor.objects.filter(department=d).distinct().count()
+
+        dept_labels.append(d.name)
+        dept_counts.append(courses_count)
+        dept_table_data.append({
+            'name': d.name,
+            'code': d.code or '—',
+            'courses_count': courses_count,
+            'professors_count': prof_count,
+            'is_active': d.is_active
+        })
+
+    # 3. حساب عدد المواد الحقيقي لكل مستوى دراسي فعلياً
+    level_labels = []
+    level_counts = []
+    levels_qs = Level.objects.all().order_by('number', 'id')
+
+    if levels_qs.exists():
+        for lvl in levels_qs:
+            c_cnt = Course.objects.filter(level=lvl).count()
+            level_labels.append(lvl.name)
+            level_counts.append(c_cnt)
+    else:
+        for i in range(1, 9):
+            c_cnt = Course.objects.filter(level__order=i).count()
+            level_labels.append(f"المستوى {i}")
+            level_counts.append(c_cnt)
+
+    # 4. أحدث العمليات من سجل الأحداث
+    recent_activities = ActivityLog.objects.exclude(action__startswith='view_').order_by('-created_at')[:6]
+
+    context = {
+        'total_departments': total_departments,
+        'total_plans': total_plans,
+        'total_courses': total_courses,
+        'total_active_courses': total_active_courses,
+        'total_credits': total_credits,
+        'total_professors': total_professors,
+        'total_semesters': total_semesters,
+        'total_rules': total_rules,
+        'current_semester': current_semester,
+        'dept_table_data': dept_table_data,
+        'recent_activities': recent_activities,
+        'chart_labels': json.dumps(dept_labels, ensure_ascii=False),
+        'chart_data': json.dumps(dept_counts),
+        'level_labels': json.dumps(level_labels, ensure_ascii=False),
+        'level_counts': json.dumps(level_counts),
+    }
+    return render(request, 'users/general_registrar_dashboard.html', context)

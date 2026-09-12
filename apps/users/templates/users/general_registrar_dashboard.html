@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}لوحة تحكم المسجل العام | نظام كلية طرابلس{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'renewal/css/dashboard.css' %}?v=5.0.0">
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-container">
+
+    <!-- ===== 1. رأس الصفحة والبانر المطور ===== -->
+    <div class="dashboard-header-banner no-print">
+        <div class="header-banner-info">
+            <div class="header-banner-icon">
+                <span class="material-symbols-outlined">account_balance</span>
+            </div>
+            <div>
+                <div class="header-banner-title-row">
+                    <h1 class="header-banner-title">لوحة تحكم المسجل العام</h1>
+                    <span class="header-banner-badge">{{ current_semester|default:"2026 - ربيع" }}</span>
+                </div>
+                <p class="header-banner-subtitle">
+                    المنظومة المركزية لإدارة الهيكل الأكاديمي، الخطط الدراسية، وتنسيق الأقسام والمقررات العلمية
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 2. شريط أزرار التقارير والمخرجات الرسمية ===== -->
+    <div class="dashboard-toolbar-row no-print">
+        <div class="toolbar-title-hint">
+            <span class="material-symbols-outlined">verified</span>
+            <span>التقارير والمخرجات التأسيسية للمسجل العام</span>
+        </div>
+        <div class="toolbar-buttons-group">
+            <a href="{% url 'renewal:department_list' %}" class="btn-print-visual" style="text-decoration: none;">
+                <span class="material-symbols-outlined">domain</span>
+                <span>دليل الأقسام العلمية</span>
+            </a>
+            <a href="{% url 'renewal:plans_display' %}" class="btn-print-official" style="text-decoration: none;">
+                <span class="material-symbols-outlined">article</span>
+                <span>الخطط الدراسية والمناهج</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- ===== 3. الصف الأول: كروت الإحصائيات الخمسة ===== -->
+    <div class="stats-grid">
+
+        <!-- كرت 1: الأقسام العلمية -->
+        <div class="stat-card stat-teal">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">الأقسام العلمية</span>
+                    <h3 class="stat-card-number">{{ total_departments|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-teal">
+                    <span class="material-symbols-outlined">corporate_fare</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-teal">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                    أقسام علمية نشطة
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 2: الخطط الدراسية -->
+        <div class="stat-card stat-indigo">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">الخطط الدراسية</span>
+                    <h3 class="stat-card-number">{{ total_plans|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-indigo">
+                    <span class="material-symbols-outlined">article</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-sub">خطط أكاديمية معتمدة</span>
+            </div>
+        </div>
+
+        <!-- كرت 3: المقررات المعتمدة -->
+        <div class="stat-card stat-teal">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">المقررات الدراسية</span>
+                    <h3 class="stat-card-number">{{ total_courses|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-teal" style="background-color: #ecfdf5; color: #10b981;">
+                    <span class="material-symbols-outlined">menu_book</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-teal" style="background-color: #ecfdf5; color: #059669;">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
+                    {{ total_active_courses }} مقرر نشط فعلياً
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 4: أعضاء هيئة التدريس -->
+        <div class="stat-card stat-amber">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">هيئة التدريس</span>
+                    <h3 class="stat-card-number">{{ total_professors|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-amber">
+                    <span class="material-symbols-outlined">badge</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-badge badge-amber">
+                    <span class="material-symbols-outlined" style="font-size: 14px;">groups</span>
+                    أعضاء هيئة التدريس
+                </span>
+            </div>
+        </div>
+
+        <!-- كرت 5: قواعد المعادلة -->
+        <div class="stat-card stat-rose">
+            <div class="stat-card-header">
+                <div>
+                    <span class="stat-card-label">قواعد المعادلة</span>
+                    <h3 class="stat-card-number">{{ total_rules|default:"0" }}</h3>
+                </div>
+                <div class="stat-card-icon-wrapper stat-icon-rose">
+                    <span class="material-symbols-outlined">swap_horiz</span>
+                </div>
+            </div>
+            <div class="stat-card-footer">
+                <span class="stat-card-sub text-danger fw-bold">ضوابط تغيير المسار</span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 4. الصف الثاني: الدويرة + كرت الإجمالي الموحد ===== -->
+    <div class="middle-section">
+
+        <!-- المخطط: المقررات حسب الأقسام العلمية (الدويرة الفعلية) -->
+        <div class="chart-card chart-card-status">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined" style="color: #307e92; font-size: 22px;">donut_large</span>
+                    <h2 class="chart-card-title">توزيع المقررات الدراسية حسب الأقسام العلمية</h2>
+                </div>
+                <span class="chart-badge-pill">الأقسام العلمية</span>
+            </div>
+            <div class="chart-card-body chart-card-body-status">
+                <canvas id="generalRegistrarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- كرت إجمالي مقررات الكلية الموحد -->
+        <div class="total-card">
+            <div class="total-card-icon-wrapper">
+                <span class="material-symbols-outlined text-3xl text-yellow-300">school</span>
+            </div>
+            <div class="total-card-label">إجمالي المقررات الدراسية</div>
+            <div class="total-card-number" id="totalCourses">{{ total_courses|default:"0" }}</div>
+            <div class="total-card-sub">قاعدة البيانات المعتمدة لكافة المناهج بالكلية</div>
+            <div class="total-card-stats">
+                <span class="total-tag">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">domain</span>
+                    {{ total_departments|default:"0" }} أقسام علمية
+                </span>
+                <span class="total-tag">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">timer</span>
+                    {{ total_credits|default:"0" }} ساعة معتمدة
+                </span>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 5. الصف الثالث: توزيع المقررات حسب المستويات 1 - 8 ===== -->
+    <div class="bottom-section">
+
+        <!-- مخطط الأعمدة الفعلي للمستويات -->
+        <div class="chart-card chart-card-main">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined" style="color: #0284c7; font-size: 22px;">bar_chart</span>
+                    <h2 class="chart-card-title">توزيع وكثافة المقررات الدراسية حسب المستويات</h2>
+                </div>
+                <span class="chart-badge-pill">المستويات الدراسية</span>
+            </div>
+            <div class="chart-card-body">
+                <canvas id="levelsBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- كرت البيانات المساعدة والتأسيسية -->
+        <div class="chart-card chart-card-side">
+            <div class="chart-card-header">
+                <div class="chart-card-title-group">
+                    <span class="material-symbols-outlined"
+                        style="color: #eab308; font-size: 22px;">settings_suggest</span>
+                    <h2 class="chart-card-title">البيانات المساعدة للنظام</h2>
+                </div>
+                <span class="chart-badge-pill">البيانات الأساسية</span>
+            </div>
+            <div class="chart-card-body" style="padding: 16px;">
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <a href="{% url 'renewal:nationality_data' %}"
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #1e293b; font-weight: 700; font-size: 0.85rem;">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined text-primary" style="font-size: 18px;">flag</span>
+                            بيانات الجنسيات
+                        </span>
+                        <span class="material-symbols-outlined text-muted" style="font-size: 16px;">arrow_back</span>
+                    </a>
+                    <a href="{% url 'renewal:places_data' %}"
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #1e293b; font-weight: 700; font-size: 0.85rem;">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined text-info"
+                                style="font-size: 18px;">location_on</span> بيانات المدن والأماكن
+                        </span>
+                        <span class="material-symbols-outlined text-muted" style="font-size: 16px;">arrow_back</span>
+                    </a>
+                    <a href="{% url 'renewal:qualification_data' %}"
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #1e293b; font-weight: 700; font-size: 0.85rem;">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined text-success"
+                                style="font-size: 18px;">workspace_premium</span> المؤهلات العلمية
+                        </span>
+                        <span class="material-symbols-outlined text-muted" style="font-size: 16px;">arrow_back</span>
+                    </a>
+                    <a href="{% url 'renewal:semester_management' %}"
+                        style="display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; text-decoration: none; color: #1e293b; font-weight: 700; font-size: 0.85rem;">
+                        <span style="display: flex; align-items: center; gap: 8px;">
+                            <span class="material-symbols-outlined text-warning"
+                                style="font-size: 18px;">calendar_month</span> الفصول الدراسية
+                        </span>
+                        <span class="material-symbols-outlined text-muted" style="font-size: 16px;">arrow_back</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ===== 6. الصف الرابع: جدول الأقسام العلمية وجدول سجل الأحداث ===== -->
+    <div class="dashboard-tables-grid no-print">
+
+        <!-- جدول 1: الأقسام العلمية وموادها الفعلية -->
+        <div class="dashboard-table-card">
+            <div class="dashboard-table-header">
+                <h6 class="dashboard-table-title">
+                    <span class="material-symbols-outlined text-primary fs-5">domain</span>
+                    الأقسام العلمية المعتمدة بالكلية
+                </h6>
+                <a href="{% url 'renewal:department_list' %}"
+                    class="btn btn-sm btn-light border small py-1 px-2 fw-semibold">دليل الأقسام</a>
+            </div>
+            <div class="table-responsive">
+                <table class="dashboard-table text-end align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 35%;">القسم العلمي</th>
+                            <th style="width: 20%;">الرمز</th>
+                            <th style="width: 25%;">المقررات المعتمدة</th>
+                            <th style="width: 20%;">الحالة</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for dept in dept_table_data %}
+                        <tr>
+                            <td class="fw-bold text-dark">{{ dept.name }}</td>
+                            <td class="font-monospace text-primary fw-bold">{{ dept.code }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ dept.courses_count }} مادة</span></td>
+                            <td>
+                                {% if dept.is_active %}
+                                <span class="badge bg-success-subtle text-success">نشط</span>
+                                {% else %}
+                                <span class="badge bg-danger-subtle text-danger">مجمد</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">لا توجد أقسام مسجلة.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- جدول 2: سجل الأحداث التأسيسية الحديثة -->
+        <div class="dashboard-table-card">
+            <div class="dashboard-table-header">
+                <h6 class="dashboard-table-title">
+                    <span class="material-symbols-outlined text-success fs-5">manage_history</span>
+                    أحدث العمليات والأحداث التأسيسية
+                </h6>
+                <a href="{% url 'users:activity_log' %}"
+                    class="btn btn-sm btn-light border small py-1 px-2 fw-semibold">عرض السجل</a>
+            </div>
+            <div class="table-responsive">
+                <table class="dashboard-table text-end align-middle">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">المستخدم</th>
+                            <th style="width: 50%;">الإجراء والبيان</th>
+                            <th style="width: 25%;">التاريخ والوقت</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for act in recent_activities %}
+                        <tr>
+                            <td class="fw-bold text-dark text-truncate">{{ act.user.username|default:"النظام" }}</td>
+                            <td class="text-muted small text-truncate">{{ act.details|default:act.action }}</td>
+                            <td class="text-muted small font-monospace">{{ act.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">لا توجد عمليات مسجلة مؤخراً.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // 1. الدويرة: توزيع المواد الحقيقية على الأقسام العلمية
+        var ctx1 = document.getElementById('generalRegistrarChart');
+        if (ctx1) {
+            var labels1 = JSON.parse('{{ chart_labels|safe }}');
+            var data1 = JSON.parse('{{ chart_data|safe }}');
+
+            new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: labels1,
+                    datasets: [{
+                        data: data1,
+                        backgroundColor: ['#10b981', '#0284c7', '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff',
+                        cutout: '72%'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            rtl: true,
+                            labels: { font: { family: 'inherit', size: 12, weight: 'bold' }, boxWidth: 14, padding: 16 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. الأعمدة: توزيع المواد الحقيقية على المستويات الدراسية
+        var ctx2 = document.getElementById('levelsBarChart');
+        if (ctx2) {
+            var labels2 = JSON.parse('{{ level_labels|safe }}');
+            var data2 = JSON.parse('{{ level_counts|safe }}');
+
+            new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: labels2,
+                    datasets: [{
+                        label: 'عدد المقررات الفعلية',
+                        data: data2,
+                        backgroundColor: '#0284c7',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { weight: 'bold' } } }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

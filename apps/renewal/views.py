@@ -2657,7 +2657,29 @@ def excel_results(request):
 
 @login_required
 def reports_page(request):
-    return render(request, 'renewal/reports.html')
+    """
+    مركز التقارير والاستمارات الشامل - يعرض كافة تقارير المنظومة في واجهة موحدة
+    """
+    try:
+        from apps.renewal.models import GraduationClearance, StudentWithdrawal
+        from apps.student.models import Student
+        total_students = Student.objects.count()
+        withdrawn_count = StudentWithdrawal.objects.count()
+        clearance_count = GraduationClearance.objects.count()
+        non_libyan_count = Student.objects.exclude(nationality__name__icontains='ليبي').count()
+    except Exception:
+        total_students = 0
+        withdrawn_count = 0
+        clearance_count = 0
+        non_libyan_count = 0
+
+    context = {
+        'total_students': total_students,
+        'withdrawn_count': withdrawn_count,
+        'clearance_count': clearance_count,
+        'non_libyan_count': non_libyan_count,
+    }
+    return render(request, 'renewal/reports.html', context)
 
 
 @admin_required
@@ -8388,12 +8410,6 @@ def semester_stats_api(request):
         'active': [d['active'] for d in data],
         'special': [d['special'] for d in data]
     })
-
-
-@login_required
-def graduation_certificate(request):
-    """صفحة شهادة التخرج"""
-    return render(request, 'renewal/graduation_certificate.html')
 
 
 

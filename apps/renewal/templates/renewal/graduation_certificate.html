@@ -226,6 +226,24 @@
         margin: 0;
     }
 }
+
+.job-inactive-banner {
+    display: none;
+    margin-bottom: 1.25rem;
+    padding: 0.9rem 1.25rem;
+    background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%);
+    border: 1.5px solid #f43f5e;
+    border-radius: 12px;
+    color: #9f1239;
+    font-weight: 700;
+    font-size: 0.92rem;
+    align-items: center;
+    gap: 0.75rem;
+    box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);
+}
+.job-inactive-banner.is-active-error {
+    display: flex;
+}
 </style>
 {% endblock %}
 
@@ -239,14 +257,10 @@
     </div>
 
     <!-- ⚠️ تنبيه حالة الوظيفة الموقوفة -->
-    {% if not is_certificate_job_open %}
-    <div id="jobInactiveBanner" class="job-inactive-banner no-print" style="display: flex; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
-    {% else %}
-    <div id="jobInactiveBanner" class="job-inactive-banner no-print" style="display: none; margin-bottom: 1.25rem; padding: 0.9rem 1.25rem; background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border: 1.5px solid #f43f5e; border-radius: 12px; color: #9f1239; font-weight: 700; font-size: 0.92rem; align-items: center; gap: 0.75rem; box-shadow: 0 4px 14px rgba(244, 63, 94, 0.12);">
-    {% endif %}
+    <div id="jobInactiveBanner" class="job-inactive-banner no-print{% if is_certificate_job_open is False %} is-active-error{% endif %}">
         <span class="material-symbols-outlined" style="font-size: 24px; color: #e11d48; flex-shrink: 0;">lock_clock</span>
         <div style="flex: 1;">
-            <span id="jobInactiveBannerText">{% if not is_certificate_job_open %}{{ certificate_job_message|default:"خدمة 'إفادة التخرج' غير مفعلة حالياً" }}{% endif %}</span>
+            <span id="jobInactiveBannerText">{{ certificate_job_message|default:"خدمة 'إفادة التخرج' غير مفعلة حالياً" }}</span>
         </div>
     </div>
 
@@ -450,8 +464,8 @@
 
 {% block extra_js %}
 <script>
-    window.IS_CERTIFICATE_JOB_OPEN = "{{ is_certificate_job_open|yesno:'true,false' }}" === "true";
-    window.CERTIFICATE_JOB_MESSAGE = "{{ certificate_job_message|escapejs }}";
+    window.IS_CERTIFICATE_JOB_OPEN = {% if is_certificate_job_open is False %}false{% else %}true{% endif %};
+    window.CERTIFICATE_JOB_MESSAGE = "{{ certificate_job_message|default:''|escapejs }}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
 <script src="{% static 'renewal/js/graduation_certificate.js' %}?v=3.1.0"></script>
