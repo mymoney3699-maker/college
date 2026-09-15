@@ -199,3 +199,21 @@ class StudentWithdrawalAdmin(BaseAdminWithLogging):
     raw_id_fields = ('student',)
 
 
+from django.contrib import admin
+from .models import Job, SystemJob # قم بإضافة النماذج التي تريد إدارتها
+
+@admin.register(Job)
+class JobAdmin(admin.ModelAdmin):
+    list_display = ('title', 'posted_date', 'is_active') # الحقول التي ستظهر كأعمدة في القائمة
+    list_filter = ('is_active', 'posted_date')           # فلاتر جانبية لتصفية البيانات بسرعة
+    search_fields = ('title', 'description')             # شريط بحث للبحث في العنوان أو الوصف
+    list_editable = ('is_active',)                       # إمكانية تعديل حالة التفعيل مباشرة من الجدول
+    ordering = ('-posted_date',)                         # الترتيب الافتراضي (من الأحدث للأقدم)
+
+
+@admin.register(SystemJob)
+class SystemJobAdmin(admin.ModelAdmin):
+    list_display = ('name', 'code', 'start_date', 'duration_days', 'is_active')
+    list_filter = ('is_active', 'start_date')
+    search_fields = ('name', 'code')
+    list_editable = ('is_active',)
