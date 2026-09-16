@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% load static permissions_tags %}
+
+{% block title %}تعديل قسم {{ department.name }} | مركز إدارة الأقسام{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ============================================================
+       صفحة تعديل القسم الأكاديمي - متطابقة مع مركز التقارير والاستمارات الشامل
+       ============================================================ */
+    .dept-edit-page {
+        direction: rtl;
+        font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+
+    .dept-edit-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0.5rem 1rem 3rem 1rem;
+    }
+
+    /* 🏛️ هيدر الصفحة الرئيسي الفاخر المتطابق مع مركز التقارير */
+    .reports-hero-banner {
+        background: linear-gradient(135deg, #1f5f70 0%, #307e92 50%, #1e3a47 100%);
+        border-radius: 20px;
+        padding: 2.25rem 2.5rem;
+        margin-bottom: 2rem;
+        color: #ffffff;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 10px 30px rgba(48, 126, 146, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .reports-hero-banner::before {
+        content: '';
+        position: absolute;
+        top: -60px;
+        left: -60px;
+        width: 220px;
+        height: 220px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .reports-hero-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -50px;
+        right: 15%;
+        width: 180px;
+        height: 180px;
+        background: radial-gradient(circle, rgba(181, 155, 102, 0.2) 0%, rgba(181, 155, 102, 0) 70%);
+        border-radius: 50%;
+        pointer-events: none;
+    }
+
+    .reports-hero-content {
+        max-width: 700px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .reports-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        padding: 4px 14px;
+        border-radius: 30px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 0.85rem;
+        color: #f8fafc;
+    }
+
+    .reports-hero-title {
+        font-size: 2.1rem;
+        font-weight: 900;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.3;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #ffffff;
+    }
+
+    .reports-hero-title .material-symbols-outlined {
+        font-size: 2.5rem;
+        color: #f1c40f;
+    }
+
+    .reports-hero-desc {
+        font-size: 1rem;
+        color: #e2e8f0;
+        line-height: 1.6;
+        margin: 0;
+        font-weight: 500;
+    }
+
+    /* كروت الإحصائيات السريعة الأنيقة مثل مركز التقارير */
+    .hero-stat-card {
+        background: #ffffff;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 18px;
+        padding: 1.25rem 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+        transition: all 0.25s ease;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        position: relative;
+    }
+
+    .hero-stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(48, 126, 146, 0.12);
+        border-color: #307e92;
+    }
+
+    .stat-card-icon-circle {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .stat-card-num {
+        font-size: 1.85rem;
+        font-weight: 900;
+        line-height: 1;
+        margin-bottom: 0.35rem;
+    }
+
+    .stat-card-label {
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    /* بطاقة النموذج الرئيسية */
+    .main-form-card {
+        background: #ffffff;
+        border-radius: 20px;
+        border: 1.5px solid #e2e8f0;
+        padding: 2.25rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+        margin-bottom: 2rem;
+    }
+
+    .form-input-field {
+        width: 100%;
+        padding: 0.85rem 1.15rem;
+        border-radius: 12px;
+        border: 1.5px solid #cbd5e1;
+        background-color: #f8fafc;
+        color: #0f172a;
+        font-size: 0.95rem;
+        font-weight: 700;
+        transition: all 0.25s ease;
+    }
+
+    .form-input-field:focus {
+        outline: none;
+        border-color: #307e92;
+        background-color: #ffffff;
+        box-shadow: 0 0 0 4px rgba(48, 126, 146, 0.14);
+    }
+
+    /* 🌙 دعم الوضع الداكن الشامل */
+    html.dark,
+    html.dark body {
+        background-color: #0f172a !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .reports-hero-banner {
+        background: linear-gradient(135deg, #0b2533 0%, #123e4d 50%, #06161f 100%) !important;
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6) !important;
+        border: 1px solid rgba(48, 126, 146, 0.3) !important;
+    }
+
+    html.dark .hero-stat-card,
+    html.dark .main-form-card {
+        background-color: #1e293b !important;
+        border-color: #334155 !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    html.dark .stat-card-label {
+        color: #94a3b8 !important;
+    }
+
+    html.dark .form-input-field {
+        background-color: #0f172a !important;
+        border-color: #475569 !important;
+        color: #f8fafc !important;
+    }
+
+    html.dark .form-input-field:focus {
+        border-color: #38bdf8 !important;
+        background-color: #0f172a !important;
+        box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.2) !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<main class="custom-main dept-edit-page">
+    <div class="dept-edit-container">
+        
+        <!-- 🧭 مسار التنقل (Breadcrumbs) -->
+        <nav class="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 mb-4 font-semibold">
+            <a href="{% url 'renewal:department_list' %}" class="hover:text-[#307e92] dark:hover:text-cyan-400 transition-colors flex items-center gap-1">
+                <span class="material-symbols-outlined text-base">corporate_fare</span>
+                <span>إدارة الأقسام والتخصصات</span>
+            </a>
+            <span class="text-gray-300 dark:text-slate-600">/</span>
+            <span class="text-gray-800 dark:text-slate-200 font-bold">تعديل قسم {{ department.name }}</span>
+        </nav>
+
+        <!-- 🏛️ بانر الصفحة الرئيسي الفاخر (مطابق لمركز التقارير الشامل) -->
+        <div class="reports-hero-banner">
+            <div class="reports-hero-content">
+                <div class="reports-badge">
+                    <span class="material-symbols-outlined text-base text-cyan-200">verified_user</span>
+                    <span>بوابة إدارة الأقسام والتخصصات الأكاديمية</span>
+                </div>
+                <h1 class="reports-hero-title">
+                    <span class="material-symbols-outlined">account_balance</span>
+                    <span>تعديل بيانات القسم الأكاديمي</span>
+                </h1>
+                <p class="reports-hero-desc">
+                    منصة متكاملة تتيح لك تحديث مسمّى ورمز القسم ومتابعة أحجام التسجيل وتفعيل أو تجميد القسم العلمي بالكلية.
+                </p>
+            </div>
+
+            <!-- بادج حالة القسم والكود -->
+            <div class="relative z-10 flex flex-col sm:flex-row gap-3 items-center">
+                <div class="px-4 py-2.5 rounded-xl bg-white/15 backdrop-blur-md border border-white/25 text-white font-mono font-bold text-sm text-center">
+                    <span class="block text-xs text-cyan-200 font-sans font-semibold mb-0.5">رمز القسم المختصر</span>
+                    <span>{{ department.code }}</span>
+                </div>
+                {% if department.is_active %}
+                <div class="px-4 py-2.5 rounded-xl bg-emerald-500/25 backdrop-blur-md border border-emerald-400/40 text-emerald-100 font-bold text-sm text-center flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>قسم نشط ومفعّل</span>
+                </div>
+                {% else %}
+                <div class="px-4 py-2.5 rounded-xl bg-rose-500/25 backdrop-blur-md border border-rose-400/40 text-rose-100 font-bold text-sm text-center flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
+                    <span>قسم مجمّد (أرشيف فقط)</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 📊 كروت الإحصائيات الأربعة السريعة الفاخرة (مثل كروت مركز التقارير) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+            
+            <!-- كرت 1: الطلاب -->
+            <div class="hero-stat-card">
+                <div>
+                    <div class="stat-card-icon-circle bg-cyan-50 dark:bg-cyan-950/60 text-[#307e92] dark:text-cyan-400">
+                        <span class="material-symbols-outlined text-2xl">groups</span>
+                    </div>
+                    <div class="stat-card-num text-[#1f5f70] dark:text-cyan-400">{{ total_students }}</div>
+                </div>
+                <div class="stat-card-label">
+                    <span class="material-symbols-outlined text-sm">badge</span>
+                    <span>إجمالي الطلاب المقيدين</span>
+                </div>
+            </div>
+
+            <!-- كرت 2: المواد الدراسية -->
+            <div class="hero-stat-card">
+                <div>
+                    <div class="stat-card-icon-circle bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400">
+                        <span class="material-symbols-outlined text-2xl">menu_book</span>
+                    </div>
+                    <div class="stat-card-num text-amber-600 dark:text-amber-400">{{ courses_count }}</div>
+                </div>
+                <div class="stat-card-label">
+                    <span class="material-symbols-outlined text-sm">auto_stories</span>
+                    <span>المواد والمقررات بالقسم</span>
+                </div>
+            </div>
+
+            <!-- كرت 3: الشعب الدراسية -->
+            <div class="hero-stat-card">
+                <div>
+                    <div class="stat-card-icon-circle bg-sky-50 dark:bg-sky-950/60 text-[#307e92] dark:text-sky-400">
+                        <span class="material-symbols-outlined text-2xl">diversity_3</span>
+                    </div>
+                    <div class="stat-card-num text-[#307e92] dark:text-sky-400">{{ groups_count }}</div>
+                </div>
+                <div class="stat-card-label">
+                    <span class="material-symbols-outlined text-sm">meeting_room</span>
+                    <span>المجموعات والشعب الأكاديمية</span>
+                </div>
+            </div>
+
+            <!-- كرت 4: حالة التفعيل -->
+            <div class="hero-stat-card">
+                <div>
+                    <div class="stat-card-icon-circle {% if department.is_active %}bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400{% else %}bg-rose-50 dark:bg-rose-950/60 text-rose-600 dark:text-rose-400{% endif %}">
+                        <span class="material-symbols-outlined text-2xl">{% if department.is_active %}check_circle{% else %}block{% endif %}</span>
+                    </div>
+                    <div class="stat-card-num text-base font-extrabold {% if department.is_active %}text-emerald-600 dark:text-emerald-400{% else %}text-rose-600 dark:text-rose-400{% endif %}">
+                        {% if department.is_active %}جاهز للعمليات{% else %}موقوف حالياً{% endif %}
+                    </div>
+                </div>
+                <div class="stat-card-label">
+                    <span class="material-symbols-outlined text-sm">settings_power</span>
+                    <span>حالة القسم في المنظومة</span>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- 📝 بطاقة نموذج التعديل الرئيسية -->
+        <div class="main-form-card">
+            <div class="flex items-center gap-3 pb-4 mb-6 border-b border-gray-100 dark:border-slate-700 text-[#1f5f70] dark:text-cyan-400">
+                <span class="material-symbols-outlined text-2xl">edit_note</span>
+                <h3 class="text-lg font-black text-gray-900 dark:text-slate-100 m-0">بيانات القسم الأكاديمي الأساسية</h3>
+            </div>
+
+            <form method="POST" action="{% url 'renewal:department_update' department.id %}">
+                {% csrf_token %}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div>
+                        <label class="block text-xs font-extrabold text-gray-700 dark:text-slate-300 mb-2">
+                            اسم القسم الأكاديمي <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="name" value="{{ department.name }}" required 
+                               placeholder="مثال: قسم الأمن السيبراني" 
+                               class="form-input-field">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-extrabold text-gray-700 dark:text-slate-300 mb-2">
+                            رمز القسم (الكود المختصر) <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" name="code" value="{{ department.code }}" required 
+                               placeholder="مثال: CYBER" 
+                               class="form-input-field font-mono">
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-1">يُستخدم الرمز في أرقام القيود ومسميات المقررات والشعب.</p>
+                    </div>
+                </div>
+
+                <!-- تفعيل / تجميد القسم -->
+                <div class="p-5 rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50/80 dark:bg-slate-900/50 flex flex-wrap gap-4 items-center justify-between mb-8">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-2xl text-[#307e92] dark:text-cyan-400 mt-0.5">toggle_on</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-gray-900 dark:text-slate-100 m-0">حالة نشاط القسم الأكاديمي</h4>
+                            <p class="text-xs text-gray-500 dark:text-slate-400 mt-1 mb-0">
+                                تفعيل القسم يتيح عمليات تجديد القيد وتنزيل المواد وتعيين المجموعات، بينما تجميده يقتصر على الأرشيف التاريخي.
+                            </p>
+                        </div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" name="is_active" class="sr-only peer" {% if department.is_active %}checked{% endif %}>
+                        <div class="w-12 h-6.5 bg-gray-300 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[3px] after:start-[3px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#307e92] dark:peer-checked:bg-cyan-600"></div>
+                    </label>
+                </div>
+
+                <!-- أزرار الحفظ والإلغاء الفاخرة -->
+                <div class="flex items-center justify-end gap-3 pt-5 border-t border-gray-100 dark:border-slate-700">
+                    <a href="{% url 'renewal:department_list' %}" 
+                       class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 hover:bg-gray-200 dark:hover:bg-slate-600 transition-colors flex items-center gap-1.5">
+                        <span class="material-symbols-outlined text-base">close</span>
+                        <span>إلغاء والعودة</span>
+                    </a>
+                    <button type="submit" 
+                            class="px-7 py-2.5 rounded-xl text-xs font-extrabold text-white bg-[#307e92] hover:bg-[#1f5f70] dark:bg-cyan-600 dark:hover:bg-cyan-700 transition-all shadow-lg hover:shadow-[#307e92]/30 flex items-center gap-1.5 cursor-pointer">
+                        <span class="material-symbols-outlined text-base">save</span>
+                        <span>حفظ بيانات القسم</span>
+                    </button>
+                </div>
+            </form>
+
+        </div>
+
+    </div>
+</main>
+{% endblock %}

@@ -177,8 +177,29 @@
         border-color: #334155 !important;
         box-shadow: 0 14px 45px rgba(0, 0, 0, 0.7) !important;
     }
-    html.dark #toastNotification p {
-        color: #f8fafc !important;
+    /* زر تعديل القسم (Edit Department Button) */
+    .btn-dept-edit {
+        background-color: #eef2ff;
+        color: #4f46e5;
+        border: 1px solid #c7d2fe;
+    }
+    .btn-dept-edit:hover {
+        background-color: #4f46e5 !important;
+        color: #ffffff !important;
+        border-color: #4f46e5 !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3) !important;
+        transform: translateY(-1px);
+    }
+    html.dark .btn-dept-edit {
+        background-color: rgba(99, 102, 241, 0.15) !important;
+        color: #a5b4fc !important;
+        border-color: rgba(99, 102, 241, 0.35) !important;
+    }
+    html.dark .btn-dept-edit:hover {
+        background-color: #6366f1 !important;
+        color: #ffffff !important;
+        border-color: #6366f1 !important;
+        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
     }
 </style>
 {% endblock %}
@@ -257,11 +278,18 @@
                     </div>
                 </div>
 
-                <!-- زر الإجراء والربط بالمسار الديناميكي مع زر التفعيل/الإلغاء -->
+                <!-- أزرار الإجراءات: عرض التفاصيل، تعديل القسم، وتجميد/تفعيل القسم -->
                 <div class="p-4 bg-white dark:bg-slate-800 border-t border-gray-100 dark:border-slate-700 flex flex-wrap gap-2 justify-between items-center">
-                    <a href="{% url 'renewal:department_detail' dept_code=item.department.code %}" class="flex-1 text-center py-2 px-3 rounded-lg bg-primary/10 dark:bg-cyan-950/60 hover:bg-primary dark:hover:bg-cyan-600 text-primary hover:text-white dark:text-cyan-400 dark:hover:text-white font-bold text-xs transition-colors duration-200 flex items-center justify-center gap-1 shadow-xs">
+                    <a href="{% url 'renewal:department_detail' dept_code=item.department.code %}" class="flex-1 min-w-[120px] text-center py-2 px-3 rounded-lg bg-primary/10 dark:bg-cyan-950/60 hover:bg-primary dark:hover:bg-cyan-600 text-primary hover:text-white dark:text-cyan-400 dark:hover:text-white font-bold text-xs transition-colors duration-200 flex items-center justify-center gap-1 shadow-xs">
                         <span class="material-symbols-outlined text-base">visibility</span>
                         <span>عرض تفاصيل القسم</span>
+                    </a>
+
+                    <a href="{% url 'renewal:department_update' id=item.department.id %}" 
+                       class="py-2 px-3 rounded-lg font-bold text-xs transition-all duration-200 flex items-center justify-center gap-1 shadow-xs btn-dept-edit" 
+                       title="تعديل بيانات القسم">
+                        <span class="material-symbols-outlined text-base">edit</span>
+                        <span>تعديل</span>
                     </a>
                     
                     <button type="button" 

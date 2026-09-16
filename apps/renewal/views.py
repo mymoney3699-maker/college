@@ -5752,6 +5752,62 @@ def department_list_view(request):
 
 
 @login_required
+def department_update_view(request, id=None, dept_id=None):
+    """
+    صفحة تعديل بيانات القسم الأكاديمي
+    """
+    actual_id = id if id is not None else dept_id
+    department = get_object_or_404(Department, pk=actual_id)
+    
+    if request.method == 'POST':
+        name = request.POST.get('name', '').strip()
+        code = request.POST.get('code', '').strip()
+        is_active = request.POST.get('is_active') in ['on', '1', 'true', True]
+        
+        if not name or not code:
+            messages.error(request, 'يرجى إدخال اسم القسم والرمز المختصر.')
+        elif Department.objects.filter(name__iexact=name).exclude(pk=department.pk).exists():
+            messages.error(request, f'يوجد قسم آخر مسجل بنفس الاسم ({name}).')
+        elif Department.objects.filter(code__iexact=code).exclude(pk=department.pk).exists():
+            messages.error(request, f'يوجد قسم آخر مسجل بنفس الرمز ({code}).')
+        else:
+            old_name = department.name
+            old_code = department.code
+            department.name = name
+            department.code = code
+            department.is_active = is_active
+            department.save()
+            
+            try:
+                from apps.users.utils import log_activity
+                log_activity(
+                    user=request.user,
+                    action='update',
+                    model_name='Department',
+                    object_name=department.name,
+                    details=f"تعديل بيانات القسم الأكاديمي من ({old_name} - {old_code}) إلى ({name} - {code})",
+                    request=request
+                )
+            except Exception:
+                pass
+            
+            messages.success(request, f'تم تحديث بيانات قسم ({department.name}) بنجاح.')
+            return redirect('renewal:department_list')
+            
+    total_students = exclude_withdrawn_students(Student.objects.filter(department=department)).count()
+    courses_count = Course.objects.filter(department=department).count()
+    groups_count = Group.objects.filter(department=department).count()
+    
+    context = {
+        'department': department,
+        'total_students': total_students,
+        'courses_count': courses_count,
+        'groups_count': groups_count,
+    }
+    return render(request, 'renewal/department_update.html', context)
+
+
+@login_required
 def department_detail_view(request, dept_code):
     """
     عرض تفاصيل قسم/تخصص معين ديناميكياً مع التحليلات والإحصائيات الشاملة
@@ -11411,155 +11467,53 @@ def non_libyan_students_view(request):
     return render(request, 'renewal/non_libyan_students.html', context)
 
 
-@login_required
 def non_libyan_students_api(request):
-    """
-    API لجلب الطلاب غير الليبيين مع دعم الفلترة والبحث (AJAX)
-    """
-    try:
-        print("="*60)
-        print(f"🔍 non_libyan_students_api CALLED | GET: {dict(request.GET)}")
-
-        # استبعاد الليبيين من البداية دائماً
-        students = Student.objects.exclude(
-            LIBYAN_EXCLUDE_Q
-        ).select_related(
-            'nationality', 'department', 'student_status', 'level', 'gender'
+    # 1. استبعاد الليبيين بدقة فقط (أو أخذ كل من لديه جنسية غير ليبية)
+    students = Student.objects.filter(nationality__isnull=False).exclude(
+        Q(nationality__name__icontains='ليبي') | Q(nationality__name__icontains='ليبيا')
+    )
+    
+    # 2. الفلترة
+    nationality_id = request.GET.get('nationality_id') or request.GET.get('nationality')
+    department_id = request.GET.get('department_id') or request.GET.get('department')
+    search = request.GET.get('search') or request.GET.get('q', '').strip()
+    
+    if nationality_id and nationality_id not in ['all', '0']:
+        students = students.filter(nationality_id=nationality_id)
+        
+    if department_id and department_id not in ['all', '0']:
+        students = students.filter(department_id=department_id)
+        
+    if search:
+        students = students.filter(
+            Q(student_id__icontains=search) |
+            Q(name__icontains=search) |
+            Q(father_name__icontains=search) |
+            Q(last_name__icontains=search) |
+            Q(national_id__icontains=search)
         )
-
-        print(f"📊 Total non-Libyan students in DB: {students.count()}")
-
-        # تطبيق الفلاتر الاختيارية
-        nationality_id = request.GET.get('nationality_id', '').strip()
-        if nationality_id and nationality_id not in ['all', '0', '']:
-            if nationality_id.isdigit():
-                students = students.filter(nationality_id=int(nationality_id))
-            else:
-                students = students.filter(nationality__name__iexact=nationality_id)
-
-        department_id = request.GET.get('department_id', '').strip()
-        if department_id and department_id not in ['all', '0', '']:
-            try:
-                students = students.filter(department_id=int(department_id))
-            except (ValueError, TypeError):
-                pass
-
-        level_id = request.GET.get('level_id', '').strip()
-        if level_id and level_id not in ['all', '0', '']:
-            try:
-                students = students.filter(level_id=int(level_id))
-            except (ValueError, TypeError):
-                pass
-
-        search = request.GET.get('search', '').strip()
-        if search:
-            students = students.filter(
-                Q(name__icontains=search) |
-                Q(student_id__icontains=search) |
-                Q(passport_number__icontains=search) |
-                Q(nationality__name__icontains=search) |
-                Q(father_name__icontains=search) |
-                Q(last_name__icontains=search)
-            )
-
-        order_by = request.GET.get('order_by', 'student_id')
-        if order_by and order_by.startswith('-'):
-            students = students.order_by(order_by)
-        else:
-            students = students.order_by('student_id')
-
-        total_count = students.count()
-        nationalities_count = students.values('nationality_id').distinct().count()
-        active_count = students.filter(
-            Q(student_status__name__icontains='مستمر') |
-            Q(student_status__name__icontains='منتظم')
-        ).count()
-        passport_holders = students.filter(
-            passport_number__isnull=False
-        ).exclude(passport_number='').count()
-
-        data = []
-        for student in students:
-            try:
-                photo_url = None
-                if student.photo:
-                    try:
-                        photo_url = student.photo.url
-                    except Exception:
-                        photo_url = None
-
-                qr_code_url = None
-                if student.qr_code:
-                    try:
-                        qr_code_url = student.qr_code.url
-                    except Exception:
-                        qr_code_url = None
-
-                created_at_val = getattr(student, 'created_at', None)
-                updated_at_val = getattr(student, 'updated_at', None)
-
-                data.append({
-                    'id': student.id,
-                    'student_id': student.student_id or '',
-                    'full_name': f"{student.name or ''} {student.father_name or ''} {student.grandfather_name or ''} {student.last_name or ''}".strip(),
-                    'name': student.name or '',
-                    'father_name': student.father_name or '',
-                    'grandfather_name': student.grandfather_name or '',
-                    'last_name': student.last_name or '',
-                    'nationality_id': student.nationality.id if getattr(student, 'nationality', None) else None,
-                    'nationality_name': student.nationality.name if getattr(student, 'nationality', None) else '',
-                    'passport_number': getattr(student, 'passport_number', '') or '',
-                    'national_id': getattr(student, 'national_id', '') or '',
-                    'gender': student.get_gender_display() if hasattr(student, 'get_gender_display') else ('ذكر' if getattr(student, 'gender', None) == 'M' else 'أنثى'),
-                    'gender_code': student.gender if getattr(student, 'gender', None) else '',
-                    'gender_id': student.gender if getattr(student, 'gender', None) else '',
-                    'department_id': student.department.id if getattr(student, 'department', None) else None,
-                    'department_name': student.department.name if getattr(student, 'department', None) else '',
-                    'level_id': student.level.id if getattr(student, 'level', None) else None,
-                    'level_number': student.level.number if getattr(student, 'level', None) else 0,
-                    'level_name': student.level.name if getattr(student, 'level', None) else '',
-                    'status_id': student.student_status.id if getattr(student, 'student_status', None) else None,
-                    'status_name': student.student_status.name if getattr(student, 'student_status', None) else '',
-                    'phone': student.phone or '',
-                    'email': student.email or '',
-                    'birth_date': student.birth_date.strftime('%Y-%m-%d') if getattr(student, 'birth_date', None) else '',
-                    'enrollment_date': student.enrollment_date.strftime('%Y-%m-%d') if getattr(student, 'enrollment_date', None) else '',
-                    'enrollment_semester': getattr(student, 'enrollment_semester', '') or '',
-                    'photo_url': photo_url,
-                    'qr_code_url': qr_code_url,
-                    'created_at': created_at_val.strftime('%Y-%m-%d %H:%M') if created_at_val else '',
-                    'updated_at': updated_at_val.strftime('%Y-%m-%d %H:%M') if updated_at_val else '',
-                })
-            except Exception as row_err:
-                print(f"⚠️ Error formatting student row: {row_err}")
-                continue
-
-        print(f"✅ Returning {len(data)} non-Libyan students")
-        print("="*60)
-
-        return JsonResponse({
-            'success': True,
-            'students': data,
-            'count': total_count,
-            'stats': {
-                'total': total_count,
-                'nationalities': nationalities_count,
-                'active': active_count,
-                'passport_holders': passport_holders
-            },
-            'message': f'تم العثور على {total_count} طالب',
+        
+    # 3. تجهيز الرد
+    data = []
+    for s in students.select_related('nationality', 'department', 'student_status'):
+        full_name = f"{s.name} {s.father_name or ''} {s.grandfather_name or ''} {s.last_name or ''}".strip()
+        data.append({
+            'id': s.id,
+            'student_id': s.student_id or '-',
+            'full_name': full_name or s.name,
+            'name': s.name,
+            'nationality_name': s.nationality.name if s.nationality else '-',
+            'nationality_id': s.nationality_id,
+            'passport_number': getattr(s, 'passport_number', '') or s.national_id or '-',
+            'department_name': s.department.name if s.department else '-',
+            'status_name': s.student_status.name if (hasattr(s, 'student_status') and s.student_status) else 'منتظم',
         })
-
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return JsonResponse({
-            'success': False,
-            'message': f'حدث خطأ: {str(e)}',
-            'students': [],
-            'count': 0,
-            'stats': {'total': 0, 'nationalities': 0, 'active': 0, 'passport_holders': 0}
-        })
+        
+    return JsonResponse({
+        'success': True,
+        'count': len(data),
+        'students': data
+    })
 
 
 @login_required
@@ -12426,4 +12380,4 @@ def search_enrollment_student_api(request):
             'qr_verification_url': qr_url,
         })
 
-    return JsonResponse({'success': True, 'students': results})
+    return JsonResponse({'success': True, 'students': results})

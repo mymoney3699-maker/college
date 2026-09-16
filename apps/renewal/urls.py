@@ -19,6 +19,7 @@ urlpatterns = [
     
    
     path('departments/', views.department_list_view, name='department_list'),
+    path('departments/<int:id>/edit/', views.department_update_view, name='department_update'),
     path('departments/<str:dept_code>/', views.department_detail_view, name='department_detail'),
     path('api/departments/<str:dept_code>/analytics/', views.department_analytics_api, name='department_analytics_api'),
     path('student-data/', views.student_data, name='student_data'),

@@ -1,420 +1,482 @@
-{% extends "base.html" %}
+ح{% extends 'base.html' %}
 {% load static %}
 
 {% block title %}مركز التقارير والاستمارات الشامل | كلية طرابلس{% endblock %}
 
 {% block extra_css %}
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Outfit:wght@500;600;700;800;900&display=swap">
+
 <style>
-    /* ============================================================
-       صفحة مركز التقارير والاستمارات الشامل - Reports Hub
-       ============================================================ */
-    .reports-page {
-        direction: rtl;
-        font-family: 'Cairo', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    :root {
+        --rep-teal: #307e92;
+        --rep-teal-dark: #1e5563;
+        --rep-gold: #b59b66;
+        --rep-emerald: #10b981;
+        --rep-amber: #f59e0b;
+        --rep-rose: #f43f5e;
+        --rep-indigo: #6366f1;
+        --rep-bg-card: #ffffff;
+        --rep-card-border: #e2e8f0;
+        --rep-text-main: #0f172a;
+        --rep-text-muted: #64748b;
+        --rep-bg-subtle: #f8fafc;
     }
 
-    .reports-container {
+    html.dark {
+        --rep-bg-card: #1e293b;
+        --rep-card-border: #334155;
+        --rep-text-main: #f8fafc;
+        --rep-text-muted: #94a3b8;
+        --rep-bg-subtle: #0f172a;
+    }
+
+    .rep-page {
+        width: 100%;
         max-width: 1400px;
         margin: 0 auto;
-        padding: 0.5rem 1rem 3rem 1rem;
+        padding: 0.75rem 1.25rem 3.5rem 1.25rem;
+        direction: rtl;
+        font-family: 'Tajawal', sans-serif;
     }
 
-    /* هيدر الصفحة الرئيسي الفاخر */
-    .reports-hero-banner {
-        background: linear-gradient(135deg, #1f5f70 0%, #307e92 50%, #1e3a47 100%);
+    /* 1. البانر العلوي الفاخر النظيف (بدون زحمة داخلية) */
+    .rep-hero-banner {
+        position: relative;
+        background: linear-gradient(135deg, #1e5563 0%, #307e92 55%, #18444f 100%);
         border-radius: 20px;
-        padding: 2.25rem 2.5rem;
+        padding: 2.2rem 2.5rem;
         margin-bottom: 2rem;
         color: #ffffff;
-        position: relative;
-        overflow: hidden;
-        box-shadow: 0 10px 30px rgba(48, 126, 146, 0.25);
+        box-shadow: 0 12px 32px -4px rgba(30, 85, 99, 0.32);
         display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 2rem;
-        flex-wrap: wrap;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        overflow: hidden;
     }
 
-    .reports-hero-banner::before {
+    .rep-hero-banner::before {
         content: '';
         position: absolute;
-        top: -60px;
-        left: -60px;
+        top: -70px;
+        left: -70px;
         width: 220px;
         height: 220px;
-        background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0) 70%);
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.18) 0%, transparent 70%);
         border-radius: 50%;
         pointer-events: none;
     }
 
-    .reports-hero-banner::after {
+    .rep-hero-banner::after {
         content: '';
         position: absolute;
-        bottom: -50px;
-        right: 15%;
-        width: 180px;
-        height: 180px;
-        background: radial-gradient(circle, rgba(181, 155, 102, 0.2) 0%, rgba(181, 155, 102, 0) 70%);
+        bottom: -60px;
+        right: 20%;
+        width: 260px;
+        height: 260px;
+        background: radial-gradient(circle, rgba(181, 155, 102, 0.22) 0%, transparent 70%);
         border-radius: 50%;
         pointer-events: none;
     }
 
-    .reports-hero-content {
-        max-width: 700px;
-        position: relative;
-        z-index: 2;
-    }
-
-    .reports-badge {
+    .rep-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
-        background: rgba(255, 255, 255, 0.18);
+        background: rgba(255, 255, 255, 0.16);
         backdrop-filter: blur(8px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.28);
         padding: 4px 14px;
         border-radius: 30px;
-        font-size: 0.85rem;
-        font-weight: 700;
-        margin-bottom: 0.85rem;
-        color: #f8fafc;
+        font-size: 0.82rem;
+        font-weight: 800;
+        margin-bottom: 0.65rem;
+        color: #ffffff;
+        position: relative;
+        z-index: 2;
     }
 
-    .reports-hero-title {
-        font-size: 2.1rem;
+    .rep-title {
+        font-size: clamp(1.5rem, 2.3vw, 2.05rem);
         font-weight: 900;
         margin: 0 0 0.5rem 0;
-        line-height: 1.3;
         display: flex;
         align-items: center;
         gap: 0.75rem;
-    }
-
-    .reports-hero-title .material-symbols-outlined {
-        font-size: 2.5rem;
-        color: #f1c40f;
-    }
-
-    .reports-hero-desc {
-        font-size: 1rem;
-        color: #e2e8f0;
-        line-height: 1.6;
-        margin: 0;
-        font-weight: 500;
-    }
-
-    /* كروت الإحصائيات السريعة بالهيدر */
-    .hero-stats-group {
-        display: flex;
-        gap: 1rem;
+        color: #ffffff;
+        letter-spacing: -0.5px;
         position: relative;
         z-index: 2;
-        flex-wrap: wrap;
     }
 
-    .hero-stat-card {
-        background: rgba(255, 255, 255, 0.12);
-        backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.25);
-        border-radius: 16px;
-        padding: 1rem 1.25rem;
-        min-width: 140px;
-        text-align: center;
-        transition: transform 0.25s ease, background 0.25s ease;
+    .rep-desc {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.92);
+        margin: 0;
+        font-weight: 600;
+        line-height: 1.6;
+        max-width: 900px;
+        position: relative;
+        z-index: 2;
     }
 
-    .hero-stat-card:hover {
-        transform: translateY(-3px);
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    .hero-stat-card .stat-num {
-        font-size: 1.65rem;
-        font-weight: 900;
-        color: #ffffff;
-        display: block;
-        line-height: 1.2;
-    }
-
-    .hero-stat-card .stat-label {
-        font-size: 0.82rem;
-        color: #cbd5e1;
-        font-weight: 700;
-        margin-top: 4px;
-        display: block;
-    }
-
-    /* شريط البحث وتصنيف الأقسام */
-    .reports-filter-bar {
-        background: #ffffff;
-        border: 1.5px solid #e2e8f0;
-        border-radius: 16px;
-        padding: 1.25rem 1.5rem;
+    /* 2. بطاقات المؤشرات الـ 4 المنفصلة (نفس ستايل الخريجين بالضبط) */
+    .rep-kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.35rem;
         margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    }
+
+    .rep-kpi-card {
+        background: var(--rep-bg-card);
+        border: 1px solid var(--rep-card-border);
+        border-radius: 18px;
+        padding: 1.4rem 1.5rem;
         display: flex;
         flex-direction: column;
-        gap: 1.25rem;
+        justify-content: space-between;
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.05);
+        position: relative;
+        overflow: hidden;
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
     }
 
-    .search-row {
+    .rep-kpi-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.1);
+    }
+
+    .rep-kpi-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        left: 0;
+        height: 4px;
+    }
+
+    .kpi-card-1::after { background: linear-gradient(90deg, #6366f1, #3b82f6); }
+    .kpi-card-2::after { background: linear-gradient(90deg, #10b981, #059669); }
+    .kpi-card-3::after { background: linear-gradient(90deg, #f43f5e, #e11d48); }
+    .kpi-card-4::after { background: linear-gradient(90deg, #307e92, #0891b2); }
+
+    .rep-kpi-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+    }
+
+    .rep-kpi-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .kpi-card-1 .rep-kpi-icon { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+    .kpi-card-2 .rep-kpi-icon { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .kpi-card-3 .rep-kpi-icon { background: rgba(244, 63, 94, 0.12); color: #f43f5e; }
+    .kpi-card-4 .rep-kpi-icon { background: rgba(48, 126, 146, 0.12); color: #307e92; }
+
+    .rep-kpi-label {
+        font-size: 0.84rem;
+        font-weight: 700;
+        color: var(--rep-text-muted);
+        margin-bottom: 0.35rem;
+    }
+
+    .rep-kpi-val {
+        font-family: 'Outfit', sans-serif;
+        font-size: 2.1rem;
+        font-weight: 900;
+        line-height: 1;
+        color: var(--rep-text-main);
+    }
+
+    .rep-kpi-footer {
+        font-size: 0.78rem;
+        font-weight: 700;
+        color: var(--rep-text-muted);
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+        padding-top: 0.8rem;
+        border-top: 1px dashed var(--rep-card-border);
+    }
+
+    /* 3. بطاقتي الخدمات السريعة (إخلاء الطرف والإفادة) */
+    .rep-services-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.25rem;
+        margin-bottom: 2rem;
+    }
+
+    .rep-service-card {
+        background: var(--rep-bg-card);
+        border: 1px solid var(--rep-card-border);
+        border-radius: 16px;
+        padding: 1.2rem 1.4rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        text-decoration: none;
+        color: var(--rep-text-main);
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
+        position: relative;
+        overflow: hidden;
+        transition: all 0.25s ease;
+    }
+
+    .rep-service-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 5px;
+        height: 100%;
+        background: var(--rep-teal);
+    }
+
+    .rep-service-card.gold::before {
+        background: var(--rep-gold);
+    }
+
+    .rep-service-card:hover {
+        border-color: var(--rep-teal);
+        transform: translateY(-2px);
+        box-shadow: 0 10px 24px rgba(48, 126, 146, 0.12);
+    }
+
+    .rep-service-card.gold:hover {
+        border-color: var(--rep-gold);
+        box-shadow: 0 10px 24px rgba(181, 155, 102, 0.16);
+    }
+
+    .rep-service-info {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .rep-service-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        background: rgba(48, 126, 146, 0.1);
+        color: var(--rep-teal);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+    }
+
+    .rep-service-card.gold .rep-service-icon {
+        background: rgba(181, 155, 102, 0.12);
+        color: var(--rep-gold);
+    }
+
+    .rep-service-title {
+        font-size: 1rem;
+        font-weight: 800;
+        color: var(--rep-text-main);
+        margin: 0 0 0.2rem 0;
+    }
+
+    .rep-service-sub {
+        font-size: 0.8rem;
+        color: var(--rep-text-muted);
+        margin: 0;
+        font-weight: 600;
+    }
+
+    .rep-service-btn {
+        background: var(--rep-teal);
+        color: #ffffff;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        font-size: 0.82rem;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        white-space: nowrap;
+        transition: background 0.2s ease;
+    }
+
+    .rep-service-card.gold .rep-service-btn {
+        background: var(--rep-gold);
+    }
+
+    .rep-service-card:hover .rep-service-btn {
+        background: var(--rep-teal-dark);
+    }
+
+    .rep-service-card.gold:hover .rep-service-btn {
+        background: #967f4f;
+    }
+
+    /* 4. شريط الفلاتر والبحث */
+    .rep-filter-panel {
+        background: var(--rep-bg-card);
+        border: 1px solid var(--rep-card-border);
+        border-radius: 18px;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
+        display: flex;
+        flex-direction: column;
+        gap: 1.15rem;
+    }
+
+    .rep-search-bar {
         display: flex;
         align-items: center;
         gap: 1rem;
         flex-wrap: wrap;
     }
 
-    .search-input-wrapper {
+    .rep-input-box {
         position: relative;
         flex: 1;
         min-width: 280px;
     }
 
-    .search-input-wrapper .material-symbols-outlined {
+    .rep-input-box .material-symbols-outlined {
         position: absolute;
         top: 50%;
         right: 14px;
         transform: translateY(-50%);
-        color: #307e92;
-        font-size: 24px;
+        color: var(--rep-teal);
+        font-size: 22px;
         pointer-events: none;
     }
 
-    .search-input {
+    .rep-input {
         width: 100%;
-        padding: 12px 48px 12px 16px;
-        background: #f8fafc;
-        border: 1.5px solid #cbd5e1;
+        padding: 10px 46px 10px 16px;
+        background: var(--rep-bg-subtle);
+        border: 1px solid var(--rep-card-border);
         border-radius: 12px;
-        font-size: 1rem;
-        font-weight: 600;
-        color: #1e293b;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--rep-text-main);
         outline: none;
-        transition: all 0.25s ease;
+        transition: all 0.2s ease;
+        font-family: 'Tajawal', sans-serif;
     }
 
-    .search-input:focus {
-        background: #ffffff;
-        border-color: #307e92;
-        box-shadow: 0 0 0 4px rgba(48, 126, 146, 0.12);
+    .rep-input:focus {
+        background: var(--rep-bg-card);
+        border-color: var(--rep-teal);
+        box-shadow: 0 0 0 3px rgba(48, 126, 146, 0.15);
     }
 
-    .reports-count-pill {
-        background: #e7f1f9;
-        color: #307e92;
-        padding: 8px 16px;
+    .rep-count-tag {
+        background: rgba(48, 126, 146, 0.1);
+        color: var(--rep-teal);
+        border: 1px solid rgba(48, 126, 146, 0.2);
+        padding: 6px 14px;
         border-radius: 10px;
-        font-size: 0.9rem;
+        font-size: 0.86rem;
         font-weight: 800;
         white-space: nowrap;
-        border: 1px solid #bfdbfe;
     }
 
-    /* فلاتر التصنيفات (Category Tabs) */
-    .category-tabs {
+    .rep-tabs-list {
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.5rem;
         overflow-x: auto;
-        padding-bottom: 4px;
-        scrollbar-width: thin;
+        padding-bottom: 2px;
     }
 
-    .cat-btn {
-        background: #f1f5f9;
-        color: #475569;
-        border: 1.5px solid #e2e8f0;
+    .rep-tab {
+        background: var(--rep-bg-subtle);
+        color: var(--rep-text-muted);
+        border: 1px solid var(--rep-card-border);
         border-radius: 10px;
-        padding: 8px 16px;
-        font-size: 0.9rem;
-        font-weight: 700;
+        padding: 6px 14px;
+        font-size: 0.86rem;
+        font-weight: 800;
         cursor: pointer;
         transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         white-space: nowrap;
+        font-family: 'Tajawal', sans-serif;
     }
 
-    .cat-btn .material-symbols-outlined {
-        font-size: 18px;
+    .rep-tab .material-symbols-outlined {
+        font-size: 16px;
     }
 
-    .cat-btn:hover {
-        background: #e2e8f0;
-        color: #1e293b;
+    .rep-tab:hover {
+        background: var(--rep-card-border);
+        color: var(--rep-text-main);
     }
 
-    .cat-btn.active {
-        background: #307e92;
+    .rep-tab.active {
+        background: var(--rep-teal);
         color: #ffffff;
-        border-color: #307e92;
+        border-color: var(--rep-teal);
         box-shadow: 0 4px 12px rgba(48, 126, 146, 0.25);
     }
 
-    /* بطاقات مميزة للخدمات المباشرة (إخلاء طرف وإفادة التخرج) */
-    .featured-services-row {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-        gap: 1.25rem;
-        margin-bottom: 2.25rem;
-    }
-
-    .featured-card {
-        background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
-        border: 2px solid #bae6fd;
-        border-radius: 18px;
-        padding: 1.5rem;
+    /* 5. قسم وبطاقات التقارير */
+    .rep-sec-head {
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        gap: 1.25rem;
-        box-shadow: 0 6px 18px rgba(0, 120, 160, 0.06);
-        transition: all 0.25s ease;
-        text-decoration: none;
-        color: inherit;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .featured-card:hover {
-        transform: translateY(-4px);
-        border-color: #307e92;
-        box-shadow: 0 12px 24px rgba(48, 126, 146, 0.15);
-    }
-
-    .featured-card::after {
-        content: '';
-        position: absolute;
-        top: 0;
-        right: 0;
-        width: 6px;
-        height: 100%;
-        background: #307e92;
-    }
-
-    .featured-card.grad::after {
-        background: #b59b66;
-    }
-
-    .featured-card-info {
-        display: flex;
         align-items: center;
-        gap: 1rem;
-    }
-
-    .featured-icon-box {
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        background: #e0f2fe;
-        color: #0284c7;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        flex-shrink: 0;
-    }
-
-    .featured-card.grad .featured-icon-box {
-        background: #fef3c7;
-        color: #b45309;
-    }
-
-    .featured-title {
-        font-size: 1.15rem;
-        font-weight: 800;
-        color: #0f172a;
-        margin: 0 0 4px 0;
-    }
-
-    .featured-sub {
-        font-size: 0.85rem;
-        color: #64748b;
-        margin: 0;
-        font-weight: 600;
-    }
-
-    .featured-btn-badge {
-        background: #307e92;
-        color: #ffffff;
-        padding: 8px 14px;
-        border-radius: 10px;
-        font-size: 0.85rem;
-        font-weight: 800;
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-        transition: background 0.2s ease;
-    }
-
-    .featured-card.grad .featured-btn-badge {
-        background: #b59b66;
-    }
-
-    .featured-card:hover .featured-btn-badge {
-        background: #235d6c;
-    }
-
-    .featured-card.grad:hover .featured-btn-badge {
-        background: #967f4f;
-    }
-
-    /* شبكة بطاقات التقارير الفاخرة */
-    .reports-section-title {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
         margin-bottom: 1.25rem;
-        padding-bottom: 0.75rem;
-        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.8rem;
+        border-bottom: 1px solid var(--rep-card-border);
     }
 
-    .reports-section-title h2 {
-        font-size: 1.35rem;
+    .rep-sec-title {
+        font-size: 1.1rem;
         font-weight: 900;
-        color: #1e293b;
-        margin: 0;
+        color: var(--rep-text-main);
         display: flex;
         align-items: center;
-        gap: 8px;
+        gap: 0.6rem;
+        margin: 0;
     }
 
-    .reports-section-title h2 .material-symbols-outlined {
-        color: #307e92;
-        font-size: 26px;
-    }
-
-    .reports-grid {
+    .rep-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 1.25rem;
     }
 
-    /* كرت التقرير */
-    .report-card {
-        background: #ffffff;
-        border: 1.5px solid #e2e8f0;
+    .rep-card {
+        background: var(--rep-bg-card);
+        border: 1px solid var(--rep-card-border);
         border-radius: 18px;
-        padding: 1.5rem;
-        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        padding: 1.35rem 1.45rem;
         display: flex;
         flex-direction: column;
         justify-content: space-between;
-        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.03);
+        box-shadow: 0 4px 18px -2px rgba(0, 0, 0, 0.04);
         position: relative;
         overflow: hidden;
+        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
     }
 
-    .report-card:hover {
-        transform: translateY(-5px);
-        border-color: #307e92;
-        box-shadow: 0 14px 28px rgba(48, 126, 146, 0.12);
+    .rep-card:hover {
+        transform: translateY(-4px);
+        border-color: var(--rep-teal);
+        box-shadow: 0 14px 28px -4px rgba(48, 126, 146, 0.12);
     }
 
-    .report-card-top {
+    .rep-card-top {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -422,787 +484,753 @@
         margin-bottom: 1rem;
     }
 
-    .report-icon-wrapper {
-        width: 52px;
-        height: 52px;
-        border-radius: 14px;
+    .rep-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 26px;
         flex-shrink: 0;
-        transition: transform 0.25s ease;
     }
 
-    .report-card:hover .report-icon-wrapper {
-        transform: scale(1.1);
-    }
+    .t-blue { background: rgba(2, 132, 199, 0.12); color: #0284c7; }
+    .t-emerald { background: rgba(16, 185, 129, 0.12); color: #10b981; }
+    .t-amber { background: rgba(245, 158, 11, 0.12); color: #f59e0b; }
+    .t-indigo { background: rgba(99, 102, 241, 0.12); color: #6366f1; }
+    .t-purple { background: rgba(126, 34, 206, 0.12); color: #7e22ce; }
+    .t-rose { background: rgba(244, 63, 94, 0.12); color: #f43f5e; }
+    .t-cyan { background: rgba(8, 145, 178, 0.12); color: #0891b2; }
+    .t-teal { background: rgba(48, 126, 146, 0.12); color: #307e92; }
 
-    /* ألوان أيقونات التقارير حسب الفئة */
-    .theme-blue { background: #e0f2fe; color: #0284c7; }
-    .theme-emerald { background: #d1fae5; color: #059669; }
-    .theme-amber { background: #fef3c7; color: #d97706; }
-    .theme-indigo { background: #e0e7ff; color: #4338ca; }
-    .theme-purple { background: #f3e8ff; color: #7e22ce; }
-    .theme-rose { background: #ffe4e6; color: #e11d48; }
-    .theme-cyan { background: #cffafe; color: #0891b2; }
-    .theme-teal { background: #ccfbf1; color: #0d9488; }
-
-    .report-card-badge {
-        font-size: 0.75rem;
+    .rep-card-badge {
+        font-size: 0.74rem;
         font-weight: 800;
-        padding: 4px 10px;
-        border-radius: 20px;
-        background: #f1f5f9;
-        color: #475569;
-        border: 1px solid #cbd5e1;
+        padding: 3px 10px;
+        border-radius: 9999px;
+        background: var(--rep-bg-subtle);
+        color: var(--rep-text-muted);
+        border: 1px solid var(--rep-card-border);
         white-space: nowrap;
     }
 
-    .report-card-body {
+    .rep-card-body {
         flex: 1;
-        margin-bottom: 1.25rem;
+        margin-bottom: 1.15rem;
     }
 
-    .report-title {
-        font-size: 1.15rem;
+    .rep-card-title {
+        font-size: 1.02rem;
         font-weight: 800;
-        color: #1e293b;
-        margin: 0 0 0.5rem 0;
+        color: var(--rep-text-main);
+        margin: 0 0 0.4rem 0;
         line-height: 1.4;
     }
 
-    .report-desc {
-        font-size: 0.88rem;
-        color: #64748b;
+    .rep-card-desc {
+        font-size: 0.83rem;
+        color: var(--rep-text-muted);
         line-height: 1.55;
         margin: 0;
-        font-weight: 500;
+        font-weight: 600;
     }
 
-    .report-card-footer {
+    .rep-card-footer {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding-top: 1rem;
-        border-top: 1px solid #f1f5f9;
+        padding-top: 0.85rem;
+        border-top: 1px dashed var(--rep-card-border);
         gap: 0.75rem;
     }
 
-    .report-tag {
+    .rep-card-tag {
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        font-size: 0.78rem;
+        font-size: 0.76rem;
         font-weight: 700;
-        color: #64748b;
+        color: var(--rep-text-muted);
     }
 
-    .report-tag .material-symbols-outlined {
-        font-size: 16px;
-        color: #307e92;
+    .rep-card-tag .material-symbols-outlined {
+        font-size: 15px;
+        color: var(--rep-teal);
     }
 
-    .report-action-btn {
-        background: #307e92;
+    .rep-btn {
+        background: var(--rep-teal);
         color: #ffffff;
         text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 10px;
-        font-size: 0.88rem;
+        padding: 6px 13px;
+        border-radius: 9px;
+        font-size: 0.82rem;
         font-weight: 800;
         display: inline-flex;
         align-items: center;
-        gap: 6px;
+        gap: 5px;
         transition: all 0.2s ease;
         box-shadow: 0 2px 6px rgba(48, 126, 146, 0.2);
     }
 
-    .report-action-btn .material-symbols-outlined {
-        font-size: 18px;
+    .rep-btn:hover {
+        background: var(--rep-teal-dark);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.3);
+    }
+
+    .rep-btn .material-symbols-outlined {
+        font-size: 15px;
         transition: transform 0.2s ease;
     }
 
-    .report-action-btn:hover {
-        background: #226374;
-        box-shadow: 0 4px 12px rgba(48, 126, 146, 0.35);
-    }
-
-    .report-action-btn:hover .material-symbols-outlined {
+    .rep-btn:hover .material-symbols-outlined {
         transform: translateX(-3px);
     }
 
-    /* حالة عدم وجود نتائج بحث */
-    .no-results-box {
+    .rep-no-data {
         display: none;
         text-align: center;
         padding: 3.5rem 1.5rem;
-        background: #ffffff;
-        border: 2px dashed #cbd5e1;
+        background: var(--rep-bg-card);
+        border: 2px dashed var(--rep-card-border);
         border-radius: 18px;
         grid-column: 1 / -1;
     }
 
-    .no-results-box .material-symbols-outlined {
-        font-size: 54px;
-        color: #94a3b8;
-        margin-bottom: 0.75rem;
+    .rep-no-data .material-symbols-outlined {
+        font-size: 44px;
+        color: var(--rep-text-muted);
+        margin-bottom: 0.6rem;
     }
 
-    .no-results-title {
-        font-size: 1.25rem;
+    .rep-no-data h4 {
+        font-size: 1.1rem;
         font-weight: 800;
-        color: #334155;
-        margin-bottom: 0.25rem;
+        color: var(--rep-text-main);
+        margin: 0 0 0.3rem 0;
     }
 
-    .no-results-text {
-        font-size: 0.95rem;
-        color: #64748b;
+    .rep-no-data p {
+        font-size: 0.85rem;
+        color: var(--rep-text-muted);
+        margin: 0;
     }
 
-    /* الدارك مود */
-    html.dark .reports-hero-banner {
-        background: linear-gradient(135deg, #133944 0%, #1e4f5c 50%, #0d1b22 100%);
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    @media (max-width: 1200px) {
+        .rep-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+        .rep-services-grid { grid-template-columns: 1fr; }
     }
 
-    html.dark .reports-filter-bar {
-        background: #1e293b;
-        border-color: #334155;
-    }
-
-    html.dark .search-input {
-        background: #0f172a;
-        border-color: #334155;
-        color: #f8fafc;
-    }
-
-    html.dark .cat-btn {
-        background: #0f172a;
-        color: #94a3b8;
-        border-color: #334155;
-    }
-
-    html.dark .cat-btn:hover {
-        background: #1e293b;
-        color: #f8fafc;
-    }
-
-    html.dark .cat-btn.active {
-        background: #307e92;
-        color: #ffffff;
-    }
-
-    html.dark .featured-card {
-        background: #1e293b;
-        border-color: #334155;
-    }
-
-    html.dark .featured-title {
-        color: #f8fafc;
-    }
-
-    html.dark .featured-sub {
-        color: #94a3b8;
-    }
-
-    html.dark .reports-section-title h2 {
-        color: #f8fafc;
-    }
-
-    html.dark .reports-section-title {
-        border-bottom-color: #334155;
-    }
-
-    html.dark .report-card {
-        background: #1e293b;
-        border-color: #334155;
-    }
-
-    html.dark .report-title {
-        color: #f8fafc;
-    }
-
-    html.dark .report-desc {
-        color: #94a3b8;
-    }
-
-    html.dark .report-card-footer {
-        border-top-color: #334155;
-    }
-
-    html.dark .report-card-badge {
-        background: #0f172a;
-        border-color: #334155;
-        color: #cbd5e1;
-    }
-
-    html.dark .no-results-box {
-        background: #1e293b;
-        border-color: #334155;
-    }
-
-    html.dark .no-results-title {
-        color: #f8fafc;
+    @media (max-width: 720px) {
+        .rep-kpi-grid { grid-template-columns: 1fr; }
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="reports-page">
-    <div class="reports-container">
+<main class="rep-page" dir="rtl">
 
-        <!-- 1. الهيدر الرئيسي التفاعلي (Hero Banner) -->
-        <div class="reports-hero-banner">
-            <div class="reports-hero-content">
-                <div class="reports-badge">
-                    <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
-                    بوابة التقارير الأكاديمية والإدارية المعتمدة
+    <!-- 1. البانر الفاخر بدون أي مربعات داخله -->
+    <div class="rep-hero-banner">
+        <div class="rep-badge">
+            <span class="material-symbols-outlined" style="font-size: 16px;">verified</span>
+            بوابة التقارير الأكاديمية والإدارية المعتمدة
+        </div>
+        <h1 class="rep-title">
+            <span class="material-symbols-outlined" style="font-size: 34px;">analytics</span>
+            <span>مركز التقارير والاستمارات الشامل</span>
+        </h1>
+        <p class="rep-desc">
+            منصة مركزية متكاملة تتيح لك الوصول السريع لكافة التقارير الأكاديمية، كشوفات النتائج والدرجات، شهادات القيد، والنماذج الإدارية مع إمكانية التصدير والطباعة المباشرة.
+        </p>
+    </div>
+
+    <!-- 2. كروت الإحصائيات الأربعة (نفس تصميم الخريجين بالضبط) -->
+    <div class="rep-kpi-grid">
+        
+        <!-- إجمالي الطلاب -->
+        <div class="rep-kpi-card kpi-card-1">
+            <div class="rep-kpi-top">
+                <div>
+                    <div class="rep-kpi-label">إجمالي الطلاب المقيدين</div>
+                    <div class="rep-kpi-val">{{ total_students|default:"-" }}</div>
                 </div>
-                <h1 class="reports-hero-title">
-                    <span class="material-symbols-outlined">analytics</span>
-                    مركز التقارير والاستمارات الشامل
-                </h1>
-                <p class="reports-hero-desc">
-                    منصة مركزية متكاملة تتيح لك الوصول السريع لكافة التقارير الأكاديمية، كشوفات النتائج والدرجات، شهادات القيد، والنماذج الإدارية مع إمكانية التصدير والطباعة المباشرة.
-                </p>
+                <div class="rep-kpi-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">groups</span>
+                </div>
             </div>
-
-            <!-- كروت إحصائية سريعة -->
-            <div class="hero-stats-group">
-                <div class="hero-stat-card">
-                    <span class="stat-num">{{ total_students|default:"-" }}</span>
-                    <span class="stat-label">إجمالي الطلاب</span>
-                </div>
-                <div class="hero-stat-card">
-                    <span class="stat-num">{{ clearance_count|default:"-" }}</span>
-                    <span class="stat-label">إخلاءات الطرف</span>
-                </div>
-                <div class="hero-stat-card">
-                    <span class="stat-num">{{ withdrawn_count|default:"-" }}</span>
-                    <span class="stat-label">سحب الملفات</span>
-                </div>
-                <div class="hero-stat-card">
-                    <span class="stat-num">{{ non_libyan_count|default:"-" }}</span>
-                    <span class="stat-label">الطلاب غير الليبيين</span>
-                </div>
+            <div class="rep-kpi-footer">
+                <span class="material-symbols-outlined" style="font-size: 15px;">school</span>
+                <span>كافة الطلاب المسجلين بالمنظومة</span>
             </div>
         </div>
 
-        <!-- 2. بطاقات وصول سريع مميزة (إخلاء طرف وإفادة التخرج) -->
-        <div class="featured-services-row">
-            <a href="{% url 'renewal:clearance' %}" class="featured-card">
-                <div class="featured-card-info">
-                    <div class="featured-icon-box">
-                        <span class="material-symbols-outlined">assignment_turned_in</span>
-                    </div>
-                    <div>
-                        <h3 class="featured-title">إخلاء طرف رسمي</h3>
-                        <p class="featured-sub">إجراء واعتماد إخلاء طرف طالب أو خريج وإصدار الوثيقة</p>
-                    </div>
+        <!-- إخلاءات الطرف -->
+        <div class="rep-kpi-card kpi-card-2">
+            <div class="rep-kpi-top">
+                <div>
+                    <div class="rep-kpi-label">إخلاءات الطرف المنجزة</div>
+                    <div class="rep-kpi-val" style="color: #10b981;">{{ clearance_count|default:"-" }}</div>
                 </div>
-                <div class="featured-btn-badge">
-                    <span>فتح الخدمة</span>
-                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-                </div>
-            </a>
-
-            <a href="{% url 'renewal:graduation_certificate' %}" class="featured-card grad">
-                <div class="featured-card-info">
-                    <div class="featured-icon-box">
-                        <span class="material-symbols-outlined">school</span>
-                    </div>
-                    <div>
-                        <h3 class="featured-title">إفادة التخرج</h3>
-                        <p class="featured-sub">إصدار وتوثيق إفادة التخرج بالباركود والتقدير العام</p>
-                    </div>
-                </div>
-                <div class="featured-btn-badge">
-                    <span>إصدار الإفادة</span>
-                    <span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span>
-                </div>
-            </a>
-        </div>
-
-        <!-- 3. شريط الفلاتر والبحث المتقدم -->
-        <div class="reports-filter-bar">
-            <div class="search-row">
-                <div class="search-input-wrapper">
-                    <span class="material-symbols-outlined">search</span>
-                    <input type="text" id="reportSearchInput" class="search-input" placeholder="ابحث عن تقرير، كشف درجات، استمارة، أو شهادة بالاسم أو الكلمة المفتاحية..." onkeyup="filterReports()">
-                </div>
-                <div class="reports-count-pill" id="reportsCountBadge">
-                    <span id="visibleCount">15</span> تقرير متاح
+                <div class="rep-kpi-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">verified</span>
                 </div>
             </div>
-
-            <!-- تبويبات التصنيف -->
-            <div class="category-tabs">
-                <button class="cat-btn active" onclick="setCategory('all', this)">
-                    <span class="material-symbols-outlined">grid_view</span>
-                    كافة التقارير
-                </button>
-                <button class="cat-btn" onclick="setCategory('students', this)">
-                    <span class="material-symbols-outlined">group</span>
-                    شؤون الطلاب والتسجيل
-                </button>
-                <button class="cat-btn" onclick="setCategory('grades', this)">
-                    <span class="material-symbols-outlined">military_tech</span>
-                    الامتحانات والنتائج
-                </button>
-                <button class="cat-btn" onclick="setCategory('graduates', this)">
-                    <span class="material-symbols-outlined">workspace_premium</span>
-                    الخريجين والشهادات
-                </button>
-                <button class="cat-btn" onclick="setCategory('forms', this)">
-                    <span class="material-symbols-outlined">description</span>
-                    النماذج والكشوفات
-                </button>
-                <button class="cat-btn" onclick="setCategory('courses', this)">
-                    <span class="material-symbols-outlined">menu_book</span>
-                    المقررات والدراسة
-                </button>
+            <div class="rep-kpi-footer">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: #10b981;">check_circle</span>
+                <span>إخلاءات طرف وتخرج موثقة</span>
             </div>
         </div>
 
-        <!-- 4. شبكة بطاقات التقارير -->
-        <div class="reports-section-title">
-            <h2>
-                <span class="material-symbols-outlined">dashboard_customize</span>
-                دليل التقارير والخدمات الأكاديمية
-            </h2>
+        <!-- سحب الملفات -->
+        <div class="rep-kpi-card kpi-card-3">
+            <div class="rep-kpi-top">
+                <div>
+                    <div class="rep-kpi-label">الطلاب المسحوبة ملفاتهم</div>
+                    <div class="rep-kpi-val" style="color: #f43f5e;">{{ withdrawn_count|default:"-" }}</div>
+                </div>
+                <div class="rep-kpi-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">folder_zip</span>
+                </div>
+            </div>
+            <div class="rep-kpi-footer">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: #f43f5e;">archive</span>
+                <span>سجلات إنهاء القيد وسحب الملف</span>
+            </div>
         </div>
 
-        <div class="reports-grid" id="reportsGrid">
-
-            <!-- 1. شهادة تعريف طالب -->
-            <div class="report-card" data-category="students" data-title="شهادة تعريف طالب إفادة قيد تعريف الطالب" data-desc="استخراج وطباعة شهادة تعريف وإفادة قيد رسمي للطالب موثقة بالباركود والختم للجهات الرسمية">
+        <!-- الطلاب غير الليبيين -->
+        <div class="rep-kpi-card kpi-card-4">
+            <div class="rep-kpi-top">
                 <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-blue">
-                            <span class="material-symbols-outlined">badge</span>
-                        </div>
-                        <span class="report-card-badge">شؤون الطلاب</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">شهادة تعريف طالب</h3>
-                        <p class="report-desc">استخراج وطباعة شهادة تعريف وإفادة قيد رسمي للطالب موثقة بالباركود والختم للتقديم لدى الجهات الرسمية والوزارات.</p>
-                    </div>
+                    <div class="rep-kpi-label">الطلاب غير الليبيين</div>
+                    <div class="rep-kpi-val" style="color: #307e92;">{{ non_libyan_count|default:"-" }}</div>
                 </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">print</span>
-                        طباعة فورية
-                    </span>
-                    <a href="{% url 'renewal:student_enrollment_certificate' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
+                <div class="rep-kpi-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">public</span>
                 </div>
             </div>
-
-            <!-- 2. كشف إفادات التخرج -->
-            <div class="report-card" data-category="graduates" data-title="كشف إفادات التخرج أرشيف الخريجين سجل الإفادات" data-desc="الأرشيف والسجل الشامل لكافة إفادات التخرج الصادرة والمعتمدة مع أرقام الإفادات والتواريخ">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-amber">
-                            <span class="material-symbols-outlined">workspace_premium</span>
-                        </div>
-                        <span class="report-card-badge">الخريجين</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">كشف إفادات التخرج</h3>
-                        <p class="report-desc">الأرشيف الإلكتروني والسجل الشامل لجميع إفادات التخرج الصادرة والمعتمدة وتتبع أرقام الإفادات وسنة التخرج.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">inventory</span>
-                        أرشيف معتمد
-                    </span>
-                    <a href="{% url 'renewal:graduation_archive' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
+            <div class="rep-kpi-footer">
+                <span class="material-symbols-outlined" style="font-size: 15px; color: #307e92;">flag</span>
+                <span>إحصائيات الطلاب والوافدين</span>
             </div>
-
-            <!-- 3. الطلاب المسحوبة ملفاتهم -->
-            <div class="report-card" data-category="students" data-title="الطلاب المسحوبة ملفاتهم سحب ملف أرشيف السحب مغادرين" data-desc="سجل وأرشيف الطلاب الذين قاموا بسحب ملفاتهم أو إنهاء قيدهم وتوثيق أسباب السحب">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-rose">
-                            <span class="material-symbols-outlined">folder_zip</span>
-                        </div>
-                        <span class="report-card-badge">شؤون الطلاب</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">الطلاب المسحوبة ملفاتهم</h3>
-                        <p class="report-desc">حصر وتدقيق أرشيف الطلاب الذين سحبوا ملفاتهم أو أنهوا دراستهم بالكلية مع توثيق التواريخ والبيانات المستلمة.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">archive</span>
-                        سجل الأرشفة
-                    </span>
-                    <a href="{% url 'renewal:file_withdrawal_archive' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 4. كشف الدرجات التراكمي -->
-            <div class="report-card" data-category="grades" data-title="كشف الدرجات التراكمي السجل الأكاديمي transcript المعدل التراكمي" data-desc="كشف الدرجات الأكاديمي الشامل للطالب متضمنا جميع المقررات والمعدلات الفصلية والتراكمية">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-indigo">
-                            <span class="material-symbols-outlined">history_edu</span>
-                        </div>
-                        <span class="report-card-badge">الامتحانات</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">كشف الدرجات التراكمي</h3>
-                        <p class="report-desc">استخراج السجل الأكاديمي الشامل للدرجات لكافة الفصول الدراسية مع حساب المعدل الفصلي والتراكمي والتقدير.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">verified_user</span>
-                        معتمد رسمياً
-                    </span>
-                    <a href="{% url 'grades:cumulative_grades' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 5. الحالات الأكاديمية وقيد الطلاب -->
-            <div class="report-card" data-category="grades" data-title="الحالات الأكاديمية وقيد الطلاب إنذار تعثر فصل منتظم موقوف" data-desc="تقرير مفصل بالوضع الأكاديمي للطلاب وحالات الإنذار والتعثر والفصل الأكاديمي">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-emerald">
-                            <span class="material-symbols-outlined">fact_check</span>
-                        </div>
-                        <span class="report-card-badge">الامتحانات والكنترول</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">الحالات الأكاديمية وقيد الطلاب</h3>
-                        <p class="report-desc">رصد ومتابعة الحالات الأكاديمية وتدقيق الطلاب المنذرين والمفصولين أكاديمياً والمنتظمين وفق اللائحة.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">rule</span>
-                        تدقيق أكاديمي
-                    </span>
-                    <a href="{% url 'grades:academic_status' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 6. متابعة الطلاب -->
-            <div class="report-card" data-category="students" data-title="متابعة الطلاب تتبع مسار دراسي إنجاز الساعات" data-desc="نظام التتبع الأكاديمي والإداري لمسيرة الطلاب ومراقبة تقدمهم بالمستويات الدراسية">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-cyan">
-                            <span class="material-symbols-outlined">monitoring</span>
-                        </div>
-                        <span class="report-card-badge">شؤون الطلاب</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">متابعة الطلاب</h3>
-                        <p class="report-desc">شاشة المراقبة الأكاديمية لمتابعة مستويات الطلاب، إنجاز الساعات المعتمدة، والسجلات التاريخية.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">insights</span>
-                        تتبع فوري
-                    </span>
-                    <a href="{% url 'renewal:student_tracking' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 7. نموذج تسجيل طالب -->
-            <div class="report-card" data-category="forms" data-title="نموذج تسجيل طالب استمارة تسجيل استمارة قيد" data-desc="طباعة استمارة ونموذج تسجيل وبيانات الطالب الرسمية المعتمدة بالكلية">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-teal">
-                            <span class="material-symbols-outlined">how_to_reg</span>
-                        </div>
-                        <span class="report-card-badge">النماذج</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">نموذج تسجيل طالب</h3>
-                        <p class="report-desc">توليد واستخراج استمارة تسجيل الطالب الشاملة المحتوية على البيانات الشخصية والأكاديمية للطباعة والحفظ بالملف.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">picture_as_pdf</span>
-                        جاهز للطباعة
-                    </span>
-                    <a href="{% url 'faculty:student_form_print' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 8. نموذج حضور الامتحانات -->
-            <div class="report-card" data-category="forms" data-title="نموذج حضور الامتحانات لجان الامتحانات تواقيع الحضور والغياب" data-desc="كشوفات وتواقيع حضور لجان الامتحانات النصفية والنهائية مقسمة حسب القاعات والمقررات">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-purple">
-                            <span class="material-symbols-outlined">assignment</span>
-                        </div>
-                        <span class="report-card-badge">النماذج والامتحانات</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">نموذج حضور الامتحانات</h3>
-                        <p class="report-desc">إعداد وطباعة استمارات توقيع حضور الامتحانات النصفية والنهائية وتوزيع الطلاب على القاعات ولجان المراقبة.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">edit_document</span>
-                        نماذج اللجان
-                    </span>
-                    <a href="{% url 'faculty:exam_attendance_form' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 9. كشف الحضور -->
-            <div class="report-card" data-category="forms" data-title="كشف الحضور حضور وغياب المحاضرات قوائم الشعب" data-desc="كشف ورقي إلكتروني رسمي لتسجيل حضور وغياب الطلاب في المحاضرات والمعامل">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-blue">
-                            <span class="material-symbols-outlined">fact_check</span>
-                        </div>
-                        <span class="report-card-badge">النماذج والشعب</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">كشف الحضور</h3>
-                        <p class="report-desc">استخراج كشوفات متابعة الحضور والغياب الأسبوعي لأساتذة المواد لتسجيل الغياب ورصد المحرومين.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">table_view</span>
-                        كشف أسماء
-                    </span>
-                    <a href="{% url 'faculty:attendance_sheet' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 10. الطلاب غير الليبيين -->
-            <div class="report-card" data-category="students" data-title="الطلاب غير الليبيين الوافدين الجاليات جنسيات أجنبية" data-desc="تقرير وإحصائيات تفصيلية بالطلاب الوافدين وغير حاملي الجنسية الليبية">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-emerald">
-                            <span class="material-symbols-outlined">public</span>
-                        </div>
-                        <span class="report-card-badge">شؤون الطلاب</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">الطلاب غير الليبيين</h3>
-                        <p class="report-desc">حصر وإحصائيات شاملة للطلاب الوافدين والجنسيات الأجنبية المقيدين بمختلف الأقسام والتخصصات بالكلية.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">flag</span>
-                        إحصائيات الوافدين
-                    </span>
-                    <a href="{% url 'renewal:non_libyan_students' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 11. تقارير الطلاب الناجحين -->
-            <div class="report-card" data-category="grades" data-title="تقارير الطلاب الناجحين كشف الناجحين نسب النجاح نتائج" data-desc="كشوفات وإحصائيات الطلاب المجتازين للمقررات والفصول بنجاح مع النسب المئوية">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-emerald">
-                            <span class="material-symbols-outlined">verified</span>
-                        </div>
-                        <span class="report-card-badge">النتائج</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">تقارير الطلاب الناجحين</h3>
-                        <p class="report-desc">عرض وتصدير قوائم الطلاب الناجحين في الفصل الحالي وحساب نسب النجاح العامة لكل قسم وتخصص.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">trending_up</span>
-                        نسب النجاح
-                    </span>
-                    <a href="{% url 'grades:successful_students' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 12. كشف الطلاب الراسبين -->
-            <div class="report-card" data-category="grades" data-title="كشف الطلاب الراسبين الرسوب دور ثاني مواد معادة" data-desc="حصر تفصيلي للطلاب الراسبين والمواد المعلقة للدور الثاني وتتبع حالات التعثر">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-rose">
-                            <span class="material-symbols-outlined">person_cancel</span>
-                        </div>
-                        <span class="report-card-badge">النتائج</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">كشف الطلاب الراسبين</h3>
-                        <p class="report-desc">كشف حصر الطلاب غير المجتازين والمواد التي لم يوفقوا بها لتنظيم امتحانات الدور الثاني وتنزيل المواد.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">warning</span>
-                        متابعة الرسوب
-                    </span>
-                    <a href="{% url 'grades:failed_students_report' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 13. كشف الطلاب حسب المعدل -->
-            <div class="report-card" data-category="grades" data-title="كشف الطلاب حسب المعدل الأوائل الترتيب GPA التقدير" data-desc="ترتيب وتصنيف الطلاب تنازليا وفق المعدل التراكمي والفصلي لتحديد الأوائل والمتفوقين">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-amber">
-                            <span class="material-symbols-outlined">leaderboard</span>
-                        </div>
-                        <span class="report-card-badge">النتائج والمتفوقين</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">كشف الطلاب حسب المعدل</h3>
-                        <p class="report-desc">ترتيب الطلاب تنازلياً حسب المعدل التراكمي وتحديد الطلاب الأوائل والمتفوقين وتصدير النتائج إلى Excel.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">stars</span>
-                        أوائل الدفعة
-                    </span>
-                    <a href="{% url 'renewal:students_by_gpa' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 14. تقرير المواد والشعب -->
-            <div class="report-card" data-category="courses" data-title="تقرير المواد والشعب تقرير المواد المقررات المسجلين بالمواد" data-desc="إحصائيات المقررات الدراسية وأعداد الطلاب المسجلين بكل مقرر وتوزيع الشعب">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-indigo">
-                            <span class="material-symbols-outlined">description</span>
-                        </div>
-                        <span class="report-card-badge">المقررات</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">تقرير المواد والشعب</h3>
-                        <p class="report-desc">كشف تحليلي شامل لجميع المقررات المفعلة بالفصل، أعداد المسجلين بكل مادة، وتوزيع القاعات والمجموعات.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">auto_stories</span>
-                        إحصائيات التسجيل
-                    </span>
-                    <a href="{% url 'renewal:my_materials_report' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 15. النماذج والاستمارات الإدارية -->
-            <div class="report-card" data-category="forms" data-title="النماذج والاستمارات الإدارية نماذج فارغة استمارة جاهزة" data-desc="دليل النماذج والاستمارات الرسمية الفارغة المعتمدة للطباعة المباشرة والاستخدام الإداري">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-cyan">
-                            <span class="material-symbols-outlined">article</span>
-                        </div>
-                        <span class="report-card-badge">النماذج الفارغة</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">النماذج والاستمارات الإدارية</h3>
-                        <p class="report-desc">مكتبة النماذج الإدارية الفارغة المعتمدة بالكلية الجاهزة للطباعة الفورية (تعهدات، إقرارات، طلبات).</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">print</span>
-                        طباعة فورية
-                    </span>
-                    <a href="{% url 'renewal:blank_forms' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- 16. الطلاب المعادَلين وتغيير المسار -->
-            <div class="report-card" data-category="students" data-title="الطلاب المعادَلين وتغيير المسار معادلة مواد تحويل مسار مقاصة" data-desc="سجل وقوائم الطلاب الذين تمت معادلة مقرراتهم وتغيير مسارهم الأكاديمي">
-                <div>
-                    <div class="report-card-top">
-                        <div class="report-icon-wrapper theme-teal">
-                            <span class="material-symbols-outlined">alt_route</span>
-                        </div>
-                        <span class="report-card-badge">المعادلات والتحويل</span>
-                    </div>
-                    <div class="report-card-body">
-                        <h3 class="report-title">الطلاب المعادَلين وتغيير المسار</h3>
-                        <p class="report-desc">سجل الطلاب المحولين والمعادلة مقرراتهم الأكاديمية ومتابعة احتساب الساعات المجتازة بالتخصص الجديد.</p>
-                    </div>
-                </div>
-                <div class="report-card-footer">
-                    <span class="report-tag">
-                        <span class="material-symbols-outlined">swap_calls</span>
-                        معادلات ومقاصة
-                    </span>
-                    <a href="{% url 'grades:equivalent_students' %}" class="report-action-btn">
-                        <span>فتح التقرير</span>
-                        <span class="material-symbols-outlined">arrow_back</span>
-                    </a>
-                </div>
-            </div>
-
-            <!-- صندوق عدم وجود نتائج للبحث -->
-            <div class="no-results-box" id="noResultsBox">
-                <span class="material-symbols-outlined">search_off</span>
-                <div class="no-results-title">لم يتم العثور على أي تقرير مطابق!</div>
-                <div class="no-results-text">تأكد من كتابة الكلمات بشكل صحيح أو قم باختيار تصنيف آخر من الأعلى.</div>
-            </div>
-
         </div>
 
     </div>
-</div>
+
+    <!-- 3. بطاقتي الخدمات السريعة (إخلاء الطرف والإفادة) -->
+    <div class="rep-services-grid">
+        <a href="{% url 'renewal:clearance' %}" class="rep-service-card">
+            <div class="rep-service-info">
+                <div class="rep-service-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">assignment_turned_in</span>
+                </div>
+                <div>
+                    <h3 class="rep-service-title">إخلاء طرف رسمي</h3>
+                    <p class="rep-service-sub">إجراء واعتماد إخلاء طرف طالب أو خريج وإصدار الوثيقة المعتمدة</p>
+                </div>
+            </div>
+            <div class="rep-service-btn">
+                <span>فتح الخدمة</span>
+                <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span>
+            </div>
+        </a>
+
+        <a href="{% url 'renewal:graduation_certificate' %}" class="rep-service-card gold">
+            <div class="rep-service-info">
+                <div class="rep-service-icon">
+                    <span class="material-symbols-outlined" style="font-size: 24px;">school</span>
+                </div>
+                <div>
+                    <h3 class="rep-service-title">إفادة التخرج الرسمية</h3>
+                    <p class="rep-service-sub">إصدار وتوثيق إفادة التخرج بالباركود والتقدير العام</p>
+                </div>
+            </div>
+            <div class="rep-service-btn">
+                <span>إصدار الإفادة</span>
+                <span class="material-symbols-outlined" style="font-size: 15px;">arrow_back</span>
+            </div>
+        </a>
+    </div>
+
+    <!-- 4. شريط البحث والتصنيف -->
+    <div class="rep-filter-panel">
+        <div class="rep-search-bar">
+            <div class="rep-input-box">
+                <span class="material-symbols-outlined">search</span>
+                <input type="text" id="reportSearchInput" class="rep-input" placeholder="ابحث عن تقرير، كشف درجات، استمارة، أو شهادة بالاسم أو الكلمة المفتاحية..." onkeyup="filterReports()">
+            </div>
+            <div class="rep-count-tag" id="reportsCountBadge">
+                <span id="visibleCount">16</span> تقرير متاح
+            </div>
+        </div>
+
+        <!-- تبويبات التصنيف -->
+        <div class="rep-tabs-list">
+            <button class="rep-tab active" onclick="setCategory('all', this)">
+                <span class="material-symbols-outlined">grid_view</span>
+                كافة التقارير
+            </button>
+            <button class="rep-tab" onclick="setCategory('students', this)">
+                <span class="material-symbols-outlined">group</span>
+                شؤون الطلاب والتسجيل
+            </button>
+            <button class="rep-tab" onclick="setCategory('grades', this)">
+                <span class="material-symbols-outlined">military_tech</span>
+                الامتحانات والنتائج
+            </button>
+            <button class="rep-tab" onclick="setCategory('graduates', this)">
+                <span class="material-symbols-outlined">workspace_premium</span>
+                الخريجين والشهادات
+            </button>
+            <button class="rep-tab" onclick="setCategory('forms', this)">
+                <span class="material-symbols-outlined">description</span>
+                النماذج والكشوفات
+            </button>
+            <button class="rep-tab" onclick="setCategory('courses', this)">
+                <span class="material-symbols-outlined">menu_book</span>
+                المقررات والدراسة
+            </button>
+        </div>
+    </div>
+
+    <!-- 5. شبكة بطاقات التقارير -->
+    <div class="rep-sec-head">
+        <h2 class="rep-sec-title">
+            <span class="material-symbols-outlined" style="color: var(--rep-teal);">dashboard_customize</span>
+            دليل التقارير والخدمات الأكاديمية
+        </h2>
+    </div>
+
+    <div class="rep-grid" id="reportsGrid">
+
+        <!-- 1. شهادة تعريف طالب -->
+        <div class="rep-card" data-category="students" data-title="شهادة تعريف طالب إفادة قيد تعريف الطالب" data-desc="استخراج وطباعة شهادة تعريف وإفادة قيد رسمي للطالب موثقة بالباركود والختم للجهات الرسمية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-blue">
+                        <span class="material-symbols-outlined">badge</span>
+                    </div>
+                    <span class="rep-card-badge">شؤون الطلاب</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">شهادة تعريف طالب</h3>
+                    <p class="rep-card-desc">استخراج وطباعة شهادة تعريف وإفادة قيد رسمي للطالب موثقة بالباركود والختم للتقديم لدى الجهات الرسمية والوزارات.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">print</span>
+                    طباعة فورية
+                </span>
+                <a href="{% url 'renewal:student_enrollment_certificate' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 2. كشف إفادات التخرج -->
+        <div class="rep-card" data-category="graduates" data-title="كشف إفادات التخرج أرشيف الخريجين سجل الإفادات" data-desc="الأرشيف والسجل الشامل لكافة إفادات التخرج الصادرة والمعتمدة مع أرقام الإفادات والتواريخ">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-amber">
+                        <span class="material-symbols-outlined">workspace_premium</span>
+                    </div>
+                    <span class="rep-card-badge">الخريجين</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">كشف إفادات التخرج</h3>
+                    <p class="rep-card-desc">الأرشيف الإلكتروني والسجل الشامل لجميع إفادات التخرج الصادرة والمعتمدة وتتبع أرقام الإفادات وسنة التخرج.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">inventory</span>
+                    أرشيف معتمد
+                </span>
+                <a href="{% url 'renewal:graduation_archive' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3. الطلاب المسحوبة ملفاتهم -->
+        <div class="rep-card" data-category="students" data-title="الطلاب المسحوبة ملفاتهم سحب ملف أرشيف السحب مغادرين" data-desc="سجل وأرشيف الطلاب الذين قاموا بسحب ملفاتهم أو إنهاء قيدهم وتوثيق أسباب السحب">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-rose">
+                        <span class="material-symbols-outlined">folder_zip</span>
+                    </div>
+                    <span class="rep-card-badge">شؤون الطلاب</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">الطلاب المسحوبة ملفاتهم</h3>
+                    <p class="rep-card-desc">حصر وتدقيق أرشيف الطلاب الذين سحبوا ملفاتهم أو أنهوا دراستهم بالكلية مع توثيق التواريخ والبيانات المستلمة.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">archive</span>
+                    سجل الأرشفة
+                </span>
+                <a href="{% url 'renewal:file_withdrawal_archive' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 4. كشف الدرجات التراكمي -->
+        <div class="rep-card" data-category="grades" data-title="كشف الدرجات التراكمي السجل الأكاديمي transcript المعدل التراكمي" data-desc="كشف الدرجات الأكاديمي الشامل للطالب متضمنا جميع المقررات والمعدلات الفصلية والتراكمية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-indigo">
+                        <span class="material-symbols-outlined">history_edu</span>
+                    </div>
+                    <span class="rep-card-badge">الامتحانات</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">كشف الدرجات التراكمي</h3>
+                    <p class="rep-card-desc">استخراج السجل الأكاديمي الشامل للدرجات لكافة الفصول الدراسية مع حساب المعدل الفصلي والتراكمي والتقدير.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">verified_user</span>
+                    معتمد رسمياً
+                </span>
+                <a href="{% url 'grades:cumulative_grades' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 5. الحالات الأكاديمية وقيد الطلاب -->
+        <div class="rep-card" data-category="grades" data-title="الحالات الأكاديمية وقيد الطلاب إنذار تعثر فصل منتظم موقوف" data-desc="تقرير مفصل بالوضع الأكاديمي للطلاب وحالات الإنذار والتعثر والفصل الأكاديمي">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-emerald">
+                        <span class="material-symbols-outlined">fact_check</span>
+                    </div>
+                    <span class="rep-card-badge">الامتحانات والكنترول</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">الحالات الأكاديمية وقيد الطلاب</h3>
+                    <p class="rep-card-desc">رصد ومتابعة الحالات الأكاديمية وتدقيق الطلاب المنذرين والمفصولين أكاديمياً والمنتظمين وفق اللائحة.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">rule</span>
+                    تدقيق أكاديمي
+                </span>
+                <a href="{% url 'grades:academic_status' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 6. متابعة الطلاب -->
+        <div class="rep-card" data-category="students" data-title="متابعة الطلاب تتبع مسار دراسي إنجاز الساعات" data-desc="نظام التتبع الأكاديمي والإداري لمسيرة الطلاب ومراقبة تقدمهم بالمستويات الدراسية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-cyan">
+                        <span class="material-symbols-outlined">monitoring</span>
+                    </div>
+                    <span class="rep-card-badge">شؤون الطلاب</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">متابعة الطلاب</h3>
+                    <p class="rep-card-desc">شاشة المراقبة الأكاديمية لمتابعة مستويات الطلاب، إنجاز الساعات المعتمدة، والسجلات التاريخية.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">insights</span>
+                    تتبع فوري
+                </span>
+                <a href="{% url 'renewal:student_tracking' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 7. نموذج تسجيل طالب -->
+        <div class="rep-card" data-category="forms" data-title="نموذج تسجيل طالب استمارة تسجيل استمارة قيد" data-desc="طباعة استمارة ونموذج تسجيل وبيانات الطالب الرسمية المعتمدة بالكلية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-teal">
+                        <span class="material-symbols-outlined">how_to_reg</span>
+                    </div>
+                    <span class="rep-card-badge">النماذج</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">نموذج تسجيل طالب</h3>
+                    <p class="rep-card-desc">توليد واستخراج استمارة تسجيل الطالب الشاملة المحتوية على البيانات الشخصية والأكاديمية للطباعة والحفظ بالملف.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">picture_as_pdf</span>
+                    جاهز للطباعة
+                </span>
+                <a href="{% url 'faculty:student_form_print' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 8. نموذج حضور الامتحانات -->
+        <div class="rep-card" data-category="forms" data-title="نموذج حضور الامتحانات لجان الامتحانات تواقيع الحضور والغياب" data-desc="كشوفات وتواقيع حضور لجان الامتحانات النصفية والنهائية مقسمة حسب القاعات والمقررات">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-purple">
+                        <span class="material-symbols-outlined">assignment</span>
+                    </div>
+                    <span class="rep-card-badge">النماذج والامتحانات</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">نموذج حضور الامتحانات</h3>
+                    <p class="rep-card-desc">إعداد وطباعة استمارات توقيع حضور الامتحانات النصفية والنهائية وتوزيع الطلاب على القاعات ولجان المراقبة.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">edit_document</span>
+                    نماذج اللجان
+                </span>
+                <a href="{% url 'faculty:exam_attendance_form' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 9. كشف الحضور -->
+        <div class="rep-card" data-category="forms" data-title="كشف الحضور حضور وغياب المحاضرات قوائم الشعب" data-desc="كشف ورقي إلكتروني رسمي لتسجيل حضور وغياب الطلاب في المحاضرات والمعامل">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-blue">
+                        <span class="material-symbols-outlined">fact_check</span>
+                    </div>
+                    <span class="rep-card-badge">النماذج والشعب</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">كشف الحضور</h3>
+                    <p class="rep-card-desc">استخراج كشوفات متابعة الحضور والغياب الأسبوعي لأساتذة المواد لتسجيل الغياب ورصد المحرومين.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">table_view</span>
+                    كشف أسماء
+                </span>
+                <a href="{% url 'faculty:attendance_sheet' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 10. الطلاب غير الليبيين -->
+        <div class="rep-card" data-category="students" data-title="الطلاب غير الليبيين الوافدين الجاليات جنسيات أجنبية" data-desc="تقرير وإحصائيات تفصيلية بالطلاب الوافدين وغير حاملي الجنسية الليبية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-emerald">
+                        <span class="material-symbols-outlined">public</span>
+                    </div>
+                    <span class="rep-card-badge">شؤون الطلاب</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">الطلاب غير الليبيين</h3>
+                    <p class="rep-card-desc">حصر وإحصائيات شاملة للطلاب الوافدين والجنسيات الأجنبية المقيدين بمختلف الأقسام والتخصصات بالكلية.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">flag</span>
+                    إحصائيات الوافدين
+                </span>
+                <a href="{% url 'renewal:non_libyan_students' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 11. تقارير الطلاب الناجحين -->
+        <div class="rep-card" data-category="grades" data-title="تقارير الطلاب الناجحين كشف الناجحين نسب النجاح نتائج" data-desc="كشوفات وإحصائيات الطلاب المجتازين للمقررات والفصول بنجاح مع النسب المئوية">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-emerald">
+                        <span class="material-symbols-outlined">verified</span>
+                    </div>
+                    <span class="rep-card-badge">النتائج</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">تقارير الطلاب الناجحين</h3>
+                    <p class="rep-card-desc">عرض وتصدير قوائم الطلاب الناجحين في الفصل الحالي وحساب نسب النجاح العامة لكل قسم وتخصص.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">trending_up</span>
+                    نسب النجاح
+                </span>
+                <a href="{% url 'grades:successful_students' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 12. كشف الطلاب الراسبين -->
+        <div class="rep-card" data-category="grades" data-title="كشف الطلاب الراسبين الرسوب دور ثاني مواد معادة" data-desc="حصر تفصيلي للطلاب الراسبين والمواد المعلقة للدور الثاني وتتبع حالات التعثر">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-rose">
+                        <span class="material-symbols-outlined">person_cancel</span>
+                    </div>
+                    <span class="rep-card-badge">النتائج</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">كشف الطلاب الراسبين</h3>
+                    <p class="rep-card-desc">كشف حصر الطلاب غير المجتازين والمواد التي لم يوفقوا بها لتنظيم امتحانات الدور الثاني وتنزيل المواد.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">warning</span>
+                    متابعة الرسوب
+                </span>
+                <a href="{% url 'grades:failed_students_report' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 13. كشف الطلاب حسب المعدل -->
+        <div class="rep-card" data-category="grades" data-title="كشف الطلاب حسب المعدل الأوائل الترتيب GPA التقدير" data-desc="ترتيب وتصنيف الطلاب تنازليا وفق المعدل التراكمي والفصلي لتحديد الأوائل والمتفوقين">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-amber">
+                        <span class="material-symbols-outlined">leaderboard</span>
+                    </div>
+                    <span class="rep-card-badge">النتائج والمتفوقين</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">كشف الطلاب حسب المعدل</h3>
+                    <p class="rep-card-desc">ترتيب الطلاب تنازلياً حسب المعدل التراكمي وتحديد الطلاب الأوائل والمتفوقين وتصدير النتائج إلى Excel.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">stars</span>
+                    أوائل الدفعة
+                </span>
+                <a href="{% url 'renewal:students_by_gpa' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 14. تقرير المواد والشعب -->
+        <div class="rep-card" data-category="courses" data-title="تقرير المواد والشعب تقرير المواد المقررات المسجلين بالمواد" data-desc="إحصائيات المقررات الدراسية وأعداد الطلاب المسجلين بكل مقرر وتوزيع الشعب">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-indigo">
+                        <span class="material-symbols-outlined">description</span>
+                    </div>
+                    <span class="rep-card-badge">المقررات</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">تقرير المواد والشعب</h3>
+                    <p class="rep-card-desc">كشف تحليلي شامل لجميع المقررات المفعلة بالفصل، أعداد المسجلين بكل مادة، وتوزيع القاعات والمجموعات.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">auto_stories</span>
+                    إحصائيات التسجيل
+                </span>
+                <a href="{% url 'renewal:my_materials_report' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 15. النماذج والاستمارات الإدارية -->
+        <div class="rep-card" data-category="forms" data-title="النماذج والاستمارات الإدارية نماذج فارغة استمارة جاهزة" data-desc="دليل النماذج والاستمارات الرسمية الفارغة المعتمدة للطباعة المباشرة والاستخدام الإداري">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-cyan">
+                        <span class="material-symbols-outlined">article</span>
+                    </div>
+                    <span class="rep-card-badge">النماذج الفارغة</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">النماذج والاستمارات الإدارية</h3>
+                    <p class="rep-card-desc">مكتبة النماذج الإدارية الفارغة المعتمدة بالكلية الجاهزة للطباعة الفورية (تعهدات، إقرارات، طلبات).</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">print</span>
+                    طباعة فورية
+                </span>
+                <a href="{% url 'renewal:blank_forms' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 16. الطلاب المعادَلين وتغيير المسار -->
+        <div class="rep-card" data-category="students" data-title="الطلاب المعادَلين وتغيير المسار معادلة مواد تحويل مسار مقاصة" data-desc="سجل وقوائم الطلاب الذين تمت معادلة مقرراتهم وتغيير مسارهم الأكاديمي">
+            <div>
+                <div class="rep-card-top">
+                    <div class="rep-card-icon t-teal">
+                        <span class="material-symbols-outlined">alt_route</span>
+                    </div>
+                    <span class="rep-card-badge">المعادلات والتحويل</span>
+                </div>
+                <div class="rep-card-body">
+                    <h3 class="rep-card-title">الطلاب المعادَلين وتغيير المسار</h3>
+                    <p class="rep-card-desc">سجل الطلاب المحولين والمعادلة مقرراتهم الأكاديمية ومتابعة احتساب الساعات المجتازة بالتخصص الجديد.</p>
+                </div>
+            </div>
+            <div class="rep-card-footer">
+                <span class="rep-card-tag">
+                    <span class="material-symbols-outlined">swap_calls</span>
+                    معادلات ومقاصة
+                </span>
+                <a href="{% url 'grades:equivalent_students' %}" class="rep-btn">
+                    <span>فتح التقرير</span>
+                    <span class="material-symbols-outlined">arrow_back</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- صندوق عدم وجود نتائج للبحث -->
+        <div class="rep-no-data" id="noResultsBox">
+            <span class="material-symbols-outlined">search_off</span>
+            <h4>لم يتم العثور على أي تقرير مطابق!</h4>
+            <p>تأكد من كتابة الكلمات بشكل صحيح أو قم باختيار تصنيف آخر من الأعلى.</p>
+        </div>
+
+    </div>
+
+</main>
 {% endblock %}
 
 {% block extra_js %}
@@ -1212,8 +1240,7 @@
     function setCategory(category, btnElement) {
         activeCategory = category;
         
-        // تحديث حالة الأزرار
-        document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.rep-tab').forEach(btn => btn.classList.remove('active'));
         btnElement.classList.add('active');
 
         filterReports();
@@ -1221,7 +1248,7 @@
 
     function filterReports() {
         const query = document.getElementById('reportSearchInput').value.toLowerCase().trim();
-        const cards = document.querySelectorAll('.report-card');
+        const cards = document.querySelectorAll('.rep-card');
         const noResultsBox = document.getElementById('noResultsBox');
         let visibleCount = 0;
 
@@ -1241,18 +1268,14 @@
             }
         });
 
-        // تحديث عداد التقارير الظاهرة
-        document.getElementById('visibleCount').textContent = visibleCount;
+        const badgeEl = document.getElementById('visibleCount');
+        if (badgeEl) badgeEl.textContent = visibleCount;
 
-        // إظهار رسالة عدم وجود نتائج إذا لزم
-        if (visibleCount === 0) {
-            noResultsBox.style.display = 'block';
-        } else {
-            noResultsBox.style.display = 'none';
+        if (noResultsBox) {
+            noResultsBox.style.display = (visibleCount === 0) ? 'block' : 'none';
         }
     }
 
-    // تشغيل الفلتر عند التحميل للتأكد من حساب العداد بدقة
     document.addEventListener('DOMContentLoaded', () => {
         filterReports();
     });

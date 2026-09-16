@@ -464,7 +464,7 @@
 
 {% block extra_js %}
 <script>
-    window.IS_CERTIFICATE_JOB_OPEN = {% if is_certificate_job_open is False %}false{% else %}true{% endif %};
+    window.IS_CERTIFICATE_JOB_OPEN = "{{ is_certificate_job_open|yesno:'true,false,true' }}" === "true";
     window.CERTIFICATE_JOB_MESSAGE = "{{ certificate_job_message|default:''|escapejs }}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
