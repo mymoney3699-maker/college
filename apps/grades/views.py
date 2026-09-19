@@ -1169,14 +1169,6 @@ def import_excel_grades_api(request):
         if not semester_id or not course_id:
             return JsonResponse({'success': False, 'message': 'بيانات الفصل أو المادة ناقصة'})
         
-        # فحص حالات القفل والاعتماد حسب الفترة بشكل مستقل
-        if period == 'midterm':
-            if Grade.objects.filter(course_id=course_id, semester_id=semester_id, is_midterm_locked=True).exists():
-                return JsonResponse({'success': False, 'message': '[WARN] لا يمكن الاستيراد! درجات النصفي معتمدة ومقفلة 🔒'})
-        elif period == 'final':
-            if Grade.objects.filter(course_id=course_id, semester_id=semester_id, is_final_locked=True).exists():
-                return JsonResponse({'success': False, 'message': '[WARN] لا يمكن الاستيراد! درجات النهائي معتمدة ومقفلة 🔒'})
-        
         from apps.student.models import Student
         from django.db.models import Q
         
@@ -1247,6 +1239,7 @@ def import_excel_grades_api(request):
 
         students_data = []
         not_found_students = []
+        locked_students = []
         
         # استخراج ورصد الدرجات والتسجيل التلقائي في المادة
         for row_idx, row in enumerate(rows_data[1:], start=2):
@@ -1292,9 +1285,12 @@ def import_excel_grades_api(request):
                     }
                 )
                 if not created:
-                    grade.midterm_grade = score
-                    grade.updated_by = request.user
-                    grade.save()
+                    if grade.is_midterm_locked:
+                        locked_students.append(student.name)
+                    else:
+                        grade.midterm_grade = score
+                        grade.updated_by = request.user
+                        grade.save()
             else:
                 score_idx = final_idx if (final_idx is not None and len(row) > final_idx) else (mid_idx if (mid_idx is not None and len(row) > mid_idx) else None)
                 score = safe_float(row[score_idx]) if (score_idx is not None and len(row) > score_idx) else 0.0
@@ -1310,10 +1306,13 @@ def import_excel_grades_api(request):
                     }
                 )
                 if not created:
-                    grade.final_grade = score
-                    grade.is_final_entered = True
-                    grade.updated_by = request.user
-                    grade.save()
+                    if grade.is_final_locked:
+                        locked_students.append(student.name)
+                    else:
+                        grade.final_grade = score
+                        grade.is_final_entered = True
+                        grade.updated_by = request.user
+                        grade.save()
             
             students_data.append({
                 'id': student.id,
