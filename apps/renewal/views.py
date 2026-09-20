@@ -1887,8 +1887,10 @@ def search_student_api(request):
         data = []
         for student in students[:20]:
             if hasattr(student, 'generate_qr_code'):
+                from apps.student.utils import get_local_network_ip
+                current_ip = get_local_network_ip()
                 current_qr_data = getattr(student, 'qr_code_data', '') or ''
-                need_regen = not student.qr_code or not current_qr_data or '127.0.0.1' in current_qr_data or '10.125.88.177' in current_qr_data
+                need_regen = not student.qr_code or not current_qr_data or '127.0.0.1' in current_qr_data or 'localhost' in current_qr_data or (current_ip != '127.0.0.1' and current_ip not in current_qr_data)
                 if need_regen:
                     try:
                         student.generate_qr_code(request=request, force_regenerate=True)
