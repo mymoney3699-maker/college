@@ -614,16 +614,20 @@ function selectStudent(student) {
         btnSaveText.innerText = 'حفظ التعديلات';
     }
 
-    // 🎯 عرض كود الـ QR وتخزين الرابط في خاصية data-url للزر
+    // 🎯 عرض كود الـ QR وتخزين الرابط النظيف في خاصية data-url للزر
     window.currentSelectedStudent = student;
     const qrUrl = student.qr_code_url || student.qr_code || '';
-    const qrData = student.qr_code_data || '';
-    renderStudentQRCode(qrUrl, qrData);
+    // 🔥 دائماً نبني الرابط النظيف من qr_key + الـ origin الحالي
+    //    حتى لا نعتمد على qr_code_data القديم الذي قد يحتوي على IP مختلف أو signature منتهي
+    const cleanQrLink = student.qr_key
+        ? `${window.location.origin}/student/qr/${student.qr_key}/`
+        : '';
+    renderStudentQRCode(qrUrl, cleanQrLink || student.qr_code_data || '');
 
     const btnCopyQR = document.getElementById('btnCopyQR');
     if (btnCopyQR) {
-        btnCopyQR.dataset.url = qrData;
-        btnCopyQR.setAttribute('data-url', qrData);
+        btnCopyQR.dataset.url = cleanQrLink;
+        btnCopyQR.setAttribute('data-url', cleanQrLink);
     }
 
 
@@ -1427,14 +1431,28 @@ function previewAvatar(event) {
 // 🔥 دالة نسخ رابط التحقق الخاص بـ QR إلى الحافظة (Clipboard)
 function copyQRCodeLink() {
     try {
-        const btn = document.getElementById('btnCopyQR');
         const student = window.currentSelectedStudent;
-        const qrUrl = (btn && (btn.dataset.url || btn.getAttribute('data-url'))) || (student && student.qr_code_data) || '';
+
+        // ✅ دائماً نبني الرابط النظيف مباشرة من qr_key + window.location.origin
+        //    هذا يضمن أن الرابط يستخدم الـ IP/Domain الحالي للجهاز المضيف
+        //    ولا يعتمد على qr_code_data القديم الذي قد يحتوي على IP مختلف أو signature منتهي الصلاحية
+        let qrUrl = '';
+        if (student && student.qr_key) {
+            qrUrl = `${window.location.origin}/student/qr/${student.qr_key}/`;
+        }
+
+        // احتياطي: إذا لم يكن qr_key متاحاً، نحاول dataset الزر
+        if (!qrUrl) {
+            const btn = document.getElementById('btnCopyQR');
+            qrUrl = (btn && (btn.dataset.url || btn.getAttribute('data-url'))) || '';
+        }
 
         if (!qrUrl) {
             if (typeof toastError === 'function') toastError('يرجى اختيار طالب أولاً لنسخ رابط التحقق');
             return;
         }
+
+        console.log('📋 Copying QR URL:', qrUrl);
 
         if (navigator.clipboard && window.isSecureContext) {
             navigator.clipboard.writeText(qrUrl).then(() => showCopySuccess()).catch(() => fallbackCopyText(qrUrl));

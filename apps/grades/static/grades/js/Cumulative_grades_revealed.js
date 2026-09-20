@@ -431,9 +431,16 @@ function printTranscriptReport() {
     const registrar = getOfficialInfo('general_registrar');
     const registrarName = registrar.name || 'أ. أحمد محمد علي محمود';
 
-    // توليد رابط وبيانات رمز التحقق QR Code الخاص بالطالب المحدد
+    // ✅ دائماً نبني رابط QR من qr_key + window.location.origin
+    //    هذا يضمن أن الرابط يستخدم الـ IP/Domain الحالي للمتصفح
+    //    ولا يعتمد على verify_url القادم من الـ backend الذي قد يحتوي على IP مختلف
     const studentIdentifier = student.student_id || student.reg_num || student.id || '';
-    const verifyUrl = student.verify_url || `${window.location.origin}/student/verify/${encodeURIComponent(studentIdentifier)}/`;
+    let verifyUrl;
+    if (student.qr_key) {
+        verifyUrl = `${window.location.origin}/student/qr/${student.qr_key}/`;
+    } else {
+        verifyUrl = student.verify_url || `${window.location.origin}/student/verify/${encodeURIComponent(studentIdentifier)}/`;
+    }
     let qrDataUrl = '';
     try {
         if (typeof QRCode !== 'undefined') {

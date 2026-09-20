@@ -469,7 +469,15 @@ function updateViewQRCode(student) {
     const qrImg = document.getElementById('view_qr_image');
     const qrPlaceholder = document.getElementById('view_qr_placeholder');
     const qrUrl = student ? (student.qr_code_url || student.qr_code) : '';
-    window.currentViewQRLink = student ? (student.qr_code_data || '') : '';
+    // ✅ دائماً نبني الرابط النظيف من qr_key + الـ origin الحالي
+    //    حتى لا نستخدم qr_code_data القديم الذي قد يحتوي على IP مختلف أو signature منتهي
+    if (student && student.qr_key) {
+        window.currentViewQRLink = `${window.location.origin}/student/qr/${student.qr_key}/`;
+        window.currentViewStudent = student;
+    } else {
+        window.currentViewQRLink = student ? (student.qr_code_data || '') : '';
+        window.currentViewStudent = student || null;
+    }
     
     if (qrImg) {
         if (qrUrl) {
@@ -486,8 +494,18 @@ function updateViewQRCode(student) {
 
 // نسخ رابط الـ QR
 function copyQRCodeLink() {
-    if (window.currentViewQRLink) {
-        navigator.clipboard.writeText(window.currentViewQRLink).then(() => {
+    // إعادة بناء الرابط النظيف من qr_key لضمان استخدام الـIP الحالي
+    const student = window.currentViewStudent;
+    let link = window.currentViewQRLink || '';
+    if (student && student.qr_key) {
+        link = `${window.location.origin}/student/qr/${student.qr_key}/`;
+    }
+    if (link) {
+        console.log('📋 Copying QR URL:', link);
+        (navigator.clipboard
+            ? navigator.clipboard.writeText(link)
+            : Promise.reject(new Error('no clipboard')))
+        .then(() => {
             const btnText = document.getElementById('btnCopyQRText');
             if (btnText) {
                 const orig = btnText.innerText;
@@ -497,7 +515,15 @@ function copyQRCodeLink() {
             showNotification('success', 'تم نسخ رابط التحقق بنجاح إلى الحافظة');
         }).catch(err => {
             console.error('Failed to copy QR link:', err);
-            showNotification('error', 'تعذر نسخ الرابط إلى الحافظة');
+            // احتياطي: نسخ textarea
+            const ta = document.createElement('textarea');
+            ta.value = link;
+            ta.style.position = 'fixed';
+            ta.style.left = '-999999px';
+            document.body.appendChild(ta);
+            ta.focus(); ta.select();
+            try { document.execCommand('copy'); showNotification('success', 'تم نسخ رابط التحقق بنجاح'); } catch (e) { showNotification('error', 'تعذر نسخ الرابط إلى الحافظة'); }
+            document.body.removeChild(ta);
         });
     } else {
         showNotification('warning', 'يرجى اختيار طالب أولاً لنسخ رابط التحقق');

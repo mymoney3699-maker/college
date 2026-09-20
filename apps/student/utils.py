@@ -107,9 +107,8 @@ def get_student_verification_qr_url(student, request=None):
     if not sig and hasattr(student, 'generate_secure_token'):
         sig = student.generate_secure_token()
 
-    qr_data = f"{base_url}/student/verify/{student_id}/?signature={sig}"
+    qr_data = f"{base_url}/student/qr/{student.qr_key}/"
     return qr_data
-
 
 
 def generate_qr_for_student(student, request=None):
@@ -429,4 +428,4 @@ def get_active_students_queryset():
         Q(student_status__name__in=graduated_statuses) |
         Q(graduation_year__isnull=False)
     )
-
+

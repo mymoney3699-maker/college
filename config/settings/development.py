@@ -18,8 +18,8 @@ EMAIL_HOST_PASSWORD = 'szcy wyrg xaor hvju'
 DEFAULT_FROM_EMAIL = f'منظومة كلية طرابلس <{EMAIL_HOST_USER}>'
 
 # 2️⃣ الدومين الافتراضي للنظام
-DOMAIN_NAME = '127.0.0.1:8000'
-SITE_DOMAIN = 'http://127.0.0.1:8000'
+DOMAIN_NAME = '10.26.116.177:8000'
+SITE_DOMAIN = 'http://10.26.116.177:8000'
 
 # 3️⃣ Content Security Policy (CSP) - السماح بـ eval والسكربتات في بيئة التطوير
 CSP_DEFAULT_SRC = ("'self'", "'unsafe-inline'", "'unsafe-eval'", "*")
