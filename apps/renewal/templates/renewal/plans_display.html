@@ -528,7 +528,15 @@
                                                             <td class="td-code"><span class="course-code-pill">{{ course.code }}</span></td>
                                                             <td class="td-name">{{ course.name }}</td>
                                                             <td class="td-credits"><span class="credit-number">{{ course.credits }}</span></td>
-                                                            <td class="td-hours">{{ course.theoretical_hours }} ن / {{ course.practical_hours }} ع</td>
+                                                            <td class="td-hours">
+                                                                {% if course.total_hours == 1 %}
+                                                                    1 ساعة
+                                                                {% elif course.total_hours > 1 %}
+                                                                    {{ course.total_hours }} ساعات
+                                                                {% else %}
+                                                                    0
+                                                                {% endif %}
+                                                            </td>
                                                             <td class="td-type">
                                                                 {% if course.is_mandatory %}
                                                                     <span class="pill-mandatory">إجباري</span>

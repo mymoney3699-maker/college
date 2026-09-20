@@ -90,7 +90,7 @@ async function printStudyPlanReport() {
                 const code = row.querySelector('.td-code')?.textContent?.trim() || '—';
                 const name = row.querySelector('.td-name')?.textContent?.trim() || '—';
                 const credits = row.querySelector('.td-credits')?.textContent?.trim() || '—';
-                const hours = row.querySelector('.td-hours')?.textContent?.trim() || '—';
+                const hours = row.querySelector('.td-hours')?.textContent?.replace(/\s+/g, ' ').trim() || '—';
                 const type = row.querySelector('.td-type')?.textContent?.trim() || 'إجباري';
                 const prereq = row.querySelector('.td-prereq')?.textContent?.trim() || 'لا يوجد';
 
