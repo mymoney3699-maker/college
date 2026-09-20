@@ -1,5 +1,8 @@
 import json
+import logging
 from datetime import datetime, timedelta
+
+logger = logging.getLogger(__name__)
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test, permission_required
@@ -783,7 +786,80 @@ def student_data(request):
             except Exception:
                 pass
 
+            # 📧 إرسال إيميل ترحيبي للطالب يحتوي على بيانات الدخول ورابط QR
+            try:
+                student_email = student.email or (user.email if user else '')
+                if student_email:
+                    from django.core.mail import send_mail
+                    from django.conf import settings
+
+                    # بناء رابط QR النظيف من qr_key + host الحالي
+                    scheme = request.scheme
+                    host = request.get_host()
+                    # استبدال localhost/127.0.0.1 بالـ IP الحقيقي إن أمكن
+                    host_parts = host.split(':')
+                    host_name = host_parts[0]
+                    port_str = f":{host_parts[1]}" if len(host_parts) > 1 else ''
+                    if host_name in ['127.0.0.1', 'localhost', '0.0.0.0']:
+                        try:
+                            from apps.student.utils import get_local_network_ip
+                            real_ip = get_local_network_ip()
+                            if real_ip and real_ip != '127.0.0.1':
+                                host = f"{real_ip}{port_str}"
+                        except Exception:
+                            pass
+                    base_url = f"{scheme}://{host}"
+                    qr_link = f"{base_url}/student/qr/{student.qr_key}/" if student.qr_key else ''
+
+                    full_name = ' '.join(filter(None, [
+                        student.name, student.father_name,
+                        student.grandfather_name, student.last_name
+                    ]))
+                    department_name = student.department.name if student.department else ''
+
+                    subject = f'مرحباً {student.name} — بيانات تسجيلك في كلية طرابلس'
+                    message = f"""السلام عليكم ورحمة الله وبركاته،
+
+مرحباً بك {full_name} في كلية طرابلس للعلوم والتقنية 🎓
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📋 بيانات قيدك الدراسي:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• رقم القيد     : {student.student_id}
+• القسم العلمي  : {department_name}
+• الاسم الكامل  : {full_name}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔐 بيانات تسجيل الدخول للنظام:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• اسم المستخدم  : {username}
+• كلمة المرور   : {student.student_id}
+  (يُرجى تغيير كلمة المرور بعد أول تسجيل دخول)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📱 رمز التحقق الإلكتروني (QR):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+{qr_link if qr_link else '(سيتم توفير رابط التحقق لاحقاً)'}
+
+يمكنك مسح هذا الرابط بكاميرا هاتفك للتحقق من بياناتك الأكاديمية.
+
+مع أطيب التحيات،
+إدارة شؤون الطلاب — كلية طرابلس للعلوم والتقنية
+"""
+                    send_mail(
+                        subject,
+                        message,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [student_email],
+                        fail_silently=False,
+                    )
+                    messages.info(request, f'📧 تم إرسال بيانات القيد ورابط QR إلى بريد الطالب: {student_email}')
+            except Exception as email_err:
+                # عدم إيقاف عملية التسجيل إذا فشل الإيميل
+                messages.warning(request, f'⚠️ تم تسجيل الطالب بنجاح، لكن فشل إرسال الإيميل: {str(email_err)}')
+
             return redirect('renewal:student_data')
+
             
         except Exception as e:
             messages.error(request, f'❌ حدث خطأ أثناء الحفظ: {str(e)}')
@@ -4975,6 +5051,7 @@ def download_special_materials_api(request):
         for student_id in student_ids:
             try:
                 student = Student.objects.get(id=int(student_id))
+                is_blocked = False  # افتراضي: غير محظور
                 
                 # 🔒 فحص الأهلية الأكاديمية للطالب
                 eligibility = check_student_academic_eligibility(student, action_type='registration')
