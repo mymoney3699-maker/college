@@ -2915,25 +2915,63 @@ def get_students_by_level_api(request):
         print(f"   Total matching students: {all_students.count()}")
         print(f"   Already renewed in this specific term: {len(renewals_map)}")
         print("="*70 + "\n")
-        
+
+        # ── جلب الدرجات والمواد بشكل مُجمَّع (bulk) لتجنب N+1 queries ──────
+        from apps.grades.models import Grade as GradeModel
+        student_ids_list = [s.id for s in all_students]
+        # زوج (student_id, course_id) للمواد التي نجح فيها كل طالب
+        passed_pairs = set(
+            GradeModel.objects.filter(student_id__in=student_ids_list, is_passed=True)
+            .values_list('student_id', 'course_id')
+        )
+        # مواد كل (study_plan, dept, level) مجتمعة
+        combos = set()
+        for s in all_students:
+            if s.level and s.department:
+                sp_id = getattr(s, 'study_plan_id', None)
+                combos.add((sp_id, s.department_id, s.level_id))
+        level_course_ids = {}  # (sp_id, dept_id, lvl_id) -> set of course ids
+        for (sp_id, dept_id, lvl_id) in combos:
+            qs = Course.objects.filter(department=dept_id, level=lvl_id, is_active=True)
+            if sp_id:
+                qs = qs.filter(study_plan_id=sp_id)
+            level_course_ids[(sp_id, dept_id, lvl_id)] = set(qs.values_list('id', flat=True))
+
         data = []
         for student in all_students:
             student_id_value = student.student_id or f"STU{student.id:06d}"
             current_num = student.level.number if student.level else 1
             current_level_name = student.level.name if student.level else f"المستوى {current_num}"
-            
+
             existing_renewal = renewals_map.get(student.id)
             is_renewed = (existing_renewal is not None)
-            
+
             if existing_renewal and existing_renewal.level:
+                # ✅ طالب مجدد: اعرض المستوى الفعلي المسجل في سجل التجديد
                 target_level_name = existing_renewal.level.name
                 target_num = existing_renewal.level.number
             else:
-                next_lvl = all_levels_by_num.get(current_num + 1)
-                if next_lvl:
-                    target_level_name = next_lvl.name
-                    target_num = next_lvl.number
+                # ⚙️ طالب لم يُجدَّد بعد: احسب المستوى المتوقع بنفس منطق التجديد
+                if student.level and student.department:
+                    sp_id = getattr(student, 'study_plan_id', None)
+                    combo_key = (sp_id, student.department_id, student.level_id)
+                    level_courses = level_course_ids.get(combo_key, set())
+                    passed_for_student = {cid for (sid, cid) in passed_pairs if sid == student.id}
+                    unpassed_count = len(level_courses - passed_for_student)
+                    should_promote = (unpassed_count <= 2)
                 else:
+                    should_promote = True
+
+                if should_promote:
+                    next_lvl = all_levels_by_num.get(current_num + 1)
+                    if next_lvl:
+                        target_level_name = next_lvl.name
+                        target_num = next_lvl.number
+                    else:
+                        target_level_name = current_level_name
+                        target_num = current_num
+                else:
+                    # راسب: يبقى في نفس المستوى
                     target_level_name = current_level_name
                     target_num = current_num
             

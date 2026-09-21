@@ -15,11 +15,9 @@ from django.conf import settings
 from django.utils import timezone
 from django.core.files.storage import default_storage
 from django.core.files.base import ContentFile
-
 from apps.student.models import Notification
 from apps.faculty.models import Professor, CourseAssignment
 from apps.renewal.models import Course, Semester, Department
-
 
 def clean_header_text(header_val):
     """فك ترميز وتنظيف نصوص عناوين البريد الإلكتروني"""
@@ -39,8 +37,7 @@ def clean_header_text(header_val):
         return "".join(text_parts).strip()
     except Exception:
         return str(header_val).strip()
-
-
+    
 def parse_excel_grade_sheet_bytes(file_bytes, filename=""):
     """
     تحليل محتوى ملف إكسل الدرجات واستخراج بيانات المادة وعدد الطلاب المسجلين
