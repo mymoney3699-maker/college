@@ -132,6 +132,7 @@ urlpatterns = [
     path('api/get-semester-courses/', views.get_semester_courses_api, name='get_semester_courses_api'),
     path('api/preview-materials/', views.preview_materials_api, name='preview_materials'),
     path('api/download-materials/', views.download_materials_for_students_api, name='download_materials_for_students'),
+    path('api/student-courses/<int:student_id>/', views.get_student_courses_api, {'semester_id': 0}, name='get_student_courses_default'),
     path('api/student-courses/<int:student_id>/<int:semester_id>/', views.get_student_courses_api, name='get_student_courses'),
     path('api/download-special-materials/', views.download_special_materials_api, name='download_special_materials'),
     path('api/search-student-for-download/', views.search_student_for_download_api, name='search_student_for_download'),

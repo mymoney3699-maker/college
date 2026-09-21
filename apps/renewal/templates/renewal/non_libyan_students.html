@@ -1169,12 +1169,11 @@
                                 onclick="window.sortTable('status_name')">
                                 حالة القيد <span class="non-libyan-sort-icon">⇅</span>
                             </th>
-                            <th class="non-libyan-table__th non-libyan-col--actions">الإجراءات</th>
                         </tr>
                     </thead>
                     <tbody id="studentsBody">
                         <tr>
-                            <td colspan="8" class="non-libyan-table__td--empty">
+                            <td colspan="7" class="non-libyan-table__td--empty">
                                 <div class="non-libyan-empty-state">
                                     <span class="material-symbols-outlined">search_off</span>
                                     <p class="non-libyan-empty-state__title">لا توجد بيانات</p>
@@ -1331,5 +1330,5 @@
     window.NON_LIBYAN_API_URL = "{% url 'renewal:non_libyan_students_api' %}";
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'renewal/js/non_libyan_students.js' %}?v=1.0.0"></script>
+<script src="{% static 'renewal/js/non_libyan_students.js' %}?v=3.0.0"></script>
 {% endblock %}

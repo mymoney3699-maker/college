@@ -249,11 +249,6 @@ function renderTable() {
                 <td style="text-align: center;">${passportDisplay}</td>
                 <td>${escapeHtml(student.department_name)}</td>
                 <td><span class="non-libyan-badge ${badgeClass}">${escapeHtml(student.status_name)}</span></td>
-                <td style="text-align: center;">
-                    <button type="button" class="non-libyan-btn-icon" onclick="window.viewStudent('${student.id}')" title="عرض الملف الكامل">
-                        <span class="material-symbols-outlined">visibility</span>
-                    </button>
-                </td>
             </tr>
         `;
     });
@@ -277,7 +272,7 @@ function renderEmptyTable(message) {
     
     tbody.innerHTML = `
         <tr>
-            <td colspan="8" class="non-libyan-table__td--empty">
+            <td colspan="7" class="non-libyan-table__td--empty">
                 <div class="non-libyan-empty-state">
                     <span class="material-symbols-outlined">search_off</span>
                     <p class="non-libyan-empty-state__title">${escapeHtml(message)}</p>

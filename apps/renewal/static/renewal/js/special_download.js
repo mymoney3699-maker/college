@@ -546,12 +546,12 @@ function toggleSubRow(button) {
     if (btn.dataset.isLoading === 'true') return;
     btn.dataset.isLoading = 'true';
 
-    const isDownloaded = window.downloadedStudents && window.downloadedStudents[studentId];
+    const isDownloaded = Boolean(window.downloadedStudents && window.downloadedStudents[studentId]);
     btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px; animation: spin 1s linear infinite;">refresh</span> جاري التحميل...`;
     btn.disabled = true;
     btn.style.opacity = '0.7';
 
-    const semesterId = window.currentSemesterId;
+    const semesterId = window.currentSemesterId || document.getElementById('currentSemesterId')?.value || 0;
     let url = isDownloaded
         ? `/renewal/api/student-courses/${studentId}/${semesterId}/`
         : `/renewal/api/preview-materials/?student_ids=${studentId}`;
@@ -561,6 +561,78 @@ function toggleSubRow(button) {
         url += `&level_id=${encodeURIComponent(levelVal)}`;
     }
 
+    const renderSubRow = (coursesList, isRegisteredMode) => {
+        // تأكيد حذف أي صف فرعي سابق لنفس الطالب لمنع التكرار نهائياً
+        document.querySelectorAll(`#sub-row-${studentId}`).forEach(el => el.remove());
+
+        const subRow = document.createElement('tr');
+        subRow.id = `sub-row-${studentId}`;
+        subRow.className = 'sub-row';
+        subRow.style.backgroundColor = '#f8fafc';
+
+        let coursesHtml = '';
+        if (coursesList && coursesList.length > 0) {
+            coursesHtml = coursesList.map((c) => {
+                const code = c.code || c.course_code || '-';
+                const name = c.raw_name || c.name || c.course_name || '-';
+                const credits = (c.credits !== undefined && c.credits !== null) ? c.credits : '-';
+                const levelNum = c.level_number || c.level_id || c.level || 1;
+                const realLevelName = c.level_name || c.semester_name || (levelNum ? `المستوى ${levelNum}` : 'المستوى 1');
+                const prereqVal = c.prerequisite || c.prerequisite_name || '-';
+                const prereqHtml = (prereqVal && prereqVal !== '-')
+                    ? `<span style="color: #b45309; font-weight: 700; font-size: 11px;">${escapeHtml(prereqVal)}</span>`
+                    : `<span style="color: #94a3b8; font-size: 11px;">-</span>`;
+
+                return `
+                    <tr style="border-bottom: 1px solid #e2e8f0; background: white;">
+                        <td style="padding: 4px 8px; text-align: center; font-weight: 700; font-family: monospace; font-size: 11px; color: #0f766e;">${escapeHtml(code)}</td>
+                        <td style="padding: 4px 8px; text-align: right; font-size: 11px; font-weight: 600; color: #1e293b;">${escapeHtml(name)}</td>
+                        <td style="padding: 4px 8px; text-align: center; font-size: 11px; font-weight: 700;">${escapeHtml(String(credits))}</td>
+                        <td style="padding: 4px 8px; text-align: center; font-size: 11px;">${prereqHtml}</td>
+                        <td style="padding: 4px 8px; text-align: center; font-size: 10px; color: #475569; font-weight: 600;">${escapeHtml(realLevelName)}</td>
+                    </tr>
+                `;
+            }).join('');
+        } else {
+            coursesHtml = `<tr><td colspan="5" style="padding: 15px; text-align: center; color: #64748b; font-size: 11px; font-weight: bold;">⚠️ لا توجد مواد دراسية متوفرة للعرض لهذا الطالب حالياً.</td></tr>`;
+        }
+
+        const titleText = isRegisteredMode ? 'المواد المسجلة / المنزلة للطالب' : 'المواد المقرر تنزيلها للطالب';
+
+        subRow.innerHTML = `
+            <td colspan="6" style="padding: 0; border: none;">
+                <div style="background: linear-gradient(135deg, #f0fdfa, #f8fafc); border: 1px solid #99f6e4; border-radius: 8px; margin: 3px 10px 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,118,110,0.08);">
+                    <div style="padding: 6px 12px; background: ${isRegisteredMode ? '#059669' : '#0f766e'}; color: white; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
+                        <span>📚 ${titleText}: ${escapeHtml(studentName)} (${escapeHtml(studentCode)})</span>
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span style="background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 4px; font-size: 10px;">${(coursesList || []).length} مادة</span>
+                            <button type="button" onclick="window.printStudentMaterials(${studentId}, '${escapeHtml(studentName)}', '${escapeHtml(studentCode)}')"
+                                style="background: #b59b66; color: white; border: none; border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: all 0.2s ease;">
+                                <span class="material-symbols-outlined" style="font-size: 14px;">print</span>
+                                طباعة ورقة تنزيل المواد
+                            </button>
+                        </div>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #e6fffa; border-bottom: 1.5px solid #0f766e;">
+                                <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 80px;">رمز المادة</th>
+                                <th style="padding: 4px 8px; text-align: right; font-weight: 700; color: #0f766e; font-size: 10px;">اسم المادة</th>
+                                <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 60px;">الوحدات</th>
+                                <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 110px;">المتطلب السابق</th>
+                                <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 100px;">الفصل الدراسي</th>
+                            </tr>
+                        </thead>
+                        <tbody>${coursesHtml}</tbody>
+                    </table>
+                </div>
+            </td>
+        `;
+
+        row.insertAdjacentElement('afterend', subRow);
+        btn.innerHTML = isRegisteredMode ? `✅ المواد المسجلة (${(coursesList || []).length})` : `📥 إخفاء المواد`;
+    };
+
     fetch(url)
         .then(response => response.json())
         .then(data => {
@@ -568,87 +640,42 @@ function toggleSubRow(button) {
             btn.style.opacity = '1';
             delete btn.dataset.isLoading;
 
-            // تأكيد حذف أي صف فرعي سابق لنفس الطالب لمنع التكرار نهائياً
-            document.querySelectorAll(`#sub-row-${studentId}`).forEach(el => el.remove());
-
-            let courses = [];
             if (isDownloaded) {
-                if (data.success && data.courses) courses = data.courses;
+                const courses = (data.success && data.courses) ? data.courses : [];
+                renderSubRow(courses, true);
             } else {
                 if (data.success && data.preview_data && data.preview_data.length > 0) {
                     const studentData = data.preview_data[0];
-                    if (studentData.already_registered) {
-                        btn.innerHTML = `<span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span> ✅ مسجّل مسبقاً`;
-                        btn.style.backgroundColor = '#10b981';
+                    if (studentData.already_registered || (studentData.courses && studentData.courses.length === 0)) {
+                        // إذا كان الطالب منزّل مواده مسبقاً، نجلب مواده المسجلة فوراً
                         window.downloadedStudents = window.downloadedStudents || {};
                         window.downloadedStudents[studentId] = true;
+                        fetch(`/renewal/api/student-courses/${studentId}/${semesterId}/`)
+                            .then(r => r.json())
+                            .then(regData => {
+                                const regCourses = (regData.success && regData.courses) ? regData.courses : [];
+                                renderSubRow(regCourses, true);
+                            })
+                            .catch(() => renderSubRow([], false));
                         return;
                     }
-                    courses = studentData.courses || [];
+                    renderSubRow(studentData.courses || [], false);
+                } else {
+                    // محاولة جلب المواد المسجلة كـ fallback
+                    fetch(`/renewal/api/student-courses/${studentId}/${semesterId}/`)
+                        .then(r => r.json())
+                        .then(regData => {
+                            if (regData.success && regData.courses && regData.courses.length > 0) {
+                                window.downloadedStudents = window.downloadedStudents || {};
+                                window.downloadedStudents[studentId] = true;
+                                renderSubRow(regData.courses, true);
+                            } else {
+                                renderSubRow([], false);
+                            }
+                        })
+                        .catch(() => renderSubRow([], false));
                 }
             }
-
-            const subRow = document.createElement('tr');
-            subRow.id = `sub-row-${studentId}`;
-            subRow.className = 'sub-row';
-            subRow.style.backgroundColor = '#f8fafc';
-
-            let coursesHtml = '';
-            if (courses && courses.length > 0) {
-                coursesHtml = courses.map((c) => {
-                    const levelNum = c.level_number || c.level_id || c.level || 1;
-                    const realLevelName = c.level_name || (levelNum ? `المستوى ${levelNum}` : 'المستوى 1');
-                    const prereqVal = c.prerequisite || c.prerequisite_name || '-';
-                    const prereqHtml = (prereqVal && prereqVal !== '-')
-                        ? `<span style="color: #b45309; font-weight: 700; font-size: 11px;">${escapeHtml(prereqVal)}</span>`
-                        : `<span style="color: #94a3b8; font-size: 11px;">-</span>`;
-
-                    return `
-                        <tr style="border-bottom: 1px solid #e2e8f0; background: white;">
-                            <td style="padding: 4px 8px; text-align: center; font-weight: 700; font-family: monospace; font-size: 11px; color: #0f766e;">${escapeHtml(c.code || c.course_code || '-')}</td>
-                            <td style="padding: 4px 8px; text-align: right; font-size: 11px; font-weight: 600; color: #1e293b;">${escapeHtml(c.raw_name || c.name || c.course_name || '-')}</td>
-                            <td style="padding: 4px 8px; text-align: center; font-size: 11px; font-weight: 700;">${escapeHtml(String(c.credits || '-'))}</td>
-                            <td style="padding: 4px 8px; text-align: center; font-size: 11px;">${prereqHtml}</td>
-                            <td style="padding: 4px 8px; text-align: center; font-size: 10px; color: #475569; font-weight: 600;">${escapeHtml(realLevelName)}</td>
-                        </tr>
-                    `;
-                }).join('');
-            } else {
-                coursesHtml = `<tr><td colspan="5" style="padding: 15px; text-align: center; color: #64748b; font-size: 11px; font-weight: bold;">⚠️ لا توجد مواد دراسية متوفرة للتنزيل لهذا الطالب حالياً.</td></tr>`;
-            }
-
-            subRow.innerHTML = `
-                <td colspan="6" style="padding: 0; border: none;">
-                    <div style="background: linear-gradient(135deg, #f0fdfa, #f8fafc); border: 1px solid #99f6e4; border-radius: 8px; margin: 3px 10px 4px; overflow: hidden; box-shadow: 0 2px 8px rgba(15,118,110,0.08);">
-                        <div style="padding: 6px 12px; background: #0f766e; color: white; font-weight: 700; font-size: 11px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>📚 المواد المقرر تنزيلها للطالب: ${escapeHtml(studentName)} (${escapeHtml(studentCode)})</span>
-                            <div style="display: flex; align-items: center; gap: 8px;">
-                                <span style="background: rgba(255,255,255,0.2); padding: 1px 8px; border-radius: 4px; font-size: 10px;">${courses.length} مادة</span>
-                                <button type="button" onclick="window.printStudentMaterials(${studentId}, '${escapeHtml(studentName)}', '${escapeHtml(studentCode)}')"
-                                    style="background: #b59b66; color: white; border: none; border-radius: 4px; padding: 3px 10px; font-size: 11px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); transition: all 0.2s ease;">
-                                    <span class="material-symbols-outlined" style="font-size: 14px;">print</span>
-                                    طباعة ورقة تنزيل المواد
-                                </button>
-                            </div>
-                        </div>
-                        <table style="width: 100%; border-collapse: collapse;">
-                            <thead>
-                                <tr style="background: #e6fffa; border-bottom: 1.5px solid #0f766e;">
-                                    <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 80px;">رمز المادة</th>
-                                    <th style="padding: 4px 8px; text-align: right; font-weight: 700; color: #0f766e; font-size: 10px;">اسم المادة</th>
-                                    <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 60px;">الوحدات</th>
-                                    <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 110px;">المتطلب السابق</th>
-                                    <th style="padding: 4px 8px; text-align: center; font-weight: 700; color: #0f766e; font-size: 10px; width: 100px;">الفصل الدراسي</th>
-                                </tr>
-                            </thead>
-                            <tbody>${coursesHtml}</tbody>
-                        </table>
-                    </div>
-                </td>
-            `;
-
-            row.insertAdjacentElement('afterend', subRow);
-            btn.innerHTML = isDownloaded ? `✅ المواد المسجلة` : `📥 إخفاء المواد`;
         })
         .catch(err => {
             console.error(err);

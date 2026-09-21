@@ -1,9 +1,9 @@
 // ============================================
-// تجديد قيد (حالة خاصة) - Special Renew (مطور) v1.0.31
-// مع منطق الترقية الخماسي
+// تجديد قيد (حالة خاصة) - Special Renew (مطور) v1.0.32
+// مع عرض عدد مرات إيقاف القيد
 // ============================================
 
-console.log('✅ special_renew.js v1.0.31 loaded successfully');
+console.log('✅ special_renew.js v1.0.32 loaded successfully');
 
 let selectedStudentId = null;
 let selectedStudentData = null;
@@ -234,7 +234,11 @@ function selectStudentForSpecialRenew(studentId) {
                     if (nameInput) nameInput.value = student.name || '';
                     if (regInput) regInput.value = student.student_id || '';
 
-                    setRenewButtonMode('renew');
+                    if (student.is_renewed && !student.is_suspended) {
+                        setRenewButtonMode('print');
+                    } else {
+                        setRenewButtonMode('renew');
+                    }
 
                     // التمرير السلس إلى أعلى حقول البحث وبطاقة الطالب
                     const targetBox = document.getElementById('studentInfoCard') || document.querySelector('.inquiry-group-box');
@@ -265,15 +269,24 @@ function displayStudentInfo(student) {
     const isAllowed = student.is_allowed !== false;
     const saveBtn = document.querySelector('#renewActionArea .btn-save');
     const statusText = student.student_status || 'غير محدد';
+    const isSuspended = Boolean(student.is_suspended || student.special_type === 'suspended' || statusText.includes('موقوف') || statusText.includes('موقف') || statusText.includes('وقف'));
+    const isMajorChange = !isSuspended && Boolean(student.special_type === 'major_change' || statusText.includes('مسار'));
+    const isRenewed = !isSuspended && Boolean(student.is_renewed);
 
     const specialTypeSpan = document.getElementById('specialTypeDisplay');
     if (specialTypeSpan) {
         if (!isAllowed) {
             specialTypeSpan.textContent = `🛑 ${statusText}`;
             specialTypeSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300';
-        } else if (statusText.includes('موقوف')) {
+        } else if (isSuspended) {
             specialTypeSpan.textContent = `⛔ ${statusText}`;
             specialTypeSpan.className = 'px-3 py-1 rounded-full text-sm font-bold badge-suspended';
+        } else if (isMajorChange) {
+            specialTypeSpan.textContent = `🔄 ${statusText}`;
+            specialTypeSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-sky-100 text-sky-700 border border-sky-300';
+        } else if (isRenewed) {
+            specialTypeSpan.textContent = `✅ مجدد قيده`;
+            specialTypeSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700 border border-green-300';
         } else {
             specialTypeSpan.textContent = `✅ ${statusText}`;
             specialTypeSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-green-100 text-green-700 border border-green-300';
@@ -294,10 +307,25 @@ function displayStudentInfo(student) {
                     ${escapeHtml(student.error_message || '🛑 الطالب غير مؤهل لإجراء التجديد')}
                 </span>
             `;
-        } else if (statusText.includes('موقوف')) {
+        } else if (isSuspended) {
+            const susp = student.suspension_count || 0;
+            const suspOrdinal = susp >= 1 ? (['', 'أول', 'ثاني', 'ثالث', 'رابع', 'خامس'][susp] || susp) + ' مرة' : null;
             levelStatus.innerHTML = `
                 <span class="special-status-badge suspended" style="display: inline-block; margin-right: 8px;">
                     ⛔ ${escapeHtml(statusText)} - بانتظار التفعيل وتجديد القيد
+                </span>
+                ${suspOrdinal ? `<span style="display:inline-block; background:#fef3c7; color:#92400e; border:1.5px solid #fcd34d; border-radius:5px; font-size:11px; font-weight:800; padding:2px 8px; margin-right:4px;">🔁 إيقاف ${escapeHtml(suspOrdinal)}</span>` : ''}
+            `;
+        } else if (isMajorChange) {
+            levelStatus.innerHTML = `
+                <span class="special-status-badge" style="display: inline-block; margin-right: 8px; background: #e0f2fe; color: #0369a1; border: 1.5px solid #7dd3fc; font-weight: 800;">
+                    🔄 ${escapeHtml(statusText)} - بانتظار التفعيل وتجديد القيد
+                </span>
+            `;
+        } else if (isRenewed) {
+            levelStatus.innerHTML = `
+                <span class="special-status-badge" style="display: inline-block; margin-right: 8px; background: #dcfce7; color: #166534; border: 1.5px solid #86efac; font-weight: 800;">
+                    ✅ مجدد قيده
                 </span>
             `;
         } else {
@@ -314,8 +342,10 @@ function displayStudentInfo(student) {
         studentStatusSpan.textContent = statusText;
         if (!isAllowed) {
             studentStatusSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-red-100 text-red-700 border border-red-300';
-        } else if (statusText.includes('موقوف')) {
+        } else if (isSuspended) {
             studentStatusSpan.className = 'px-3 py-1 rounded-full text-sm font-bold status-badge-suspended';
+        } else if (isMajorChange) {
+            studentStatusSpan.className = 'px-3 py-1 rounded-full text-sm font-bold bg-sky-100 text-sky-700 border border-sky-300';
         } else {
             studentStatusSpan.className = 'px-3 py-1 rounded-full text-sm font-bold status-badge-active';
         }
@@ -559,13 +589,44 @@ function loadSpecialCaseStudents() {
                         window.loadedSpecialStudentsMap[student.id] = student;
                         if (student.student_id) window.loadedSpecialStudentsMap[student.student_id] = student;
 
-                        const isMajorChange = student.special_type === 'major_change' || (student.interruption_reason && student.interruption_reason.includes('مسار'));
+                        const isSuspended = Boolean(
+                            student.is_suspended || 
+                            student.special_type === 'suspended' || 
+                            (student.student_status && (student.student_status.includes('موقوف') || student.student_status.includes('موقف') || student.student_status.includes('وقف')))
+                        );
+                        const isMajorChange = !isSuspended && Boolean(
+                            student.special_type === 'major_change' || 
+                            (student.interruption_reason && student.interruption_reason.includes('مسار')) || 
+                            (student.student_status && student.student_status.includes('مسار'))
+                        );
+
                         const statusClass = isMajorChange ? 'major-change' : 'suspended';
                         const statusText = isMajorChange ? '🔄 تغيير مسار' : '⛔ موقوف قيده';
                         const badgeStyle = isMajorChange ? 'background: #e0f2fe; color: #0369a1; border: 1.5px solid #7dd3fc;' : '';
                         const levelDisplay = student.level_name || (student.level_number ? `المستوى ${student.level_number}` : '-');
 
-                        const isRenewed = student.has_enrollment || (window.renewedStudentsSet && (window.renewedStudentsSet.has(String(student.id)) || window.renewedStudentsSet.has(String(student.student_id))));
+                        const isRenewed = Boolean(
+                            !isSuspended && (
+                                student.is_renewed || 
+                                (window.renewedStudentsSet && (window.renewedStudentsSet.has(String(student.id)) || window.renewedStudentsSet.has(String(student.student_id))))
+                            )
+                        );
+
+                        // ====================================================
+                        // دالة مساعدة: تحويل عدد المرات إلى ترتيبي (أول مرة / ثاني مرة...)
+                        // ====================================================
+                        function getOrdinalLabel(n) {
+                            const labels = ['أول مرة', 'ثاني مرة', 'ثالث مرة', 'رابع مرة', 'خامس مرة'];
+                            if (n >= 1 && n <= labels.length) return labels[n - 1];
+                            if (n > labels.length) return `${n} مرات`;
+                            return null;
+                        }
+
+                        const suspCount = student.suspension_count || 0;
+                        const suspLabel = suspCount > 0 ? getOrdinalLabel(suspCount) : null;
+                        const suspBadgeHtml = suspLabel
+                            ? `<span style="display:inline-block; background:#fef3c7; color:#92400e; border:1.5px solid #fcd34d; border-radius:5px; font-size:10.5px; font-weight:800; padding:2px 7px; margin-right:4px;">🔁 ${escapeHtml(suspLabel)}</span>`
+                            : '';
 
                         let actionHtml = '';
                         if (isRenewed) {
@@ -575,6 +636,7 @@ function loadSpecialCaseStudents() {
                                         <span class="material-symbols-outlined" style="font-size: 14px;">check_circle</span>
                                         <span>مجدد قيده</span>
                                     </span>
+                                    ${suspBadgeHtml}
                                     <button type="button" class="btn-print-special-report"
                                             onclick="event.stopPropagation(); window.printSpecialStudentRenew('${escapeHtml(student.id || student.student_id)}')"
                                             title="طباعة نموذج تجديد القيد لهذا الطالب"
@@ -585,7 +647,7 @@ function loadSpecialCaseStudents() {
                                 </div>
                             `;
                         } else {
-                            actionHtml = `<span class="special-status-badge ${statusClass}" style="${badgeStyle}">${statusText}</span>`;
+                            actionHtml = `<span class="special-status-badge ${statusClass}" style="${badgeStyle}">${statusText}</span>${suspBadgeHtml}`;
                         }
 
                         html += `

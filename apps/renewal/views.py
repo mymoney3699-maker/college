@@ -4877,7 +4877,7 @@ def download_materials_for_students_api(request):
 
 
 @login_required
-def get_student_courses_api(request, student_id, semester_id):
+def get_student_courses_api(request, student_id, semester_id=0):
     """API: جلب المواد المنزلة لطالب معين في فصل معين مع بيانات الطالب والفصل كاملة للطباعة"""
     try:
         from apps.student.models import Student
@@ -4887,10 +4887,13 @@ def get_student_courses_api(request, student_id, semester_id):
         if not student:
             return JsonResponse({'success': False, 'error': 'الطالب غير موجود'})
 
-        if not semester_id or semester_id == 0:
+        if not semester_id or semester_id == 0 or str(semester_id).strip() in ['0', 'undefined', 'null']:
             semester = Semester.objects.filter(is_active=True).first()
         else:
-            semester = Semester.objects.filter(id=semester_id).first()
+            try:
+                semester = Semester.objects.filter(id=int(semester_id)).first()
+            except (ValueError, TypeError):
+                semester = Semester.objects.filter(is_active=True).first()
             if not semester:
                 semester = Semester.objects.filter(is_active=True).first()
         
@@ -7888,15 +7891,37 @@ def search_student_for_special_renew_api(request):
         else:
             status_name = eligibility.get('status_name') or 'غير محدد'
         
-        is_suspended = 'موقوف' in status_name or (existing_enrollment and existing_enrollment.status == 'suspended')
-        is_major_change = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1
+        is_suspended = any(w in status_name for w in ['موقوف', 'موقف', 'وقف']) or (existing_enrollment and existing_enrollment.status == 'suspended')
+        is_major_change = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1 or 'مسار' in status_name
 
-        if is_major_change:
-            special_type = 'major_change'
-            special_type_display = 'تغيير مسار'
+        # الطالب يعتبر مجدداً فقط إذا كان لديه قيد نشط وحالته ليست موقوفة
+        is_renewed = bool(
+            existing_enrollment and 
+            existing_enrollment.status in ['RENEWED', 'active'] and 
+            not is_suspended
+        )
+
+        # حساب عدد مرات إيقاف القيد عبر كل الفصول
+        suspension_count = EnrollmentRenewal.objects.filter(
+            student=student,
+            special_type__in=['STOPPED', 'STOPPED_ENROLLMENT']
+        ).count()
+        # إذا لم يكن هناك سجل خاص، نحسب من خلال السجلات ذات الحالة suspended
+        if suspension_count == 0:
+            suspension_count = EnrollmentRenewal.objects.filter(
+                student=student,
+                status='suspended'
+            ).count()
+
+        if is_renewed:
+            special_type = 'renewed'
+            special_type_display = 'مجدد قيده'
         elif is_suspended:
             special_type = 'suspended'
             special_type_display = 'موقوف قيده'
+        elif is_major_change:
+            special_type = 'major_change'
+            special_type_display = 'تغيير مسار'
         else:
             special_type = 'regular'
             special_type_display = status_name
@@ -7911,7 +7936,10 @@ def search_student_for_special_renew_api(request):
             'student_status': status_name,
             'special_type': special_type,
             'special_type_display': special_type_display,
-            'has_enrollment': existing_enrollment is not None,
+            'is_renewed': is_renewed,
+            'is_suspended': is_suspended,
+            'has_enrollment': is_renewed,
+            'suspension_count': suspension_count,
             'current_semester': str(current_semester),
             'notes': existing_enrollment.notes if existing_enrollment else '',
             'is_allowed': eligibility['is_allowed'],
@@ -7946,7 +7974,8 @@ def get_special_case_students_api(request):
         Q(student_status__name__icontains="موقوف") | 
         Q(student_status__name__icontains="موقف") | 
         Q(student_status__name__icontains="وقف") |
-        Q(enrollmentrenewal__semester=current_semester, enrollmentrenewal__special_type='STOPPED')
+        Q(enrollmentrenewal__semester=current_semester, enrollmentrenewal__special_type='STOPPED') |
+        Q(enrollmentrenewal__semester=current_semester, enrollmentrenewal__status='suspended')
     )
 
     major_change_q = (
@@ -7996,11 +8025,45 @@ def get_special_case_students_api(request):
             semester=current_semester
         ).first()
         
-        is_major_change = getattr(student, 'has_changed_major', False) or (getattr(student, 'major_change_count', 0) or 0) >= 1 or (existing_enrollment and existing_enrollment.special_type == 'MAJOR_CHANGE')
-        status_name = student.student_status.name if student.student_status else ('تغيير مسار' if is_major_change else 'موقوف قيده')
+        status_raw = student.student_status.name.strip() if student.student_status and student.student_status.name else ''
+        is_suspended = any(w in status_raw for w in ['موقوف', 'موقف', 'وقف']) or (existing_enrollment and existing_enrollment.status == 'suspended')
         
-        special_type = 'major_change' if is_major_change else 'suspended'
-        reason_text = 'تغيير مسار' if is_major_change else f"موقوف قيده ({status_name})"
+        is_major_change = (
+            getattr(student, 'has_changed_major', False) or 
+            (getattr(student, 'major_change_count', 0) or 0) >= 1 or 
+            'مسار' in status_raw or 
+            (existing_enrollment and existing_enrollment.special_type == 'MAJOR_CHANGE')
+        )
+        
+        is_renewed = bool(
+            existing_enrollment and 
+            existing_enrollment.status in ['RENEWED', 'active'] and 
+            not is_suspended
+        )
+
+        # حساب عدد مرات إيقاف القيد عبر كل الفصول الدراسية
+        suspension_count = EnrollmentRenewal.objects.filter(
+            student=student,
+            special_type__in=['STOPPED', 'STOPPED_ENROLLMENT']
+        ).count()
+        if suspension_count == 0:
+            suspension_count = EnrollmentRenewal.objects.filter(
+                student=student,
+                status='suspended'
+            ).count()
+
+        if is_suspended:
+            special_type = 'suspended'
+            status_name = status_raw or 'موقوف قيده'
+            reason_text = f"موقوف قيده ({status_name})"
+        elif is_major_change:
+            special_type = 'major_change'
+            status_name = status_raw or 'تغيير مسار'
+            reason_text = 'تغيير مسار'
+        else:
+            special_type = 'regular'
+            status_name = status_raw or 'منتظم'
+            reason_text = status_name
         
         data.append({
             'id': student.id,
@@ -8014,7 +8077,10 @@ def get_special_case_students_api(request):
             'student_status': status_name,
             'special_type': special_type,
             'interruption_reason': reason_text,
-            'has_enrollment': existing_enrollment is not None,
+            'is_renewed': is_renewed,
+            'is_suspended': is_suspended,
+            'has_enrollment': is_renewed,
+            'suspension_count': suspension_count,
             'enrollment_id': existing_enrollment.id if existing_enrollment else None,
             'notes': existing_enrollment.notes if existing_enrollment else '',
         })
@@ -8194,7 +8260,9 @@ def get_students_for_download_api(request):
         is_major_changed = (
             getattr(st, 'has_changed_major', False) or
             (getattr(st, 'major_change_count', 0) or 0) >= 1 or
-            'مسار' in (en.notes or '') or 'تحويل' in (en.notes or '')
+            getattr(en, 'special_type', '') in ['MAJOR_CHANGE', 'major_change'] or
+            'مسار' in (en.notes or '') or 'تحويل' in (en.notes or '') or
+            (st.student_status and 'مسار' in st.student_status.name)
         )
 
         # التحقق من نوع الفلترة للحالة الخاصة
@@ -8213,7 +8281,7 @@ def get_students_for_download_api(request):
             'case_type_display': case_type_display
         }
 
-    # استبعاد من تم تنزيل موادهم بالفعل لهذا الفصل
+    # التحقق من المواد المنزلة للطلاب لهذا الفصل
     already_registered_student_ids = set(CourseRegistration.objects.filter(
         semester=target_semester
     ).values_list('student_id', flat=True))
@@ -8221,8 +8289,7 @@ def get_students_for_download_api(request):
     data = []
     for item in student_map.values():
         s = item['student']
-        if s.id in already_registered_student_ids:
-            continue
+        has_reg = s.id in already_registered_student_ids
             
         passed_course_ids = set(Grade.objects.filter(
             student=s,
@@ -8251,10 +8318,16 @@ def get_students_for_download_api(request):
             'case_type': item['case_type_display'],
             'is_renewed': True,
             'is_active': True,
+            'has_registration': has_reg,
         })
         
-    print(f"COUNT: special download students count: {len(data)}")
-    return JsonResponse({'success': True, 'students': data[:100], 'count': len(data)})
+    return JsonResponse({
+        'success': True,
+        'students': data[:100],
+        'count': len(data),
+        'semester_id': target_semester.id,
+        'semester_name': f"{target_semester.get_type_display()} {target_semester.year}"
+    })
 
 
 
@@ -12304,32 +12377,36 @@ def department_transfers_list(request):
 def graduates_dashboard(request):
     """
     لوحة تحكم قسم الخريجين:
-    تتبع إجمالي الخريجين، الطلاب الذين أتموا إخلاء الطرف وجاهزون للإفادة، والطلاب قيد الإجراء
+    تتبع إجمالي الخريجين الفعليين، والطلاب المؤهلين في المستوى الثامن فقط
     """
     from apps.student.models import Student, StudentStatus
     from apps.renewal.models import GraduationClearance, Department, Semester
     import json
     from django.core.serializers.json import DjangoJSONEncoder
 
-    # 0. الطلاب الجاهزون لإخلاء الطرف تلقائياً فور تصفية المواد
+    # 🧹 تصحيح آلي فوري: إزالة علامة الجاهزية الخاطئة عن أي طالب لم يصل للمستوى الثامن بعد
+    Student.objects.filter(
+        is_ready_for_clearance=True,
+        level__number__lt=8
+    ).update(is_ready_for_clearance=False, clearance_ready_date=None)
+
+    # 0. الطلاب الجاهزون لإخلاء الطرف (شرط إلزامي: في المستوى 8 فما فوق + استوفوا المواد)
     ready_for_clearance_students = Student.objects.filter(
         is_ready_for_clearance=True,
-        graduation_clearance__isnull=True
+        graduation_clearance__isnull=True,
+        level__number__gte=8
     ).select_related('department', 'study_plan', 'level').order_by('-clearance_ready_date')
 
-    # 1. الخريجون والطلاب المؤهلون للتخرج
+    # 1. الخريجون الفعليون فقط (متخرجون أو أتموا الإخلاء أو جاهزون فعلياً في المستوى 8)
     graduates_base_qs = Student.objects.filter(
         Q(student_status__name__icontains='خريج') |
         Q(student_status__name__icontains='متخرج') |
         Q(student_status__name__icontains='إخلاء طرف') |
         Q(graduation_clearance__isnull=False) |
-        Q(is_ready_for_clearance=True)
+        (Q(is_ready_for_clearance=True) & Q(level__number__gte=8))
     ).distinct().select_related('department', 'level', 'student_status')
 
     total_graduates = graduates_base_qs.count()
-    if total_graduates == 0:
-        # احتياطي استرجاع الطلاب ذوي المستويات النهائية
-        total_graduates = Student.objects.filter(level__number__gte=4).count()
 
     # 2. سجلات إخلاء الطرف المكتملة
     clearances_qs = GraduationClearance.objects.all().select_related(
@@ -12402,7 +12479,8 @@ def api_graduates_stats(request):
             Q(student_status__name__icontains='خريج') |
             Q(student_status__name__icontains='متخرج') |
             Q(student_status__name__icontains='إخلاء طرف') |
-            Q(graduation_clearance__isnull=False)
+            Q(graduation_clearance__isnull=False) |
+            (Q(is_ready_for_clearance=True) & Q(level__number__gte=8))
         ).distinct()
 
         total_graduates = graduates_base_qs.count()
@@ -12436,7 +12514,6 @@ def api_graduates_stats(request):
         })
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-
 
 # ============================================================
 # 📄 شهادة تعريف طالب (Student Identification Certificate)
