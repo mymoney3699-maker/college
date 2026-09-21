@@ -5458,7 +5458,6 @@ def qualification_data(request):
 
 
 @login_required
-@registrar_required
 def specialty_data(request):
     return render(request, 'renewal/specialty_data.html')
 
@@ -5889,6 +5888,7 @@ def department_list_view(request):
 
 
 @login_required
+@require_execution_permission('renewal.change_department', 'change_department', 'department')
 def department_update_view(request, id=None, dept_id=None):
     """
     صفحة تعديل بيانات القسم الأكاديمي
@@ -6310,8 +6310,8 @@ def get_departments_api(request):
 # apps/renewal/views.py
 
 @login_required
-@admin_required
 @csrf_exempt
+@require_execution_permission('renewal.add_department', 'add_department', 'department')
 def create_department_api(request):
     """
     API: إنشاء قسم/تخصص أكاديمي جديد (للمديرين فقط)
@@ -6382,8 +6382,8 @@ def create_department_api(request):
         return JsonResponse({'success': False, 'error': f'حدث خطأ داخلي في السيرفر: {str(e)}'}, status=500)
 
 @login_required
-@admin_required
 @csrf_exempt
+@require_execution_permission('renewal.change_department', 'change_department', 'department')
 def update_department_api(request, dept_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'طريقة غير مسموحة'})
@@ -6528,8 +6528,8 @@ def subject_data_api(request):
 
 
 @login_required
-@admin_required
 @csrf_exempt
+@require_execution_permission('renewal.delete_department', 'delete_department', 'department')
 def delete_department_api(request, dept_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'طريقة غير مسموحة'})
@@ -6544,8 +6544,8 @@ def delete_department_api(request, dept_id):
 
 
 @login_required
-@admin_required
 @csrf_exempt
+@require_execution_permission('renewal.change_department', 'change_department', 'department')
 def toggle_department_active_api(request, dept_id):
     """
     API: تفعيل أو إلغاء تفعيل (تجميد) القسم العلمي
@@ -6690,8 +6690,8 @@ def update_course_api(request, course_id):
 
 
 @login_required
-@admin_required
 @csrf_exempt
+@require_execution_permission('renewal.delete_course', 'delete_course', 'course')
 def delete_course_api(request, course_id):
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'طريقة غير مسموحة'})

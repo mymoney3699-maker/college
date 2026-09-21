@@ -197,13 +197,13 @@ def has_execution_perm(user, *perm_codenames):
     # 2. مصفوفة الصلاحيات حسب الأدوار الوظيفية التخصصية
     # أ) قسم الدراسة والامتحانات (الدرجات، نشر النتائج، الطعون، المعادلات)
     if user_role in ['exam_director', 'exam_officer', 'دراسة وامتحانات', 'منسق دراسة وامتحانات']:
-        exam_prefixes = ('grade', 'publish', 'appeal', 'courseequivalence', 'course', 'group')
+        exam_prefixes = ('grade', 'publish', 'appeal', 'courseequivalence', 'course', 'group', 'department')
         if any(any(prefix in perm for prefix in exam_prefixes) for perm in normalized_perms):
             return True
 
-    # ب) قسم القبول والتسجيل (تجديد القيد، تسجيل وتنزيل المواد، حالات وقيد الطلاب)
+    # ب) قسم القبول والتسجيل (تجديد القيد، تسجيل وتنزيل المواد، حالات وقيد الطلاب، الأقسام، الأماكن، المؤهلات)
     if user_role in ['registrar', 'قبول وتسجيل', 'تسجيل']:
-        reg_prefixes = ('enrollmentrenewal', 'courseregistration', 'studystatus', 'student', 'renewal', 'download')
+        reg_prefixes = ('enrollmentrenewal', 'courseregistration', 'studystatus', 'student', 'renewal', 'download', 'department', 'place', 'qualification', 'nationality')
         if any(any(prefix in perm for prefix in reg_prefixes) for perm in normalized_perms):
             return True
 
@@ -213,9 +213,9 @@ def has_execution_perm(user, *perm_codenames):
         if any(any(prefix in perm for prefix in grad_prefixes) for perm in normalized_perms):
             return True
 
-    # د) الأقسام العلمية (المواد والمقررات، المجموعات، تسجيل المواد)
+    # د) الأقسام العلمية (المواد والمقررات، المجموعات، تسجيل المواد، الأقسام والتخصصات)
     if user_role in ['academic_dept', 'قسم علمي', 'رئيس قسم', 'منسق قسم']:
-        dept_prefixes = ('course', 'group', 'courseregistration', 'grade')
+        dept_prefixes = ('course', 'group', 'courseregistration', 'grade', 'department')
         if any(any(prefix in perm for prefix in dept_prefixes) for perm in normalized_perms):
             return True
 
@@ -223,14 +223,15 @@ def has_execution_perm(user, *perm_codenames):
     for perm in perm_codenames:
         if not perm:
             continue
-        if '.' not in str(perm):
-            has_direct = user.user_permissions.filter(codename=perm).exists()
-            has_group = user.groups.filter(permissions__codename=perm).exists()
-            if has_direct or has_group:
-                return True
-        else:
-            if user.has_perm(perm):
-                return True
+        codename = str(perm).split('.', 1)[1] if '.' in str(perm) else str(perm)
+        has_direct = user.user_permissions.filter(codename=codename).exists()
+        has_group = user.groups.filter(permissions__codename=codename).exists()
+        if has_direct or has_group:
+            return True
+        if '.' in str(perm) and user.has_perm(perm):
+            return True
+        elif user.has_perm(f"renewal.{codename}") or user.has_perm(f"users.{codename}") or user.has_perm(f"grades.{codename}") or user.has_perm(f"faculty.{codename}"):
+            return True
 
     return False
 
