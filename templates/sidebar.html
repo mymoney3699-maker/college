@@ -182,6 +182,9 @@
         <a href="{% url 'faculty:sections' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">badge</span>إدارة الأساتذة والموظفين</div>
         </a>
+        <a href="{% url 'users:user_list' %}" class="side-btn">
+            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">group</span>قائمة المستخدمين</div>
+        </a>
         <a href="{% url 'renewal:search_student' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">search</span>بحث عن طالب</div>
         </a>
@@ -273,142 +276,26 @@
 
         {% else %}
         <!-- ========================================================================= -->
-        <!-- 👑 5. القائمة الشاملة لمدير النظام (Super User / Admin) -->
+        <!-- 👑 5. قائمة مدير النظام (Super User / Admin) -->
         <!-- ========================================================================= -->
 
         <a href="{% url 'users:admin_dashboard' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">dashboard</span>الرئيسية</div>
         </a>
-
-        <!-- إدارة الأقسام -->
-        <a href="{% url 'faculty:sections' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">corporate_fare</span>إدارة الأقسام</div>
-        </a>
-        <!-- التسجيل والطلاب -->
-        <a href="{% url 'renewal:student_data' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">person</span>بيانات طالب</div>
-        </a>
-        <a href="{% url 'renewal:download_materials' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">download</span>تنزيل المواد</div>
-        </a>
-        <a href="{% url 'renewal:my_materials_report' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">description</span>تقرير المواد</div>
-        </a>
-        <a href="{% url 'renewal:subject_data' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">menu_book</span>بيانات المواد الدراسية</div>
-        </a>
-        <a href="{% url 'student:subject_inquiry' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">find_in_page</span>الاستعلام عن المواد</div>
-        </a>
-        <a href="{% url 'renewal:plans_display' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">article</span>الخطط الدراسية</div>
-        </a>
-        <a href="{% url 'renewal:renew_by_level' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">autorenew</span>تجديد القيد</div>
-        </a>
         <a href="{% url 'renewal:search_student' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">search</span>بحث عن طالب</div>
         </a>
-        <a href="{% url 'renewal:special_download' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">emergency</span>تنزيل مواد (حالة خاصة)</div>
-        </a>
-        <a href="{% url 'renewal:special_renew' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">autorenew</span>تجديد قيد (حالة خاصة)</div>
-        </a>
-        <a href="{% url 'renewal:student_withdrawal' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">person_remove</span>سحب الملف</div>
-        </a>
-        <a href="{% url 'renewal:suspend_student_page' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">pause_circle</span>إدارة إيقاف القيد</div>
-        </a>
-
-        <!-- عرض النتائج والمعادلات -->
-        <a href="{% url 'grades:show_results' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">receipt</span>عرض النتائج</div>
-        </a>
-        <a href="{% url 'grades:pending_approvals' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">pending_actions</span>النتائج المعلقة والاعتماد</div>
-        </a>
-        <a href="{% url 'grades:course_equivalence_rules' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">swap_horiz</span>إدارة قواعد المعادلة</div>
-        </a>
-        <a href="{% url 'grades:course_equivalence' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">alt_route</span>معادلة المواد وتغيير المسار</div>
-        </a>
-        <a href="{% url 'grades:equivalent_students' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">groups</span>الطلبة المعادَلين</div>
-        </a>
-
-        <!-- الوظائف والنماذج الإدارية -->
         <a href="{% url 'renewal:jobs' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">work</span>الوظائف</div>
-        </a>
-        <a href="{% url 'renewal:blank_forms' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">description</span>النماذج والاستمارات الإدارية</div>
-        </a>
-
-        <!-- إدارة حسابات المستخدمين (عناوين مباشرة) -->
-        <div class="sidebar-section-title">إدارة حسابات المستخدمين</div>
-        <a href="{% url 'users:user_list' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">group</span>قائمة المستخدمين</div>
         </a>
         <a href="{% url 'users:add_user' %}" class="side-btn">
             <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">person_add</span>إضافة مستخدم</div>
         </a>
         <a href="{% url 'users:activity_log' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">manage_history</span>سجل الأحداث والتدقيق</div>
+            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">manage_history</span>سجل الأحداث</div>
         </a>
         <a href="{% url 'users:officials_management' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">admin_panel_settings</span>إدارة المسؤولين المعتمدين</div>
-        </a>
-
-        <!-- 🔻🔻 القوائم المنسدلة الأربعة المعتمدة لمدير النظام 🔻🔻 -->
-
-        <!-- 1. الدراسة والامتحانات (قائمة منسدلة) -->
-        <div>
-            <button onclick="toggleMenu('m2_adm', this, event)" class="side-btn">
-                <div class="side-btn-content">
-                    <span class="material-symbols-outlined side-btn-icon">history_edu</span>الدراسة والامتحانات
-                </div>
-                <span class="material-symbols-outlined rotate-icon menu-arrow-icon">expand_more</span>
-            </button>
-            <div id="m2_adm" class="submenu pr-4">
-                <a href="{% url 'grades:grade_entry' %}" class="sub-btn">تسجيل درجات حسب المادة</a>
-                <a href="{% url 'grades:control_holds' %}" class="sub-btn">حجب نتائج الكنترول</a>
-                <a href="{% url 'grades:publish_results' %}" class="sub-btn">اعتماد ونشر النتائج</a>
-                <a href="{% url 'grades:pending_approvals' %}" class="sub-btn">النتائج المعلقة والاعتماد</a>
-                <a href="{% url 'grades:grade_appeals' %}" class="sub-btn">إدارة طعون النتائج</a>
-                <a href="{% url 'renewal:groups' %}" class="sub-btn">المجموعات</a>
-            </div>
-        </div>
-
-        <!-- 2. البيانات المساعدة (قائمة منسدلة) -->
-        <div>
-            <button onclick="toggleMenu('m3_adm', this, event)" class="side-btn">
-                <div class="side-btn-content">
-                    <span class="material-symbols-outlined side-btn-icon">settings_suggest</span>البيانات المساعدة
-                </div>
-                <span class="material-symbols-outlined rotate-icon menu-arrow-icon">expand_more</span>
-            </button>
-            <div id="m3_adm" class="submenu pr-4">
-                <a href="{% url 'renewal:nationality_data' %}" class="sub-btn">بيانات الجنسية</a>
-                <a href="{% url 'renewal:places_data' %}" class="sub-btn">بيانات الأماكن</a>
-                <a href="{% url 'renewal:qualification_data' %}" class="sub-btn">بيانات المؤهل العلمي</a>
-                <a href="{% url 'renewal:specialty_data' %}" class="sub-btn">بيانات التخصص</a>
-                <a href="{% url 'renewal:department_list' %}" class="sub-btn">دليل الأقسام والتخصصات</a>
-                <a href="{% url 'renewal:semester_management' %}" class="sub-btn">بيانات الفصول</a>
-            </div>
-        </div>
-
-        <!-- 3. إخلاء طرف وإفادة التخرج والتقارير الشاملة -->
-        <a href="{% url 'renewal:clearance' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">assignment_turned_in</span>إخلاء طرف</div>
-        </a>
-        <a href="{% url 'renewal:graduation_certificate' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">school</span>إفادة التخرج</div>
-        </a>
-        <a href="{% url 'renewal:reports' %}" class="side-btn">
-            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">analytics</span>التقارير</div>
+            <div class="side-btn-content"><span class="material-symbols-outlined side-btn-icon">admin_panel_settings</span>إدارة المسؤولين</div>
         </a>
         {% endif %}
     </nav>
