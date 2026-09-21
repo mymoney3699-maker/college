@@ -167,9 +167,10 @@ def student_required(view_func):
 def has_execution_perm(user, *perm_codenames):
     """
     التحقق مما إذا كان المستخدم يمتلك صلاحية التنفيذ (إضافة/تعديل/حذف) لعملية معينة.
-    - المشرف العام (superuser) أو مدير النظام (admin) يمتلك كافة الصلاحيات تلقائياً.
-    - يتحقق من الصلاحيات المباشرة المسندة لحساب المستخدم (User Permissions)
-    - يتحقق من الصلاحيات المكتسبة عبر المجموعات المسندة للمستخدم (Group Permissions)
+    - المشرف العام (superuser) أو مدير النظام (admin) أو المسجل العام (general_registrar) يمتلكون كافة الصلاحيات التنفيذية تلقائياً.
+    - الكوادر الإدارية والأكاديمية تمتلك صلاحيات التنفيذ بحسب اختصاص أدوارها الوظيفية.
+    - يتحقق من الصلاحيات المباشرة المسندة لحساب المستخدم (User Permissions).
+    - يتحقق من الصلاحيات المكتسبة عبر المجموعات المسندة للمستخدم (Group Permissions).
     """
     if not user or not user.is_authenticated:
         return False
@@ -178,16 +179,51 @@ def has_execution_perm(user, *perm_codenames):
         return True
         
     user_role = (getattr(user, 'role', '') or '').lower().strip()
-    if user_role == 'admin':
+    
+    # 1. مدير النظام والمسجل العام يمتلكان الصلاحيات التنفيذية الكاملة
+    if user_role in ['admin', 'general_registrar', 'مسجل عام']:
         return True
 
-    # إذا تم تمرير أكثر من صلاحية، يكفي امتلاك واحدة منها أو التحقق من الصيغ المعتمدة
+    # تنظيف وتجهيز أسماء الصلاحيات المطلوبة
+    normalized_perms = set()
+    for p in perm_codenames:
+        if not p:
+            continue
+        p_clean = str(p).lower().strip()
+        normalized_perms.add(p_clean)
+        if '.' in p_clean:
+            normalized_perms.add(p_clean.split('.', 1)[1])
+
+    # 2. مصفوفة الصلاحيات حسب الأدوار الوظيفية التخصصية
+    # أ) قسم الدراسة والامتحانات (الدرجات، نشر النتائج، الطعون، المعادلات)
+    if user_role in ['exam_director', 'exam_officer', 'دراسة وامتحانات', 'منسق دراسة وامتحانات']:
+        exam_prefixes = ('grade', 'publish', 'appeal', 'courseequivalence', 'course', 'group')
+        if any(any(prefix in perm for prefix in exam_prefixes) for perm in normalized_perms):
+            return True
+
+    # ب) قسم القبول والتسجيل (تجديد القيد، تسجيل وتنزيل المواد، حالات وقيد الطلاب)
+    if user_role in ['registrar', 'قبول وتسجيل', 'تسجيل']:
+        reg_prefixes = ('enrollmentrenewal', 'courseregistration', 'studystatus', 'student', 'renewal', 'download')
+        if any(any(prefix in perm for prefix in reg_prefixes) for perm in normalized_perms):
+            return True
+
+    # ج) قسم الخريجين (إخلاء الطرف، إفادات التخرج، شؤون الخريجين)
+    if user_role in ['graduate_officer', 'خريجين', 'قسم الخريجين']:
+        grad_prefixes = ('graduation', 'clearance', 'certificate', 'studystatus', 'student')
+        if any(any(prefix in perm for prefix in grad_prefixes) for perm in normalized_perms):
+            return True
+
+    # د) الأقسام العلمية (المواد والمقررات، المجموعات، تسجيل المواد)
+    if user_role in ['academic_dept', 'قسم علمي', 'رئيس قسم', 'منسق قسم']:
+        dept_prefixes = ('course', 'group', 'courseregistration', 'grade')
+        if any(any(prefix in perm for prefix in dept_prefixes) for perm in normalized_perms):
+            return True
+
+    # 3. التحقق من الصلاحيات المسندة عبر Django Auth (المباشرة أو المجموعات)
     for perm in perm_codenames:
         if not perm:
             continue
-        # إذا تم تمرير codename فقط بدون app_label (مثال: 'add_course' بدلاً من 'renewal.add_course')
-        if '.' not in perm:
-            # نبحث في جميع صلاحيات المستخدم عن هذا الـ codename
+        if '.' not in str(perm):
             has_direct = user.user_permissions.filter(codename=perm).exists()
             has_group = user.groups.filter(permissions__codename=perm).exists()
             if has_direct or has_group:
