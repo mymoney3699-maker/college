@@ -236,9 +236,11 @@
                         القسم
                     </label>
                     <select id="majorSelect" class="filter-select" style="width: 100%; padding: 0.65rem; border-radius: 8px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                        {% if not is_academic_dept %}
                         <option value="">-- جميع الأقسام --</option>
+                        {% endif %}
                         {% for dept in departments %}
-                        <option value="{{ dept.id }}" {% if student and student.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
+                        <option value="{{ dept.id }}" {% if is_academic_dept or student and student.department_id == dept.id %}selected{% endif %}>{{ dept.name }}</option>
                         {% endfor %}
                     </select>
                 </div>

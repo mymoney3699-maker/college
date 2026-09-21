@@ -1808,12 +1808,19 @@ def process_clearance_api(request):
 @login_required
 def search_student(request):
     """صفحة البحث عن طالب"""
+    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+
     context = {
         'nationalities': Nationality.objects.all(),
         'marital_statuses': MaritalStatus.objects.all(),
         'birth_places': PlaceOfBirth.objects.all(),
         'genders': Gender.objects.all(),
-        'departments': Department.objects.filter(is_active=True).order_by('name'),
+        'departments': departments,
         'groups': Group.objects.all(),
         'study_plans': StudyPlan.objects.filter(is_active=True),
         'student_statuses': get_unique_student_statuses(),
@@ -1857,6 +1864,13 @@ def search_student_api(request):
 
     students = Student.objects.all()
 
+    # 🔥 تقييد نتائج البحث لرؤساء الأقسام العلمية برؤية طلاب قسمهم فقط
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+    if is_academic_dept and user_dept:
+        students = students.filter(department=user_dept)
+
     if reg_num and name and reg_num == name:
         students = students.filter(
             Q(student_id__icontains=reg_num) |
@@ -1877,9 +1891,12 @@ def search_student_api(request):
             ensure_test_graduate()
             promote_real_student_to_graduate()
             term = reg_num or name
-            students = Student.objects.filter(
+            fallback_qs = Student.objects.filter(
                 Q(student_id__icontains=term) | Q(name__icontains=term) | Q(last_name__icontains=term)
             )
+            if is_academic_dept and user_dept:
+                fallback_qs = fallback_qs.filter(department=user_dept)
+            students = fallback_qs
         except Exception:
             pass
     
@@ -6417,11 +6434,17 @@ def subject_data_api(request):
 
     from apps.faculty.models import CourseAssignment
 
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
     courses_qs = Course.objects.filter(is_active=True).filter(
         Q(department__isnull=True) | Q(department__is_active=True)
     ).select_related('level').prefetch_related('department').distinct()
 
-    if is_valid_filter(department_id):
+    if is_academic_dept and user_dept:
+        courses_qs = courses_qs.filter(department=user_dept)
+    elif is_valid_filter(department_id):
         if str(department_id).isdigit():
             courses_qs = courses_qs.filter(department__id=int(department_id), department__is_active=True)
         else:
@@ -9761,7 +9784,14 @@ def student_tracking(request):
     صفحة متابعة السجل الأكاديمي للطالب - Dynamic Database Integration
     تتيح تتبع ومراجعة كامل الملف الأكاديمي والتايم لاين للمواد والإنجاز الأكاديمي.
     """
-    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+    else:
+        departments = Department.objects.filter(is_active=True).order_by('name')
     levels = Level.objects.all().order_by('name')
     
     # 1. الاستعلام عن كائنات الطلاب
@@ -9770,6 +9800,8 @@ def student_tracking(request):
     ).prefetch_related(
         'grade_set__course', 'grade_set__semester'
     )
+    if is_academic_dept and user_dept:
+        students_qs = students_qs.filter(department=user_dept)
     
     # 2. الفلترة المباشرة عند تزويد GET parameters
     dept_param = request.GET.get('department')
@@ -9937,6 +9969,7 @@ def student_tracking(request):
         'students_json': json.dumps(students_data, ensure_ascii=False),
         'departments_json': json.dumps(departments_list, ensure_ascii=False),
         'levels_json': json.dumps(levels_list, ensure_ascii=False),
+        'is_academic_dept': is_academic_dept,
     }
 
     return render(request, 'renewal/student_tracking.html', context)
@@ -9952,6 +9985,12 @@ def get_department_courses_api(request, department_id):
     try:
         from django.db.models import Q
         
+        user_role = str(getattr(request.user, 'role', '')).strip().lower()
+        user_dept = getattr(request.user, 'department', None)
+        is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+        if is_academic_dept and user_dept and str(department_id) != str(user_dept.id):
+            return JsonResponse({'success': False, 'error': 'غير مصرح لك باستعراض مقررات أقسام أخرى'}, status=403)
+
         # 1. التخصص المحدد
         selected_dept = get_object_or_404(Department, id=department_id)
         
@@ -11059,7 +11098,16 @@ def plans_display_view(request):
     plan_id = request.GET.get('plan_id') or request.GET.get('plan') or ''
     level_id = request.GET.get('level_id') or request.GET.get('level') or ''
 
-    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        dept_id = str(user_dept.id)
+        departments = Department.objects.filter(id=user_dept.id)
+    else:
+        departments = Department.objects.filter(is_active=True).order_by('name')
+
     levels = Level.objects.all().order_by('number')
 
     # تجلب الخطط الدراسية المتاحة للتخصص المختار أو للكل (الخطط النشطة فقط)
@@ -11152,6 +11200,7 @@ def plans_display_view(request):
         'selected_dept': str(dept_id) if dept_id else '',
         'selected_plan': str(plan_id) if plan_id else '',
         'selected_level': str(level_id) if level_id else '',
+        'is_academic_dept': is_academic_dept,
     }
 
     # 🛡️ توثيق زيارة صفحة عرض الخطط الدراسية في سجل الأحداث
@@ -11180,6 +11229,13 @@ def get_plans_by_department_api(request):
     API لإرجاع الخطط الدراسية التابعة لقسم علمي معين بديناميكية عبر AJAX (الخطط النشطة فقط).
     """
     dept_id = request.GET.get('department_id') or request.GET.get('department')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        dept_id = str(user_dept.id)
+
     if is_valid_filter(dept_id):
         plan_ids = Course.objects.filter(department__id=dept_id, is_active=True).values_list('study_plan_id', flat=True).distinct()
         plans = StudyPlan.objects.filter(id__in=plan_ids, is_active=True).order_by('name')
@@ -11195,6 +11251,11 @@ def plans_manage_view(request):
     """
     عرض لوحة تحكم الإدارة لجميع الخطط الدراسية مع فلترة حسب القسم وحالة الخطة.
     """
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    if user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']:
+        messages.warning(request, "⚠️ عذراً، إدارة وتعديل الخطط الدراسية غير متاحة لرؤساء الأقسام، يمكنك فقط استعراضها.")
+        return redirect('renewal:plans_display')
+
     dept_id = request.GET.get('department_id') or request.GET.get('department')
     status_filter = request.GET.get('status')
 
@@ -11644,15 +11705,23 @@ def my_materials_report(request):
     selected_student_id = request.GET.get('student_id', '').strip()
     student = None
     matching_students = []
+
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
     
     # 1. إذا تم اختيار طالب محدد بالـ ID أو رقم القيد بشكل صريح
     if selected_student_id:
+        student_qs = Student.objects.all()
+        if is_academic_dept and user_dept:
+            student_qs = student_qs.filter(department=user_dept)
+
         if selected_student_id.isdigit():
-            student = Student.objects.filter(id=int(selected_student_id)).select_related(
+            student = student_qs.filter(id=int(selected_student_id)).select_related(
                 'department', 'level', 'student_status', 'nationality'
             ).first()
         if not student:
-            student = Student.objects.filter(student_id=selected_student_id).select_related(
+            student = student_qs.filter(student_id=selected_student_id).select_related(
                 'department', 'level', 'student_status', 'nationality'
             ).first()
 
@@ -11666,6 +11735,10 @@ def my_materials_report(request):
             Q(father_name__icontains=search_query) |
             Q(last_name__icontains=search_query)
         ).select_related('department', 'level', 'student_status', 'nationality').distinct()
+
+        # 🔥 تقييد نتائج البحث لرئيس القسم العلمي بطلبة قسمه فقط
+        if is_academic_dept and user_dept:
+            candidates = candidates.filter(department=user_dept)
 
         candidates_count = candidates.count()
         if candidates_count == 1:

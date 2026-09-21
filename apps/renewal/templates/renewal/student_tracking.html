@@ -30,9 +30,11 @@
             <div class="filter-group">
                 <label for="filterDept" class="field-label">القسم العلمي</label>
                 <select id="filterDept" class="filter-select">
+                    {% if not is_academic_dept %}
                     <option value="all">كافة الأقسام</option>
+                    {% endif %}
                     {% for dept in departments %}
-                    <option value="{{ dept.name }}" data-id="{{ dept.id }}">{{ dept.name }}</option>
+                    <option value="{{ dept.name }}" data-id="{{ dept.id }}" selected>{{ dept.name }}</option>
                     {% endfor %}
                 </select>
             </div>

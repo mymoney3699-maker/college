@@ -818,7 +818,14 @@ def cumulative_grades(request):
     صفحة كشف الدرجات التراكمي الشامل
     تجلب كشوفات الدرجات التفصيلية المأخوذة من قاعدة البيانات وتدعم التصفية المباشرة.
     """
-    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+    else:
+        departments = Department.objects.filter(is_active=True).order_by('name')
     semesters_qs = Semester.objects.all().order_by('-year', '-type')
     
     # 1. الاستعلام عن الطلاب مع تحسين الأداء
@@ -827,6 +834,8 @@ def cumulative_grades(request):
 ).prefetch_related(
     'grade_set__course', 'grade_set__semester'
 ).order_by('name', 'father_name')
+    if is_academic_dept and user_dept:
+        students_qs = students_qs.filter(department=user_dept)
     
     # 2. الفلترة المباشرة عند تزويد GET parameters
     dept_param = request.GET.get('department')
@@ -935,6 +944,7 @@ def cumulative_grades(request):
         'students_json': json.dumps(students_data, ensure_ascii=False),
         'semesters_json': json.dumps(semesters_list_json, ensure_ascii=False),
         'departments_json': json.dumps(departments_list, ensure_ascii=False),
+        'is_academic_dept': is_academic_dept,
     }
     return render(request, 'grades/cumulative_grades.html', context)
 
@@ -945,17 +955,25 @@ def get_student_transcript_api(request):
     try:
         from django.db.models import Q
         
+        user_role = str(getattr(request.user, 'role', '')).strip().lower()
+        user_dept = getattr(request.user, 'department', None)
+        is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
         student_id = request.GET.get('student_id')
         reg_num = request.GET.get('reg_num')
         name = request.GET.get('name')
         
+        base_qs = Student.objects.all()
+        if is_academic_dept and user_dept:
+            base_qs = base_qs.filter(department=user_dept)
+
         student = None
         if reg_num:
-            student = Student.objects.filter(student_id=reg_num).first()
+            student = base_qs.filter(student_id=reg_num).first()
         elif name:
-            student = Student.objects.filter(name__icontains=name).first()
+            student = base_qs.filter(name__icontains=name).first()
         elif student_id:
-            student = Student.objects.get(id=student_id)
+            student = base_qs.filter(id=student_id).first()
         
         if not student:
             return JsonResponse({
@@ -2022,7 +2040,14 @@ def check_lock_status_api(request):
 def academic_status(request):
     """عرض الحالات الأكاديمية وقيد الطلاب - يعتمد على كل السجلات المتاحة"""
 
-    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+    else:
+        departments = Department.objects.filter(is_active=True).order_by('name')
     semesters_qs = Semester.objects.all().order_by('-year', '-type')
     student_statuses = StudentStatus.objects.all().order_by('id')
 
@@ -2030,6 +2055,8 @@ def academic_status(request):
     students_qs = Student.objects.all().select_related(
         'department', 'level', 'student_status'
     ).order_by('name', 'father_name')
+    if is_academic_dept and user_dept:
+        students_qs = students_qs.filter(department=user_dept)
 
     # ② بناء خريطة: student_id → آخر EnrollmentRenewal
     from apps.renewal.models import EnrollmentRenewal
@@ -2137,6 +2164,7 @@ def academic_status(request):
         'departments_json': json.dumps(departments_list, ensure_ascii=False),
         'statuses_json':    json.dumps(statuses_list,    ensure_ascii=False),
         'student_statuses': student_statuses,
+        'is_academic_dept': is_academic_dept,
     }
     return render(request, 'grades/academic_status.html', context)
 
@@ -3459,6 +3487,7 @@ def course_equivalence_page(request):
     المرحلة الثانية: صفحة تغيير المسار واحتساب معادلة المواد للطالب
     """
     from apps.renewal.views import get_course_equivalence_job_info
+    from apps.renewal.models import EnrollmentRenewal
     equivalence_job_info = get_course_equivalence_job_info()
     is_equivalence_job_open = equivalence_job_info['is_equivalence_job_open']
     equivalence_job_message = equivalence_job_info['equivalence_job_message']

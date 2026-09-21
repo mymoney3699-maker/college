@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% load static %}
 
 {% block title %}كشف الدرجات التراكمي | نظام كلية طرابلس{% endblock %}
@@ -138,9 +138,11 @@ table.ctbl tbody td.cn{text-align:right;padding-right:9px;font-weight:700;}
             <div>
                 <label class="flbl">القسم العلمي</label>
                 <select id="filter-department" class="fsel" onchange="window.filterTranscriptByDept(this.value)">
+                    {% if not is_academic_dept %}
                     <option value="all">كافة الأقسام</option>
+                    {% endif %}
                     {% for dept in departments %}
-                    <option value="{{ dept.name }}" data-id="{{ dept.id }}">{{ dept.name }}</option>
+                    <option value="{{ dept.name }}" data-id="{{ dept.id }}" {% if is_academic_dept %}selected{% endif %}>{{ dept.name }}</option>
                     {% endfor %}
                 </select>
                 <input type="hidden" id="search-major">

@@ -897,15 +897,28 @@ def subject_inquiry(request):
     current_season = active_sem.type if active_sem else 'spring'
     current_year = active_sem.year if active_sem else 2026
 
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    departments = Department.objects.filter(is_active=True).order_by('name')
+    courses = Course.objects.filter(is_active=True).select_related('level').prefetch_related('department').order_by('code')
+
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+        courses = courses.filter(department=user_dept)
+
     context = {
         'user': request.user,
         'student': student,
         'semesters': Semester.objects.all().order_by('-year', '-type'),
-        'courses': Course.objects.filter(is_active=True).select_related('level').prefetch_related('department').order_by('code'),
-        'departments': Department.objects.filter(is_active=True).order_by('name'),
+        'courses': courses,
+        'departments': departments,
         'levels': Level.objects.all().order_by('number'),
         'current_season': current_season,
         'current_year': current_year,
+        'is_academic_dept': is_academic_dept,
+        'user_dept': user_dept,
     }
     return render(request, 'renewal/subject_inquiry.html', context)
 

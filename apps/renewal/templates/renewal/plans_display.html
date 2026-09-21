@@ -364,10 +364,12 @@
                     طباعة الخطة / PDF
                 </button>
                 {% endif %}
+                {% if not is_academic_dept and request.user.role not in 'academic_dept,قسم علمي,رئيس قسم' %}
                 <a href="{% url 'renewal:plans_manage' %}#createPlanSection" class="btn-teal-action">
                     <span class="material-symbols-outlined text-lg">add_circle</span>
                     إضافة خطة
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -385,7 +387,9 @@
                     <div>
                         <label for="majorSelect" class="form-label-system field-label">التخصص الدراسي:</label>
                         <select id="majorSelect" name="department_id" data-api-url="/renewal/api/plans-by-department/" class="form-control-system">
+                            {% if not is_academic_dept and request.user.role not in 'academic_dept,قسم علمي,رئيس قسم' %}
                             <option value="">-- جميع التخصصات --</option>
+                            {% endif %}
                             {% for dept in departments %}
                             <option value="{{ dept.id }}" {% if selected_dept|stringformat:"s" == dept.id|stringformat:"s" %}selected{% endif %}>
                                 {{ dept.name }}

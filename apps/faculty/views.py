@@ -192,9 +192,19 @@ def attendance_sheet(request):
     صفحة كشف حضور وغياب الطلاب - Dynamic Database Integration
     ترتيب الطلاب أَبَجَدِيّاً المباشر بحسب الاسم الكامل، وربط كليات ومجموعات ومواد قاعدة البيانات.
     """
-    departments = Department.objects.filter(is_active=True).order_by('name')
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    user_dept = getattr(request.user, 'department', None)
+    is_academic_dept = user_role in ['academic_dept', 'department', 'قسم علمي', 'رئيس قسم', 'رئيس / قسم علمي']
+
+    if is_academic_dept and user_dept:
+        departments = Department.objects.filter(id=user_dept.id)
+    else:
+        departments = Department.objects.filter(is_active=True).order_by('name')
     groups = Group.objects.all().order_by('name')
-    courses = Course.objects.all().order_by('name')
+    if is_academic_dept and user_dept:
+        courses = Course.objects.filter(department=user_dept).order_by('name')
+    else:
+        courses = Course.objects.all().order_by('name')
     semesters = Semester.objects.all().order_by('-year', '-type')
     levels = Level.objects.all().order_by('name')
     
@@ -202,6 +212,8 @@ def attendance_sheet(request):
     students_qs = Student.objects.all().select_related(
         'department', 'group', 'level'
     ).order_by('name')
+    if is_academic_dept and user_dept:
+        students_qs = students_qs.filter(department=user_dept)
     
     # 2. الفلترة المباشرة عند التمرير بـ GET
     dept_param = request.GET.get('department')
@@ -261,6 +273,7 @@ def attendance_sheet(request):
         'groups_json': json.dumps(groups_list, ensure_ascii=False),
         'courses_json': json.dumps(courses_list, ensure_ascii=False),
         'semesters_json': json.dumps(semesters_list, ensure_ascii=False),
+        'is_academic_dept': is_academic_dept,
     }
 
     return render(request, 'faculty/attendance_sheet.html', context)

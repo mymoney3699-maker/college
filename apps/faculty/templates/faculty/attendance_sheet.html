@@ -239,9 +239,11 @@
                 <label class="field-label">القسم العلمي</label>
                 <select id="حقل-القسم" onchange="عند_تغيير_الإدخال()"
                     style="width:100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #cbd5e1; background: #fff; font-weight: 600;">
+                    {% if not is_academic_dept %}
                     <option value="الكل">كافة الأقسام</option>
+                    {% endif %}
                     {% for dept in departments %}
-                    <option value="{{ dept.name }}" data-id="{{ dept.id }}">{{ dept.name }}</option>
+                    <option value="{{ dept.name }}" data-id="{{ dept.id }}" {% if is_academic_dept %}selected{% endif %}>{{ dept.name }}</option>
                     {% endfor %}
                 </select>
             </div>
