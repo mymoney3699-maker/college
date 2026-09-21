@@ -70,6 +70,9 @@ def sections(request):
     except Exception:
         pass
 
+    user_role = str(getattr(request.user, 'role', '')).strip().lower()
+    is_coordinator = user_role in ['exam_officer', 'exams', 'coordinator', 'study_exams', 'study_and_exams', 'منسق', 'منسقة', 'منسقة الدراسة والامتحانات', 'موظف دراسة وامتحانات']
+
     context = {
         'courses_data': json.dumps(list(courses), cls=DjangoJSONEncoder),
         'levels_data': json.dumps(list(levels), cls=DjangoJSONEncoder),
@@ -81,6 +84,7 @@ def sections(request):
         'add_instructor_message': instructor_info['add_instructor_message'],
         'is_add_staff_open': staff_info['is_add_staff_open'],
         'add_staff_message': staff_info['add_staff_message'],
+        'is_coordinator': is_coordinator,
     }
     
     return render(request, 'faculty/Sections.html', context)
@@ -574,6 +578,12 @@ def save_professor_api(request):
         
         department = get_object_or_404(Department, id=department_id)
         
+        # 🛑 حظر إضافة أساتذة جدد لمنسق الدراسة والامتحانات (صلاحيته إسناد وتكليف مواد فقط)
+        user_role = str(getattr(request.user, 'role', '')).strip().lower()
+        is_coordinator = user_role in ['exam_officer', 'exams', 'coordinator', 'study_exams', 'study_and_exams', 'منسق', 'منسقة', 'منسقة الدراسة والامتحانات', 'موظف دراسة وامتحانات']
+        if is_coordinator and not professor_id:
+            return JsonResponse({'success': False, 'message': 'عذراً، صلاحيات منسق الدراسة والامتحانات تقتصر على إسناد وتكليف المواد للأستاذ فقط دون إضافة أساتذة جدد.'}, status=403)
+
         # 🛑 حظر إضافة أساتذة جدد إذا كان القسم غير مفعّل أو الصلاحية موقوفة
         if not professor_id:
             from apps.renewal.views import get_add_instructor_job_info
@@ -1122,6 +1132,12 @@ def save_staff_api(request):
         department = get_object_or_404(Department, id=department_id)
         from apps.users.models import User
         
+        # 🛑 حظر إضافة أو تعديل الموظفين لمنسق الدراسة والامتحانات
+        user_role = str(getattr(request.user, 'role', '')).strip().lower()
+        is_coordinator = user_role in ['exam_officer', 'exams', 'coordinator', 'study_exams', 'study_and_exams', 'منسق', 'منسقة', 'منسقة الدراسة والامتحانات', 'موظف دراسة وامتحانات']
+        if is_coordinator:
+            return JsonResponse({'success': False, 'message': 'عذراً، غير مصرح لمنسق الدراسة والامتحانات بإضافة أو تعديل الموظفين الإداريين.'}, status=403)
+
         # 🛑 حظر إضافة موظفين جدد إذا كان القسم غير مفعّل أو الصلاحية موقوفة
         if not staff_id:
             from apps.renewal.views import get_add_staff_job_info

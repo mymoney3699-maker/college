@@ -700,8 +700,8 @@
             </div>
         </div>
 
-        <!-- الطلاب غير الليبيين -->
-        <div class="rep-kpi-card kpi-card-4">
+        <!-- الطلاب غير الليبيين - بطاقة قابلة للنقر -->
+        <a href="{% url 'renewal:non_libyan_students' %}" class="rep-kpi-card kpi-card-4" style="text-decoration: none; cursor: pointer; display: block;">
             <div class="rep-kpi-top">
                 <div>
                     <div class="rep-kpi-label">الطلاب غير الليبيين</div>
@@ -715,11 +715,12 @@
                 <span class="material-symbols-outlined" style="font-size: 15px; color: #307e92;">flag</span>
                 <span>إحصائيات الطلاب والوافدين</span>
             </div>
-        </div>
+        </a>
 
     </div>
 
-    <!-- 3. بطاقتي الخدمات السريعة (إخلاء الطرف والإفادة) -->
+    <!-- 3. بطاقتي الخدمات السريعة (إخلاء الطرف والإفادة) - تظهر فقط لموظف الخريجين -->
+    {% if is_graduate_officer %}
     <div class="rep-services-grid">
         <a href="{% url 'renewal:clearance' %}" class="rep-service-card">
             <div class="rep-service-info">
@@ -753,6 +754,7 @@
             </div>
         </a>
     </div>
+    {% endif %}
 
     <!-- 4. شريط البحث والتصنيف -->
     <div class="rep-filter-panel">

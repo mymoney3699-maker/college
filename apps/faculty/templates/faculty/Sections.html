@@ -593,10 +593,21 @@
     <!-- ===== نموذج إضافة/تعديل عضو (يظهر فقط عند تفعيل قسم) ===== -->
     <div class="group-box" x-show="selectedDept" style="display: none;">
         <span class="group-title">
+            {% if is_coordinator %}
+            <span>إسناد مواد للأستاذ في قسم: </span>
+            {% else %}
             <span x-text="editId !== null ? 'تعديل بيانات عضو في: ' : 'إضافة عضو جديد إلى: '"></span>
+            {% endif %}
             <span x-text="departments.find(d => d.id === selectedDept)?.name" style="color: #307e92; font-weight: 800;"></span>
         </span>
-        
+
+        {% if is_coordinator %}
+        <!-- 🛡️ بانر معلوماتي للمنسق -->
+        <div style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1.5px solid #93c5fd; border-radius: 12px; padding: 0.85rem 1.15rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 0.75rem;">
+            <span class="material-symbols-outlined" style="color: #2563eb; font-size: 22px; flex-shrink: 0;">info</span>
+            <span style="color: #1e40af; font-weight: 700; font-size: 0.92rem;">دور المنسق: يمكنك اختيار أستاذ موجود في القسم وإسناد المواد له أو تعديل تكليفاته الحالية.</span>
+        </div>
+        {% else %}
         <!-- بانر التعديل الفعال عند تعديل شخص -->
         <div x-show="editId !== null" class="edit-banner">
             <div class="edit-banner-title">
@@ -607,8 +618,10 @@
                 <span class="material-symbols-outlined" style="font-size: 16px;">close</span> إلغاء التعديل
             </button>
         </div>
+        {% endif %}
 
-        <!-- أزرار تبديل نوع الإضافة -->
+        {% if not is_coordinator %}
+        <!-- أزرار تبديل نوع الإضافة (للمدير فقط) -->
         <div class="flex border-b border-gray-200 mb-6" style="gap: 1rem; border-bottom: 2px solid #e2e8f0; margin-bottom: 1.5rem;">
             <button type="button" class="tab-btn" :class="{ 'active-tab': addType === 'professor' }" @click="switchTab('professor')" style="outline: none !important; font-weight: 800; font-size: 1rem; padding: 0.5rem 1.25rem; border-radius: 8px 8px 0 0; transition: all 0.2s;">
                 <span class="material-symbols-outlined" style="vertical-align: middle;">school</span>
@@ -619,12 +632,38 @@
                 موظف جديد
             </button>
         </div>
+        {% endif %}
 
         <!-- ============================================================ -->
         <!-- نموذج أستاذ (مع دعم التعديل وعرض المواد المسندة) -->
         <!-- ============================================================ -->
         <div x-show="addType === 'professor'" class="space-y-4">
-            <!-- الحقول الأساسية -->
+            {% if is_coordinator %}
+            <!-- 🛡️ للمنسق: اختيار أستاذ موجود من القسم -->
+            <div style="background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 1.1rem 1.25rem; margin-bottom: 0.5rem;">
+                <label style="font-weight: 800; color: #166534; display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.65rem; font-size: 0.95rem;">
+                    <span class="material-symbols-outlined" style="font-size: 20px;">school</span>
+                    اختر الأستاذ المراد إسناد المواد له
+                </label>
+                <select id="coordinatorProfSelect" x-model="coordinatorSelectedProfId" @change="onCoordinatorProfSelect()" class="custom-select">
+                    <option value="">-- اختر الأستاذ --</option>
+                    <template x-for="prof in (selectedDept && departmentsData[selectedDept] ? departmentsData[selectedDept].professors : [])" :key="prof.id">
+                        <option :value="prof.id" x-text="prof.name"></option>
+                    </template>
+                </select>
+            </div>
+            <!-- بانر التعديل الفعال عند اختيار أستاذ -->
+            <div x-show="editId !== null" class="edit-banner">
+                <div class="edit-banner-title">
+                    <span class="material-symbols-outlined">edit_note</span>
+                    <span x-text="'جاري إسناد مواد للأستاذ: ' + newProfessor.name"></span>
+                </div>
+                <button type="button" @click="cancelEditInForm()" class="btn-cancel-edit">
+                    <span class="material-symbols-outlined" style="font-size: 16px;">close</span> إلغاء
+                </button>
+            </div>
+            {% else %}
+            <!-- الحقول الأساسية للمدير -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
                 <div>
                     <label class="field-label font-bold" style="margin-bottom: 0.35rem; display: block;">الاسم الكامل للأستاذ *</label>
@@ -635,6 +674,7 @@
                     <input type="email" x-model="newProfessor.email" placeholder="m.ahmed@tripoli.edu.ly" dir="ltr" class="custom-input">
                 </div>
             </div>
+            {% endif %}
             
             <!-- ============================================================ -->
             <!-- 🔥 قسم المواد المسندة حالياً (يظهر فقط في وضع التعديل) -->
@@ -769,10 +809,18 @@
 
             <!-- أزرار الإجراءات -->
             <div class="buttons-row mt-6" style="display: flex; gap: 1rem; align-items: center;">
+                {% if is_coordinator %}
+                <!-- للمنسق: زر الحفظ يظهر فقط بعد اختيار أستاذ -->
+                <button type="button" id="btnAddProfessor" class="btn-action btn-save" @click="saveEditInForm()" x-show="editId !== null" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
+                    <span class="material-symbols-outlined">save</span>
+                    <span>حفظ الإسناد</span>
+                </button>
+                {% else %}
                 <button type="button" id="btnAddProfessor" class="btn-action btn-save" @click="editId !== null ? saveEditInForm() : addProfessor()" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
                     <span class="material-symbols-outlined" x-text="editId !== null ? 'save' : 'person_add'"></span>
                     <span x-text="editId !== null ? 'حفظ التعديلات' : 'إضافة الأستاذ'"></span>
                 </button>
+                {% endif %}
                 <button type="button" class="btn-action btn-exit" @click="cancelEditInForm()" x-show="editId !== null" style="padding: 0.6rem 1.25rem; font-size: 0.95rem; font-weight: 800; border-radius: 8px;">
                     إلغاء التعديل
                 </button>
@@ -780,8 +828,9 @@
         </div>
 
         <!-- ============================================================ -->
-        <!-- نموذج موظف جديد / تعديل موظف -->
+        <!-- نموذج موظف جديد / تعديل موظف (للمدير فقط) -->
         <!-- ============================================================ -->
+        {% if not is_coordinator %}
         <div x-show="addType === 'staff'" class="space-y-4" style="display: none;">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem;">
                 <div>
@@ -808,6 +857,7 @@
                 </button>
             </div>
         </div>
+        {% endif %}
     </div>
 
     <!-- ===== القوائم وعرض الأعضاء ===== -->
@@ -977,7 +1027,10 @@
 
     window.ACTIVE_ACADEMIC_YEAR = "{{ active_academic_year|default:''|escapejs }}";
     window.ACTIVE_SEMESTER_TYPE = "{{ active_semester_type|default:''|escapejs }}";
+
+    // 🛡️ صلاحيات المنسق
+    window.IS_COORDINATOR = "{{ is_coordinator|yesno:'true,false' }}" === "true";
 </script>
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<script src="{% static 'faculty/js/Sections.js' %}?v=2.3.3"></script>
+<script src="{% static 'faculty/js/Sections.js' %}?v=2.4.0"></script>
 {% endblock %}

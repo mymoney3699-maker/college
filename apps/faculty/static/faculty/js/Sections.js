@@ -106,6 +106,7 @@ function departmentManager() {
             subjects: [{ department_id: '', level_id: '', course_id: '', group_id: '' }] 
         },
         newStaff: { name: '', email: '', role: '' },
+        coordinatorSelectedProfId: '', // 🛡️ معرف الأستاذ المختار للمنسق
 
         init() {
             console.log('🚀 Sections Management initialized');
@@ -244,6 +245,19 @@ function departmentManager() {
                     this.newProfessor.subjects[0].department_id = this.selectedDept;
                 }
             }
+            // إعادة تعيين المنسق
+            this.coordinatorSelectedProfId = '';
+            this.cancelEditInForm();
+        },
+
+        // 🛡️ عند اختيار أستاذ من قائمة المنسق - تحميل بياناته مباشرة
+        async onCoordinatorProfSelect() {
+            const profId = this.coordinatorSelectedProfId;
+            if (!profId) {
+                this.cancelEditInForm();
+                return;
+            }
+            await this.startEditInForm('professor', profId);
         },
 
         getInitials(name) {
@@ -418,6 +432,11 @@ function departmentManager() {
         // ➕ إضافة أستاذ جديد عبر AJAX مع التنبيهات الفورية
         // ============================================================
         async addProfessor() {
+            // 🛡️ حجب للمنسق - لا يحق له إنشاء أستاذ جديد
+            if (window.IS_COORDINATOR) {
+                this.showNotification('error', '⛔ صلاحية إنشاء أستاذ جديد غير متاحة للمنسق. اختر أستاذًا موجودًا من القائمة.');
+                return;
+            }
             if (!this.selectedDept) {
                 this.showNotification('warning', 'الرجاء اختيار القسم أولاً');
                 return;
@@ -500,6 +519,11 @@ function departmentManager() {
         // ➕ إضافة موظف جديد عبر AJAX مع التنبيهات الفورية
         // ============================================================
         async addStaff() {
+            // 🛡️ حجب للمنسق - لا يحق له إضافة موظف جديد
+            if (window.IS_COORDINATOR) {
+                this.showNotification('error', '⛔ صلاحية إضافة موظف جديد غير متاحة للمنسق.');
+                return;
+            }
             if (!this.selectedDept) {
                 this.showNotification('warning', 'الرجاء اختيار القسم أولاً');
                 return;
@@ -908,6 +932,7 @@ function departmentManager() {
         cancelEditInForm() {
             this.editId = null;
             this.editProfessorAssignments = [];
+            this.coordinatorSelectedProfId = ''; // 🛡️ إعادة تعيين اختيار المنسق
             this.newProfessor = { 
                 name: '', 
                 email: '', 

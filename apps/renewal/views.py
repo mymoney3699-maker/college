@@ -2773,6 +2773,9 @@ def reports_page(request):
         'withdrawn_count': withdrawn_count,
         'clearance_count': clearance_count,
         'non_libyan_count': non_libyan_count,
+        'is_graduate_officer': str(getattr(request.user, 'role', '')).strip().lower() in [
+            'graduate_officer', 'graduates', 'قسم الخريجين', 'الخريجين', 'admin'
+        ],
     }
     return render(request, 'renewal/reports.html', context)
 
@@ -11626,7 +11629,6 @@ LIBYAN_NATIONALITY_EXCLUDE_Q = (
 
 
 @login_required
-@admin_required
 def non_libyan_students_view(request):
     """
     صفحة عرض وإدارة الطلاب غير الليبيين
@@ -11837,7 +11839,6 @@ def my_materials_report(request):
 
 
 @login_required
-@admin_required
 def export_non_libyan_students(request):
     """
     تصدير بيانات الطلاب غير الليبيين إلى ملف Excel

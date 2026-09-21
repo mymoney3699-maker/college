@@ -35,7 +35,15 @@
             <span>التقارير والمخرجات التأسيسية للمسجل العام</span>
         </div>
         <div class="toolbar-buttons-group">
-            <a href="{% url 'renewal:department_list' %}" class="btn-print-visual" style="text-decoration: none;">
+            <button type="button" onclick="printStatisticalReport()" class="btn-print-visual" title="طباعة تقرير إحصائي يشتمل على الرسوم البيانية والمؤشرات">
+                <span class="material-symbols-outlined">query_stats</span>
+                <span>طباعة تقرير إحصائي</span>
+            </button>
+            <button type="button" onclick="printStandardReport()" class="btn-print-official" title="طباعة تقرير رسمي منظم بالجداول والبيانات المعتمدة">
+                <span class="material-symbols-outlined">print</span>
+                <span>طباعة تقرير عادي</span>
+            </button>
+            <a href="{% url 'renewal:department_list' %}" class="btn-print-official" style="text-decoration: none;">
                 <span class="material-symbols-outlined">domain</span>
                 <span>دليل الأقسام العلمية</span>
             </a>
@@ -43,7 +51,7 @@
                 <span class="material-symbols-outlined">article</span>
                 <span>الخطط الدراسية والمناهج</span>
             </a>
-            <a href="{% url 'renewal:reports' %}" class="btn-print-visual" style="text-decoration: none;">
+            <a href="{% url 'renewal:reports' %}" class="btn-print-official" style="text-decoration: none;">
                 <span class="material-symbols-outlined">analytics</span>
                 <span>التقارير</span>
             </a>
@@ -336,6 +344,44 @@
     </div>
 
 </div>
+
+<!-- ===== البيانات الإحصائية للتقارير والطباعة الرسمية ===== -->
+<script id="general-registrar-data" type="application/json">
+{
+    "total_departments": {{ total_departments|default:0 }},
+    "total_plans": {{ total_plans|default:0 }},
+    "total_courses": {{ total_courses|default:0 }},
+    "total_active_courses": {{ total_active_courses|default:0 }},
+    "total_credits": {{ total_credits|default:0 }},
+    "total_professors": {{ total_professors|default:0 }},
+    "total_rules": {{ total_rules|default:0 }},
+    "total_semesters": {{ total_semesters|default:0 }},
+    "current_semester": "{{ current_semester|default:'2026 - ربيع'|escapejs }}",
+    "user_username": "{{ request.user.username|default:'المسجل العام'|escapejs }}",
+    "departments": [
+        {% for dept in dept_table_data %}
+        {
+            "name": "{{ dept.name|escapejs }}",
+            "code": "{{ dept.code|escapejs }}",
+            "courses_count": {{ dept.courses_count|default:0 }},
+            "professors_count": {{ dept.professors_count|default:0 }},
+            "is_active": {% if dept.is_active %}true{% else %}false{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ],
+    "level_labels": {{ level_labels|safe }},
+    "level_counts": {{ level_counts|safe }},
+    "recent_activities": [
+        {% for act in recent_activities %}
+        {
+            "user": "{{ act.user.username|default:'النظام'|escapejs }}",
+            "action": "{{ act.details|default:act.action|escapejs }}",
+            "date": "{{ act.created_at|date:'Y-m-d H:i' }}"
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ]
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
@@ -404,5 +450,556 @@
             });
         }
     });
+
+    // ============================================================
+    // 🖨️ دوال الطباعة الرسمية للمسجل العام (إحصائي وعادي)
+    // ============================================================
+
+    // جلب أسماء المسؤولين الرسميين المعتمدين
+    async function fetchRegistrarOfficials() {
+        let registrarName = "أ. أحمد محمد علي محمود";
+        let registrarPos = "المسجل العام بالكلية";
+        let deanName = "د. عميد الكلية";
+        let deanPos = "إدارة كلية طرابلس للعلوم والتقنية";
+
+        try {
+            if (window.OfficialsHelper) {
+                const reg = await window.OfficialsHelper.getOfficialAsync('registrar');
+                if (reg) {
+                    registrarName = window.OfficialsHelper.buildName(reg);
+                    if (reg.position) registrarPos = reg.position;
+                }
+                const dean = await window.OfficialsHelper.getOfficialAsync('dean');
+                if (dean) {
+                    deanName = window.OfficialsHelper.buildName(dean);
+                    if (dean.position) deanPos = dean.position;
+                }
+            } else {
+                const res = await fetch('/users/api/officials/');
+                const data = await res.json();
+                if (data.success && Array.isArray(data.officials)) {
+                    const reg = data.officials.find(o => 
+                        (o.position_key && o.position_key.includes('registrar')) ||
+                        (o.position && (o.position.includes('مسجل عام') || o.position.includes('المسجل العام')))
+                    );
+                    if (reg && reg.name) {
+                        registrarName = reg.name;
+                        if (reg.position) registrarPos = reg.position;
+                    }
+                    const dean = data.officials.find(o => 
+                        (o.position_key && o.position_key.includes('dean')) ||
+                        (o.position && (o.position.includes('عميد') || o.position.includes('العميد')))
+                    );
+                    if (dean && dean.name) {
+                        deanName = dean.name;
+                        if (dean.position) deanPos = dean.position;
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn("Could not fetch officials:", e);
+        }
+        return { registrarName, registrarPos, deanName, deanPos };
+    }
+
+    // الترويسة الرسمية لورقة الطباعة
+    function getOfficialHeaderHtml(semesterName) {
+        return `
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2.5px solid #000000; padding-bottom: 7px; margin-bottom: 8px;">
+                <div style="text-align: right; line-height: 1.35;">
+                    <div style="font-size: 12pt; font-weight: 800; font-family: 'Cairo', sans-serif;">دولة ليبيا</div>
+                    <div style="font-size: 10pt; font-weight: 700;">حكومة الوحدة الوطنية</div>
+                    <div style="font-size: 9.5pt; font-weight: 700;">وزارة التعليم التقني والفني</div>
+                    <div style="font-size: 10.5pt; font-weight: 800; color: #1e3a8a;">كلية طرابلس للعلوم والتقنية</div>
+                    <div style="font-size: 9pt; font-weight: 700; color: #334155;">مكتب المسجل العام</div>
+                </div>
+                <div style="text-align: center;">
+                    <img src="/static/images/شعار الكلية.jpeg" alt="شعار الكلية" style="height: 68px; width: 68px; object-fit: contain;" onerror="this.style.display='none'">
+                    <div style="font-size: 8.5pt; font-weight: 800; margin-top: 2px; color: #0f172a;">${semesterName || '2026 - ربيع'}</div>
+                </div>
+                <div style="text-align: left; line-height: 1.35; direction: ltr;">
+                    <div style="font-size: 9pt; font-weight: 800;">State of Libya</div>
+                    <div style="font-size: 8pt; font-weight: 700;">Government of National Unity</div>
+                    <div style="font-size: 7.5pt; font-weight: 700;">Ministry of Technical and Vocational Education</div>
+                    <div style="font-size: 8pt; font-weight: 800; color: #1e3a8a;">TRIPOLI COLLEGE OF SCIENCE & TECHNOLOGY</div>
+                    <div style="font-size: 7.5pt; font-weight: 700; color: #334155;">General Registrar Office</div>
+                </div>
+            </div>
+        `;
+    }
+
+    // CSS المشترك للطباعة
+    function getSharedPrintCSS() {
+        return `
+            @page {
+                size: A4 portrait;
+                margin: 5mm 7mm;
+            }
+            *, *::before, *::after { box-sizing: border-box; }
+            html, body {
+                margin: 0; padding: 0;
+                background: #ffffff !important;
+                color: #000000 !important;
+                direction: rtl;
+                font-family: 'Cairo', 'Amiri', 'Traditional Arabic', sans-serif;
+                font-size: 10pt;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .print-sheet {
+                border: 2px double #000000;
+                padding: 6mm 8mm;
+                width: 100%;
+                min-height: 278mm;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                background: #ffffff;
+                page-break-inside: avoid;
+                page-break-after: avoid;
+            }
+            .report-main-title {
+                font-family: 'Cairo', sans-serif;
+                font-size: 12.5pt;
+                font-weight: 900;
+                text-align: center;
+                margin: 2px 0 7px 0;
+                background: #f1f5f9;
+                padding: 4px 12px;
+                border: 1.5px solid #0f172a;
+                border-radius: 5px;
+                letter-spacing: 0.2px;
+            }
+            .kpi-table, .data-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 7px;
+            }
+            .kpi-table th, .kpi-table td,
+            .data-table th, .data-table td {
+                border: 1.5px solid #000000;
+                padding: 4px 6px;
+            }
+            .kpi-table th, .data-table th {
+                background: #f1f5f9;
+                font-weight: 800;
+                text-align: center;
+                font-family: 'Cairo', sans-serif;
+                font-size: 9pt;
+            }
+            .kpi-table td {
+                font-weight: 800;
+                font-size: 12pt;
+                font-family: 'Cairo', sans-serif;
+                text-align: center;
+            }
+            .data-table td {
+                font-size: 9pt;
+            }
+            .charts-container {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 7px;
+            }
+            .chart-box {
+                flex: 1;
+                border: 1.5px solid #000000;
+                border-radius: 5px;
+                padding: 5px;
+                text-align: center;
+                background: #ffffff;
+            }
+            .chart-title {
+                font-family: 'Cairo', sans-serif;
+                font-weight: 800;
+                font-size: 8.5pt;
+                margin-bottom: 3px;
+                color: #0f172a;
+            }
+            .chart-img {
+                max-width: 100%;
+                height: 115px;
+                object-fit: contain;
+                display: block;
+                margin: 0 auto;
+            }
+            .section-label {
+                font-weight: 800;
+                font-size: 9.5pt;
+                margin-bottom: 3px;
+                color: #0f172a;
+            }
+            .signatures-area {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-end;
+                margin-top: 8px;
+                padding: 0 15px;
+            }
+            .sig-card {
+                text-align: center;
+                min-width: 170px;
+                font-size: 10pt;
+            }
+            .sig-line {
+                border-bottom: 1.5px dotted #000000;
+                width: 140px;
+                margin: 18px auto 0 auto;
+            }
+            .print-footer-info {
+                display: flex;
+                justify-content: space-between;
+                font-size: 7.5pt;
+                color: #64748b;
+                border-top: 1px solid #cbd5e1;
+                padding-top: 3px;
+                margin-top: 5px;
+            }
+        `;
+    }
+
+    // طباعة خفية آمنة عبر iframe
+    function printViaHiddenIframe(htmlContent) {
+        const oldIframe = document.getElementById('reportPrintHiddenIframe');
+        if (oldIframe) oldIframe.remove();
+
+        const iframe = document.createElement('iframe');
+        iframe.id = 'reportPrintHiddenIframe';
+        Object.assign(iframe.style, {
+            position: 'fixed',
+            right: '-9999px',
+            bottom: '-9999px',
+            width: '0',
+            height: '0',
+            border: '0'
+        });
+        document.body.appendChild(iframe);
+
+        const doc = iframe.contentWindow.document;
+        doc.open();
+        doc.write(htmlContent);
+        doc.close();
+
+        let hasPrinted = false;
+        const triggerPrint = () => {
+            if (hasPrinted) return;
+            hasPrinted = true;
+            setTimeout(() => {
+                try {
+                    iframe.contentWindow.focus();
+                    iframe.contentWindow.print();
+                } catch (e) {
+                    console.error("Print error:", e);
+                }
+                setTimeout(() => {
+                    if (iframe && iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                }, 3000);
+            }, 300);
+        };
+
+        const images = doc.images;
+        let loaded = 0;
+        const total = images.length;
+        if (total === 0) {
+            triggerPrint();
+            return;
+        }
+        for (let i = 0; i < total; i++) {
+            if (images[i].complete) {
+                if (++loaded === total) triggerPrint();
+            } else {
+                images[i].onload = images[i].onerror = () => {
+                    if (++loaded === total) triggerPrint();
+                };
+            }
+        }
+        setTimeout(triggerPrint, 1200);
+    }
+
+    // 🖨️ 1. زر طباعة التقرير الإحصائي والرسومات البيانية
+    window.printStatisticalReport = async function() {
+        const { registrarName, registrarPos, deanName, deanPos } = await fetchRegistrarOfficials();
+        const rawData = document.getElementById('general-registrar-data');
+        let data = {};
+        if (rawData) {
+            try { data = JSON.parse(rawData.textContent); } catch (e) {}
+        }
+
+        let doughnutImg = '', barImg = '';
+        const c1 = document.getElementById('generalRegistrarChart');
+        const c2 = document.getElementById('levelsBarChart');
+        if (c1) { try { doughnutImg = c1.toDataURL('image/png'); } catch (e) {} }
+        if (c2) { try { barImg = c2.toDataURL('image/png'); } catch (e) {} }
+
+        const depts = data.departments || [];
+        const totalCourses = data.total_courses || 0;
+        let deptRows = '';
+        depts.forEach((d, idx) => {
+            const pct = totalCourses > 0 ? Math.round((d.courses_count / totalCourses) * 100) : 0;
+            deptRows += `<tr style="text-align:center;">
+                <td style="border:1.5px solid #000;padding:3px 5px;font-weight:bold;">${idx + 1}</td>
+                <td style="border:1.5px solid #000;padding:3px 8px;text-align:right;font-weight:bold;">${d.name}</td>
+                <td style="border:1.5px solid #000;padding:3px 5px;font-family:monospace;font-weight:bold;">${d.code || '—'}</td>
+                <td style="border:1.5px solid #000;padding:3px 5px;font-weight:bold;">${d.courses_count}</td>
+                <td style="border:1.5px solid #000;padding:3px 5px;font-weight:bold;">${d.professors_count}</td>
+                <td style="border:1.5px solid #000;padding:3px 5px;font-weight:bold;">${pct}%</td>
+                <td style="border:1.5px solid #000;padding:3px 5px;font-weight:bold;color:${d.is_active ? '#047857' : '#b91c1c'};">${d.is_active ? 'نشط ومعتمد' : 'مجمد'}</td>
+            </tr>`;
+        });
+
+        const printDate = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const printTime = new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+
+        const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير الإحصائي لمؤشرات المسجل العام</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@600;700;800;900&display=swap">
+    <style>${getSharedPrintCSS()}</style>
+</head>
+<body>
+<div class="print-sheet">
+    <div>
+        ${getOfficialHeaderHtml(data.current_semester)}
+
+        <div class="report-main-title">التقرير الإحصائي العام لمؤشرات الهيكل الأكاديمي والمسجل العام</div>
+
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>الأقسام العلمية</th>
+                    <th>الخطط الدراسية</th>
+                    <th>المقررات الدراسية</th>
+                    <th>هيئة التدريس</th>
+                    <th>قواعد المعادلة</th>
+                    <th>إجمالي الساعات</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="color:#0284c7;">${data.total_departments || 0}</td>
+                    <td style="color:#6366f1;">${data.total_plans || 0}</td>
+                    <td style="color:#059669;">${data.total_courses || 0} <span style="font-size:8.5pt;font-weight:normal;">(${data.total_active_courses || 0} نشط)</span></td>
+                    <td style="color:#d97706;">${data.total_professors || 0}</td>
+                    <td style="color:#e11d48;">${data.total_rules || 0}</td>
+                    <td style="color:#0f172a;">${data.total_credits || 0} <span style="font-size:8.5pt;font-weight:normal;">ساعة</span></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="charts-container">
+            ${doughnutImg ? `<div class="chart-box"><div class="chart-title">توزيع المقررات الدراسية على الأقسام العلمية</div><img src="${doughnutImg}" class="chart-img"></div>` : ''}
+            ${barImg ? `<div class="chart-box"><div class="chart-title">توزيع المقررات الدراسية على المستويات الدراسية</div><img src="${barImg}" class="chart-img"></div>` : ''}
+        </div>
+
+        <div class="section-label">بيان إحصائي بتوزيع المقررات وأعضاء هيئة التدريس حسب الأقسام:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th style="text-align:right;">القسم العلمي</th>
+                    <th style="width:70px;">الرمز</th>
+                    <th style="width:90px;">المقررات</th>
+                    <th style="width:100px;">أعضاء التدريس</th>
+                    <th style="width:70px;">النسبة</th>
+                    <th style="width:85px;">الحالة</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRows || '<tr><td colspan="7" style="text-align:center;padding:8px;">لا توجد بيانات للأقسام</td></tr>'}
+            </tbody>
+        </table>
+    </div>
+
+    <div>
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight:bold;">رئيس قسم التوثيق والدراسة</div>
+                <div style="font-size:8.5pt;color:#475569;margin-top:2px;">التوقيع والختم:</div>
+                <div class="sig-line"></div>
+            </div>
+            <div class="sig-card">
+                <div style="font-weight:bold;">${registrarName}</div>
+                <div style="font-size:8.5pt;color:#475569;margin-top:2px;">${registrarPos}</div>
+                <div class="sig-line"></div>
+            </div>
+            <div class="sig-card">
+                <div style="font-weight:bold;">${deanName}</div>
+                <div style="font-size:8.5pt;color:#475569;margin-top:2px;">${deanPos}</div>
+                <div class="sig-line"></div>
+            </div>
+        </div>
+
+        <div class="print-footer-info">
+            <span>تاريخ وتوقيت الطباعة: ${printDate} - ${printTime}</span>
+            <span>طبع بواسطة: ${data.user_username || 'المسجل العام'}</span>
+            <span>نظام كلية طرابلس للعلوم والتقنية الإلكتروني</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>`;
+
+        printViaHiddenIframe(html);
+    };
+
+    // 🖨️ 2. زر طباعة التقرير العادي (المعتمد الرسمي بالجداول)
+    window.printStandardReport = async function() {
+        const { registrarName, registrarPos, deanName, deanPos } = await fetchRegistrarOfficials();
+        const rawData = document.getElementById('general-registrar-data');
+        let data = {};
+        if (rawData) {
+            try { data = JSON.parse(rawData.textContent); } catch (e) {}
+        }
+
+        const depts = data.departments || [];
+        const totalCourses = data.total_courses || 0;
+        let deptRows = '';
+        depts.forEach((d, idx) => {
+            const pct = totalCourses > 0 ? Math.round((d.courses_count / totalCourses) * 100) : 0;
+            deptRows += `<tr style="text-align:center;">
+                <td style="border:1.5px solid #000;padding:4px 6px;font-weight:bold;">${idx + 1}</td>
+                <td style="border:1.5px solid #000;padding:4px 8px;text-align:right;font-weight:bold;">${d.name}</td>
+                <td style="border:1.5px solid #000;padding:4px 6px;font-family:monospace;font-weight:bold;">${d.code || '—'}</td>
+                <td style="border:1.5px solid #000;padding:4px 6px;font-weight:bold;">${d.courses_count} مقرر</td>
+                <td style="border:1.5px solid #000;padding:4px 6px;font-weight:bold;">${d.professors_count} عضو</td>
+                <td style="border:1.5px solid #000;padding:4px 6px;font-weight:bold;">${pct}%</td>
+                <td style="border:1.5px solid #000;padding:4px 6px;font-weight:bold;color:${d.is_active ? '#047857' : '#b91c1c'};">${d.is_active ? 'معتمد ونشط' : 'مجمد'}</td>
+            </tr>`;
+        });
+
+        const levelLabels = data.level_labels || [];
+        const levelCounts = data.level_counts || [];
+        let levelCols = '';
+        levelLabels.forEach((lvl, i) => {
+            levelCols += `
+                <td style="border:1.5px solid #000;padding:4px 6px;text-align:center;">
+                    <div style="font-weight:bold;font-size:8.5pt;color:#334155;">${lvl}</div>
+                    <div style="font-weight:bold;font-size:11pt;color:#0284c7;margin-top:2px;">${levelCounts[i] || 0}</div>
+                </td>
+            `;
+        });
+
+        const acts = data.recent_activities || [];
+        let actRows = '';
+        acts.slice(0, 5).forEach(act => {
+            actRows += `<tr>
+                <td style="border:1.5px solid #000;padding:3px 6px;font-weight:bold;width:120px;text-align:center;">${act.user}</td>
+                <td style="border:1.5px solid #000;padding:3px 8px;text-align:right;">${act.action}</td>
+                <td style="border:1.5px solid #000;padding:3px 6px;text-align:center;font-family:monospace;width:120px;">${act.date}</td>
+            </tr>`;
+        });
+
+        const printDate = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+        const printTime = new Date().toLocaleTimeString('ar-LY', { hour: '2-digit', minute: '2-digit' });
+
+        const html = `<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>التقرير الإداري والتأسيسي العام - مكتب المسجل العام</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@600;700;800;900&display=swap">
+    <style>${getSharedPrintCSS()}</style>
+</head>
+<body>
+<div class="print-sheet">
+    <div>
+        ${getOfficialHeaderHtml(data.current_semester)}
+
+        <div class="report-main-title">التقرير الإداري والتأسيسي العام - الهيكل الأكاديمي والمقررات</div>
+
+        <div class="section-label">أولاً: حصر المؤشرات الأكاديمية والتأسيسية العامة:</div>
+        <table class="kpi-table">
+            <thead>
+                <tr>
+                    <th>الأقسام العلمية</th>
+                    <th>الخطط المعتمدة</th>
+                    <th>إجمالي المقررات</th>
+                    <th>المقررات النشطة</th>
+                    <th>إجمالي الساعات</th>
+                    <th>هيئة التدريس</th>
+                    <th>قواعد المعادلة</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>${data.total_departments || 0}</td>
+                    <td>${data.total_plans || 0}</td>
+                    <td>${data.total_courses || 0}</td>
+                    <td style="color:#059669;">${data.total_active_courses || 0}</td>
+                    <td>${data.total_credits || 0}</td>
+                    <td>${data.total_professors || 0}</td>
+                    <td>${data.total_rules || 0}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="section-label" style="margin-top:6px;">ثانياً: بيان تفصيلي بالأقسام العلمية والكوادر والمقررات:</div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th style="width:30px;">#</th>
+                    <th style="text-align:right;">اسم القسم العلمي</th>
+                    <th style="width:70px;">الرمز</th>
+                    <th style="width:110px;">المقررات المعتمدة</th>
+                    <th style="width:110px;">أعضاء هيئة التدريس</th>
+                    <th style="width:70px;">النسبة</th>
+                    <th style="width:90px;">حالة القسم</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${deptRows || '<tr><td colspan="7" style="text-align:center;padding:8px;">لا توجد بيانات للأقسام</td></tr>'}
+            </tbody>
+        </table>
+
+        ${levelCols ? `
+        <div class="section-label" style="margin-top:6px;">ثالثاً: توزيع المقررات الدراسية على المستويات:</div>
+        <table class="data-table" style="margin-bottom:6px;">
+            <tbody><tr>${levelCols}</tr></tbody>
+        </table>` : ''}
+
+        ${actRows ? `
+        <div class="section-label" style="margin-top:6px;">رابعاً: أحدث الإجراءات والقرارات التأسيسية المسجلة:</div>
+        <table class="data-table" style="margin-bottom:6px;">
+            <thead>
+                <tr>
+                    <th>المستخدم</th>
+                    <th style="text-align:right;">الإجراء والبيان</th>
+                    <th>التاريخ والوقت</th>
+                </tr>
+            </thead>
+            <tbody>${actRows}</tbody>
+        </table>` : ''}
+    </div>
+
+    <div>
+        <div class="signatures-area">
+            <div class="sig-card">
+                <div style="font-weight:bold;">المسجل العام بالكلية</div>
+                <div style="font-size:9.5pt;font-weight:bold;color:#0f172a;margin-top:2px;">${registrarName}</div>
+                <div style="font-size:8.5pt;color:#475569;">${registrarPos}</div>
+                <div class="sig-line"></div>
+            </div>
+            <div class="sig-card">
+                <div style="font-weight:bold;">عميد الكلية</div>
+                <div style="font-size:9.5pt;font-weight:bold;color:#0f172a;margin-top:2px;">${deanName}</div>
+                <div style="font-size:8.5pt;color:#475569;">${deanPos}</div>
+                <div class="sig-line"></div>
+            </div>
+        </div>
+
+        <div class="print-footer-info">
+            <span>تاريخ وتوقيت التقرير: ${printDate} - ${printTime}</span>
+            <span>المستخدم المسؤول: ${data.user_username || 'المسجل العام'}</span>
+            <span>وثيقة إدارية رسمية معتمدة صادرة عن منظومة كلية طرابلس للعلوم والتقنية</span>
+        </div>
+    </div>
+</div>
+</body>
+</html>`;
+
+        printViaHiddenIframe(html);
+    };
 </script>
 {% endblock %}
