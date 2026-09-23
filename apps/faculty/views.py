@@ -1923,6 +1923,7 @@ def coordinator_dashboard(request):
         'professors_json': json.dumps(professors_list, ensure_ascii=False, cls=DjangoJSONEncoder),
         'departments': list(departments_qs.values('id', 'name', 'code')),
         'signatures': signatures,
+        'pass_fail_json': json.dumps({}, ensure_ascii=False),
     }
     return render(request, 'faculty/coordinator_dashboard.html', context)
 

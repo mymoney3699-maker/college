@@ -17,6 +17,10 @@ class GraduationEligibilityService:
     def check_student_eligibility(cls, student) -> bool:
         """
         فحص حالة الطالب: هل قام باجتياز وتصفية كافة مواد الخطة الدراسية بنجاح؟
+        شروط الاستيفاء الحقيقي:
+        1. أن يكون الطالب في المستوى النهائي (المستوى 8 فما فوق).
+        2. اجتياز وتصفية جميع مواد الخطة الدراسية الإجبارية للقسم والتخصص بنجاح.
+        3. مناقشة ورصد واجتياز مشروع التخرج بنجاح.
         """
         if not student:
             return False
@@ -29,9 +33,13 @@ class GraduationEligibilityService:
             if GraduationClearance.objects.filter(student=student).exists():
                 return True
 
-            # 2. إذا كان الطالب مسجلاً كجاهز مسبقاً
-            if getattr(student, 'is_ready_for_clearance', False):
-                return True
+            # 2. شرط المستوى: يجب أن يكون الطالب في المستوى 8 فما فوق
+            level_num = student.level.number if student.level else 0
+            if level_num < 8:
+                if getattr(student, 'is_ready_for_clearance', False):
+                    student.is_ready_for_clearance = False
+                    student.save(update_fields=['is_ready_for_clearance'])
+                return False
 
             # 3. جلب الخطة الدراسية والقسم للطالب
             study_plan = student.study_plan
@@ -68,9 +76,23 @@ class GraduationEligibilityService:
             # 6. التحقق من أن جميع المواد المقررة قد تم اجتيازها بالكامل
             is_all_passed = required_course_ids.issubset(passed_course_ids)
 
-            if is_all_passed:
+            # 7. التحقق من مشروع التخرج
+            project_passed = Grade.objects.filter(
+                student=student
+            ).filter(
+                Q(is_passed=True) | Q(total_grade__gte=50.0)
+            ).filter(
+                Q(course__name__icontains='مشروع') | Q(course__code__icontains='PROJ') | Q(course__name__icontains='project')
+            ).exists()
+
+            if is_all_passed and project_passed:
                 cls.mark_student_ready_and_notify(student)
                 return True
+
+            # إذا لم يكن مستوفياً، تصحيح الحالة إذا كانت مسجلة بالخطأ
+            if getattr(student, 'is_ready_for_clearance', False):
+                student.is_ready_for_clearance = False
+                student.save(update_fields=['is_ready_for_clearance'])
 
             return False
 

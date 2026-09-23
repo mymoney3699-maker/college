@@ -138,22 +138,29 @@ function printViaHiddenIframe(htmlContent) {
     const images = doc.images;
     let loaded = 0;
     const total = images.length;
+    let printed = false;
+
+    const safeTriggerPrint = () => {
+        if (printed) return;
+        printed = true;
+        triggerPrint();
+    };
 
     if (total === 0) {
-        triggerPrint();
+        safeTriggerPrint();
     } else {
         for (let i = 0; i < total; i++) {
             if (images[i].complete) {
                 loaded++;
-                if (loaded === total) triggerPrint();
+                if (loaded === total) safeTriggerPrint();
             } else {
                 images[i].onload = images[i].onerror = () => {
                     loaded++;
-                    if (loaded === total) triggerPrint();
+                    if (loaded === total) safeTriggerPrint();
                 };
             }
         }
-        setTimeout(triggerPrint, 1500);
+        setTimeout(safeTriggerPrint, 1500);
     }
 }
 

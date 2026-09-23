@@ -451,6 +451,14 @@
     "message": "{{ grade_appeals_job_message|default:''|escapejs }}"
 }
 </script>
+
+<!-- حل أخطاء الـ Linter: تمرير الصلاحية كـ JSON نظيف دون كسر قواعد الجافاسكربت -->
+<script id="appeals-permissions-data" type="application/json">
+{
+    "canEdit": {% if request.user|has_exec_perm:'grades.change_gradeappeal' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'change_gradeappeal' or request.user|has_exec_perm:'change_grade' %}true{% else %}false{% endif %}
+}
+</script>
+
 <script>
 try {
     const _ad = JSON.parse(document.getElementById('appeals-job-data').textContent);
@@ -460,10 +468,17 @@ try {
     window.IS_GRADE_APPEALS_JOB_OPEN = true;
     window.GRADE_APPEALS_JOB_MESSAGE = '';
 }
+
+try {
+    const _pd = JSON.parse(document.getElementById('appeals-permissions-data').textContent);
+    window.CAN_EDIT_APPEALS = Boolean(_pd.canEdit);
+} catch(e) {
+    window.CAN_EDIT_APPEALS = true;
+}
+
 // مسار الشعار للطباعة
 window.COLLEGE_LOGO_URL = "{% static 'images/شعار الكلية.jpeg' %}";
-window.CAN_EDIT_APPEALS = {% if request.user|has_exec_perm:'grades.change_gradeappeal' or request.user|has_exec_perm:'grades.change_grade' or request.user|has_exec_perm:'change_gradeappeal' or request.user|has_exec_perm:'change_grade' %}true{% else %}false{% endif %};
 </script>
 <script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
-<script src="{% static 'grades/js/grade_appeals.js' %}?v=1.0.3"></script>
+<script src="{% static 'grades/js/grade_appeals.js' %}?v=1.0.4"></script>
 {% endblock %}

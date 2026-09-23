@@ -5,6 +5,9 @@
 
 {% block extra_css %}
 <style>
+/* ============================================================
+   1. تنسيقات شاشة العرض العادية (Screen Styles)
+   ============================================================ */
 .transfers-page-container {
     width: 100%;
     max-width: 1350px;
@@ -15,7 +18,7 @@
     box-sizing: border-box;
 }
 
-/* 1. بانر الهيدر الموحد بلون السايدبار */
+/* بانر الهيدر الموحد */
 .transfers-header-banner {
     background: linear-gradient(135deg, #307e92 0%, #256677 100%);
     background-color: #307e92;
@@ -70,7 +73,7 @@
     opacity: 0.95;
 }
 
-/* 2. شريط الفلترة والبحث */
+/* بطاقة الفلترة */
 .filter-card {
     background: #ffffff;
     border-radius: 14px;
@@ -152,7 +155,7 @@
     gap: 4px;
 }
 
-/* 3. جدول البيانات */
+/* جدول الشاشة العادية */
 .table-card {
     background: #ffffff;
     border-radius: 16px;
@@ -244,7 +247,7 @@
     border-color: #38bdf8;
 }
 
-/* 4. الحاوية السفلية للأزرار والإجراءات */
+/* الحاوية السفلية */
 .bottom-actions-card {
     margin-top: 1.5rem;
     padding: 1.25rem;
@@ -328,8 +331,200 @@
 }
 
 /* ============================================================
-   🌙 Dark Mode Overrides
+   2. كشف الطباعة الرسمي (Official Print Sheet - Full A4 Frame)
    ============================================================ */
+.print-official-doc {
+    display: none;
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 5mm 7mm;
+    }
+
+    * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        box-sizing: border-box !important;
+    }
+
+    body * {
+        visibility: hidden;
+    }
+
+    .print-official-doc,
+    .print-official-doc * {
+        visibility: visible !important;
+    }
+
+    .print-official-doc {
+        display: block !important;
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background: #fff;
+        color: #000;
+        font-family: 'Amiri', 'Traditional Arabic', 'Times New Roman', serif;
+        direction: rtl;
+    }
+
+    /* 🔥 الإطار على كامل كبر وارتفاع ورقة الـ A4 */
+    .print-outer-frame {
+        border: 2.5px solid #000;
+        padding: 2.5px;
+        width: 100%;
+        height: 282mm;
+        min-height: 282mm;
+        max-height: 282mm;
+        box-sizing: border-box;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+
+    .print-inner-frame {
+        border: 1px solid #000;
+        padding: 6mm 9mm 7mm 9mm;
+        width: 100%;
+        height: 100%;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* ترويسة الكلية الرسمية الثلاثية */
+    .print-header-grid {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        border-bottom: 2px solid #000;
+        padding-bottom: 6px;
+        margin-bottom: 8px;
+    }
+
+    .print-header-ar {
+        width: 33%;
+        text-align: right;
+        font-size: 11pt;
+        line-height: 1.35;
+        font-weight: bold;
+    }
+
+    .print-header-logo-box {
+        width: 34%;
+        text-align: center;
+    }
+
+    .print-header-logo-box img {
+        width: 66px;
+        height: 66px;
+        object-fit: contain;
+        border-radius: 50%;
+        display: block;
+        margin: 0 auto;
+    }
+
+    .print-header-en {
+        width: 33%;
+        text-align: left;
+        direction: ltr;
+        font-family: Arial, sans-serif;
+        font-size: 9.5pt;
+        line-height: 1.25;
+        font-weight: 600;
+    }
+    .print-header-en .en-title {
+        font-size: 10.5pt;
+        font-weight: 900;
+        margin-top: 2px;
+    }
+
+    /* عنوان الوثيقة */
+    .print-doc-title-box {
+        text-align: center;
+        margin: 5px 0 7px 0;
+    }
+
+    .print-doc-title {
+        display: inline-block;
+        border: 1.5px solid #000;
+        background: #f2f2f2;
+        padding: 4px 28px;
+        font-size: 13.5pt;
+        font-weight: bold;
+        letter-spacing: 0.5px;
+    }
+
+    /* شريط البيانات الوصفية للكشف */
+    .print-meta-bar {
+        display: flex;
+        justify-content: space-between;
+        border: 1px solid #000;
+        background: #fafafa;
+        padding: 4px 10px;
+        font-size: 10pt;
+        font-weight: bold;
+        margin-bottom: 8px;
+    }
+
+    /* جدول كشف الطلاب المطبوع */
+    .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: 1.5px solid #000;
+        margin-top: 2px;
+    }
+
+    .print-table th {
+        background-color: #eaeaea;
+        border: 1px solid #000;
+        padding: 7px 5px;
+        font-size: 10.5pt;
+        font-weight: bold;
+        text-align: center;
+    }
+
+    .print-table td {
+        border: 1px solid #333;
+        padding: 8.5px 8px;
+        font-size: 10.5pt;
+        font-weight: 600;
+        text-align: center;
+    }
+
+    .print-table td.student-name-col {
+        text-align: right;
+        font-weight: bold;
+        padding-right: 12px;
+    }
+
+    /* 🔥 التوقيعات مرفوعة للأعلى بمسافة مريحة ومتناسقة بعد الجدول مباشرة */
+    .print-signatures-block {
+        width: 100%;
+        margin-top: 50px;
+        padding-top: 10px;
+        page-break-inside: avoid;
+    }
+
+    .print-signatures-table {
+        width: 100%;
+        border-collapse: collapse;
+        border: none;
+        text-align: center;
+    }
+
+    .print-signatures-table td {
+        border: none;
+        vertical-align: top;
+        padding: 0 15px;
+    }
+}
+
+/* الوضع الليلي للشاشة العادية */
 html.dark .transfers-header-banner {
     background: linear-gradient(135deg, #296c7d 0%, #1e525f 100%) !important;
     background-color: #296c7d !important;
@@ -393,7 +588,7 @@ html.dark .btn-action-secondary {
 {% block content %}
 <div class="transfers-page-container">
 
-    <!-- 1. بانر الهيدر الموحد بلون السايدبار (بدون أزرار) -->
+    <!-- 1. بانر الهيدر الموحد بلون السايدبار -->
     <div class="transfers-header-banner">
         <div class="transfers-header-info">
             <div class="transfers-header-icon">
@@ -440,12 +635,12 @@ html.dark .btn-action-secondary {
         </form>
     </div>
 
-    <!-- 3. جدول البيانات -->
+    <!-- 3. جدول البيانات على الشاشة -->
     <div class="table-card">
         <div class="table-header-bar">
             <h2 class="table-header-title">
                 <span class="material-symbols-outlined" style="color: #4f46e5; font-size: 20px;">alt_route</span>
-                <span>إجمالي الطلاب متغيري المسار / المعادَلين: {{ total_count }}</span>
+                <span>إجمالي الطلاب متغيّري المسار / المعادَلين: {{ total_count }}</span>
             </h2>
         </div>
 
@@ -455,7 +650,7 @@ html.dark .btn-action-secondary {
                     <tr>
                         <th>#</th>
                         <th>رقم القيد</th>
-                        <th>اسم الطالب</th>
+                        <th>اسم الطالب </th>
                         <th>القسم العلمي</th>
                         <th>المستوى</th>
                         <th>نوع/حالة الطالب</th>
@@ -467,7 +662,20 @@ html.dark .btn-action-secondary {
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td style="font-family: monospace; font-weight: 800; color: #307e92;">{{ student.student_id|default:"--" }}</td>
-                        <td style="font-weight: 800;">{{ student.name }}</td>
+                        
+                        <!-- الاسم رباعي في الشاشة -->
+                        <td style="font-weight: 800;">
+                            {% if student.get_full_name %}
+                                {{ student.get_full_name }}
+                            {% elif student.full_name %}
+                                {{ student.full_name }}
+                            {% elif student.father_name %}
+                                {{ student.name|default:student.first_name }} {{ student.father_name }} {{ student.grandfather_name|default:student.grand_father_name|default:"" }} {{ student.surname|default:student.family_name|default:student.last_name|default:"" }}
+                            {% else %}
+                                {{ student.name }}
+                            {% endif %}
+                        </td>
+
                         <td>{{ student.department.name|default:"--" }}</td>
                         <td>
                             <span style="font-weight: 700;">المستوى {{ student.level.number|default:"--" }}</span>
@@ -498,7 +706,7 @@ html.dark .btn-action-secondary {
         </div>
     </div>
 
-    <!-- 4. الحاوية السفلية المخصصة للأزرار والإجراءات أسفل الجدول -->
+    <!-- 4. الحاوية السفلية المخصصة للأزرار -->
     <div class="bottom-actions-card">
         <div class="bottom-actions-group">
             <a href="{% url 'renewal:notifications' %}" class="btn-action-secondary">
@@ -516,7 +724,7 @@ html.dark .btn-action-secondary {
                 <span class="material-symbols-outlined" style="font-size: 18px;">alt_route</span>
                 <span>معادلة المواد وتغيير المسار</span>
             </a>
-            <button type="button" onclick="window.print()" class="btn-action-print">
+            <button type="button" onclick="handlePrintReport()" class="btn-action-print">
                 <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
                 <span>طباعة الكشف</span>
             </button>
@@ -524,4 +732,221 @@ html.dark .btn-action-secondary {
     </div>
 
 </div>
+
+<!-- ============================================================
+     5. كشف الطباعة الرسمي (الإطار ممتد على كامل ورقة الـ A4)
+     ============================================================ -->
+<div class="print-official-doc">
+    <div class="print-outer-frame">
+        <div class="print-inner-frame">
+
+            <!-- ترويسة الكلية الرسمية الثلاثية -->
+            <div class="print-header-grid">
+                <div class="print-header-ar">
+                    <div>دولة ليبيا</div>
+                    <div>حكومة الوحدة الوطنية</div>
+                    <div>وزارة التعليم التقني والفني</div>
+                    <div style="font-size: 11.5pt; font-weight: 900; margin-top: 1px;">كلية طرابلس للعلوم والتقنية</div>
+                    <div style="font-size: 9.5pt; color: #333; font-weight: normal;">قسم الدراسة والامتحانات</div>
+                </div>
+                <div class="print-header-logo-box">
+                    <img src="{% static 'images/شعار الكلية.jpeg' %}" alt="شعار الكلية" onerror="this.onerror=null; this.src='/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';">
+                </div>
+                <div class="print-header-en">
+                    <div>State of Libya</div>
+                    <div>Government of National Unity</div>
+                    <div>Ministry of Technical and Vocational Education</div>
+                    <div class="en-title">TRIPOLI COLLEGE OF TECHNOLOGY</div>
+                </div>
+            </div>
+
+            <!-- عنوان الوثيقة -->
+            <div class="print-doc-title-box">
+                <span class="print-doc-title">كشف الطلاب الذين قاموا بتغيير مسارهم الأكاديمي</span>
+            </div>
+
+            <!-- شريط البيانات الوصفية -->
+            <div class="print-meta-bar">
+                <div>
+                    <span>القسم العلمي: </span>
+                    <strong>
+                        {% if selected_dept_id %}
+                            {% for dept in departments %}
+                                {% if selected_dept_id == dept.id|stringformat:"s" %}{{ dept.name }}{% endif %}
+                            {% endfor %}
+                        {% else %}
+                            كافة الأقسام العلمية
+                        {% endif %}
+                    </strong>
+                </div>
+                <div>
+                    <span>إجمالي الطلاب: </span>
+                    <strong>{{ total_count }} طالب</strong>
+                </div>
+                <div>
+                    <span>تاريخ الإصدار: </span>
+                    <strong>{% now "Y/m/d" %} م</strong>
+                </div>
+            </div>
+
+            <!-- جدول الكشف الرسمي المطبوع -->
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">ت</th>
+                        <th style="width: 15%;">رقم القيد</th>
+                        <th style="width: 38%;">اسم الطالب</th>
+                        <th style="width: 20%;">القسم العلمي الحالي</th>
+                        <th style="width: 10%;">المستوى</th>
+                        <th style="width: 12%;">الحالة الدراسية</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td style="font-family: 'Courier New', monospace; font-weight: bold; font-size: 11pt;">
+                            {{ student.student_id|default:"--" }}
+                        </td>
+                        
+                        <!-- الاسم رباعي في ورقة الطباعة -->
+                        <td class="student-name-col">
+                            {% if student.get_full_name %}
+                                {{ student.get_full_name }}
+                            {% elif student.full_name %}
+                                {{ student.full_name }}
+                            {% elif student.father_name %}
+                                {{ student.name|default:student.first_name }} {{ student.father_name }} {{ student.grandfather_name|default:student.grand_father_name|default:"" }} {{ student.surname|default:student.family_name|default:student.last_name|default:"" }}
+                            {% else %}
+                                {{ student.name }}
+                            {% endif %}
+                        </td>
+
+                        <td>{{ student.department.name|default:"--" }}</td>
+                        <td>المستوى {{ student.level.number|default:"--" }}</td>
+                        <td>
+                            {{ student.student_type.name|default:student.student_status.name|default:"تغيير مسار" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="padding: 20px; font-weight: bold; color: #666;">
+                            لا يوجد طلاب مسجلون بتغيير المسار حالياً
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+            <!-- 🔥 التوقيعات مرفوعة للأعلى بعد الجدول بمسافة متناسقة ومريحة (تم حذف الكلام الإضافي) -->
+            <div class="print-signatures-block">
+                <table class="print-signatures-table">
+                    <tr>
+                        <!-- المسؤول الأول (اليمين): المسجل العام -->
+                        <td style="width: 50%;">
+                            <div id="printRegistrarName" style="font-size: 12.5pt; font-weight: 900; color: #000; margin-bottom: 3px;">
+                                ...
+                            </div>
+                            <div id="printRegistrarPos" style="font-size: 11pt; font-weight: 800; color: #222;">
+                                المسجل العام
+                            </div>
+                            <div style="margin-top: 18px; font-size: 9.5pt; font-weight: bold;">
+                                التوقيع والاعتماد: ............................................
+                            </div>
+                        </td>
+
+                        <!-- المسؤول الثاني (اليسار): قسم الدراسة والامتحانات (ديناميكي) -->
+                        <td style="width: 50%;">
+                            <div id="printDirectorName" style="font-size: 12.5pt; font-weight: 900; color: #000; margin-bottom: 3px;">
+                                ...
+                            </div>
+                            <div id="printDirectorPos" style="font-size: 11pt; font-weight: 800; color: #222;">
+                                قسم الدراسة والامتحانات
+                            </div>
+                            <div style="margin-top: 18px; font-size: 9.5pt; font-weight: bold;">
+                                التوقيع والاعتماد: ............................................
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- تضمين ملف مساعد المسؤولين المعتمدين -->
+<script src="{% static 'users/js/officials_helper.js' %}?v=1.0.0"></script>
+
+<script>
+/**
+ * دالة ذكية وشاملة لجلب مسؤولي الكلية المعتمدين وتحديث الأسماء فوراً من صفحة إدارة المسؤولين
+ */
+function syncOfficialSignatures() {
+    fetch('/users/api/officials/')
+        .then(response => {
+            if (!response.ok) throw new Error('Network response was not ok');
+            return response.json();
+        })
+        .then(data => {
+            let list = [];
+            if (Array.isArray(data)) {
+                list = data;
+            } else if (data && Array.isArray(data.officials)) {
+                list = data.officials;
+            } else if (data && typeof data === 'object') {
+                for (const [key, val] of Object.entries(data)) {
+                    if (val && typeof val === 'object') {
+                        list.push({ ...val, _key: key });
+                    } else if (typeof val === 'string') {
+                        list.push({ position: key, name: val, _key: key });
+                    }
+                }
+            }
+
+            function findOfficial(keywords) {
+                return list.find(item => {
+                    const haystack = `${item._key || ''} ${item.position || ''} ${item.title || ''} ${item.role_name || ''} ${item.role || ''}`;
+                    return keywords.some(kw => haystack.includes(kw));
+                });
+            }
+
+            // 1. مسؤول قسم الدراسة والامتحانات (د. فاطمة عمران الشريف)
+            const examOfficer = findOfficial(['الدراسة والامتحانات', 'الدراسه والامتحانات', 'امتحانات', 'exam_director', 'study_exams']);
+            if (examOfficer && examOfficer.name) {
+                const elName = document.getElementById('printDirectorName');
+                const elPos  = document.getElementById('printDirectorPos');
+                if (elName) elName.textContent = examOfficer.name;
+                if (elPos) elPos.textContent = examOfficer.position || 'قسم الدراسة والامتحانات';
+            }
+
+            // 2. المسجل العام (أ. احمد محمد علي)
+            const registrarOfficer = findOfficial(['المسجل العام', 'مسجل عام', 'registrar', 'general_registrar', 'المسجل']);
+            if (registrarOfficer && registrarOfficer.name) {
+                const elName = document.getElementById('printRegistrarName');
+                const elPos  = document.getElementById('printRegistrarPos');
+                if (elName) elName.textContent = registrarOfficer.name;
+                if (elPos) elPos.textContent = registrarOfficer.position || 'المسجل العام';
+            }
+        })
+        .catch(err => {
+            console.warn('Officials sync note:', err);
+        });
+}
+
+// تشغيل المزامنة فور فتح الصفحة
+document.addEventListener('DOMContentLoaded', () => {
+    syncOfficialSignatures();
+});
+
+// تشغيل الطباعة بعد المزامنة
+function handlePrintReport() {
+    syncOfficialSignatures();
+    setTimeout(() => {
+        window.print();
+    }, 150);
+}
+</script>
 {% endblock %}

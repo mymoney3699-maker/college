@@ -24,14 +24,14 @@ function loadDepartmentAnalytics() {
         method: 'GET',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) return;
-        renderStatusChart(data.status_counts);
-        renderTopFailedChart(data.top_failed_courses);
-        renderGpaTrendChart(data.gpa_trends);
-    })
-    .catch(error => console.error('❌ Error fetching analytics:', error));
+        .then(response => response.json())
+        .then(data => {
+            if (!data.success) return;
+            renderStatusChart(data.status_counts);
+            renderTopFailedChart(data.top_failed_courses);
+            renderGpaTrendChart(data.gpa_trends);
+        })
+        .catch(error => console.error('❌ Error fetching analytics:', error));
 }
 
 function loadTopFailedCoursesOnly(levelId = 'all') {
@@ -44,13 +44,13 @@ function loadTopFailedCoursesOnly(levelId = 'all') {
         method: 'GET',
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.top_failed_courses) {
-            renderTopFailedChart(data.top_failed_courses);
-        }
-    })
-    .catch(error => console.error('❌ Error fetching top failed courses:', error));
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.top_failed_courses) {
+                renderTopFailedChart(data.top_failed_courses);
+            }
+        })
+        .catch(error => console.error('❌ Error fetching top failed courses:', error));
 }
 
 const statusColorMap = {
@@ -189,16 +189,16 @@ function renderGpaTrendChart(gpaData) {
 function printDepartmentSummaryReport() {
     const deptName = window.DEPT_NAME || document.querySelector('.h3.fw-bold span:first-of-type, .page-header-title span:first-of-type')?.textContent.trim() || 'القسم العلمي';
     const deptCode = window.DEPT_CODE || document.querySelector('.badge.font-monospace')?.textContent.trim() || '';
-    
+
     const logoUrl = window.COLLEGE_LOGO_URL || '/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';
     const dateStr = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
     // قراءة الإحصائيات من كروت الصفحة - البحث عن h3 داخل stat-card بالترتيب
     const statCards = document.querySelectorAll('.stat-card h3');
     const totalStudents = statCards[0]?.textContent.trim() || '0';
-    const facultyCount  = statCards[1]?.textContent.trim() || '0';
-    const lowGpaCount   = statCards[2]?.textContent.trim() || '0';
-    const coursesCount  = statCards[3]?.textContent.trim() || '0';
+    const facultyCount = statCards[1]?.textContent.trim() || '0';
+    const lowGpaCount = statCards[2]?.textContent.trim() || '0';
+    const coursesCount = statCards[3]?.textContent.trim() || '0';
 
     const coursesTableRows = document.querySelectorAll('[x-show="activeTab === \'courses\'"] table tbody tr');
     let coursesList = [];
@@ -206,15 +206,15 @@ function printDepartmentSummaryReport() {
     coursesTableRows.forEach(row => {
         const cols = row.querySelectorAll('td');
         if (cols.length >= 5) {
-            const code  = cols[1]?.textContent.trim() || '';
-            const name  = cols[2]?.textContent.trim() || '';
+            const code = cols[1]?.textContent.trim() || '';
+            const name = cols[2]?.textContent.trim() || '';
             const hours = cols[3]?.textContent.trim() || '';
             const level = cols[4]?.textContent.trim() || '';
-            
+
             let levelNum = 99;
             const match = level.match(/\d+/);
             if (match) levelNum = parseInt(match[0]);
-            
+
             coursesList.push({ code, name, hours, level, levelNum });
         }
     });
@@ -456,8 +456,8 @@ function printDepartmentStudentsReport() {
     console.log('🖨️ printDepartmentStudentsReport triggered');
 
     const deptName = window.DEPT_NAME || document.querySelector('.h3.fw-bold span:first-of-type, .page-header-title span:first-of-type')?.textContent.trim() || 'القسم العلمي';
-    const logoUrl  = window.COLLEGE_LOGO_URL || '/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';
-    const dateStr  = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
+    const logoUrl = window.COLLEGE_LOGO_URL || '/static/images/%D8%B4%D8%B9%D8%A7%D8%B1%20%D8%A7%D9%84%D9%83%D9%84%D9%8A%D8%A9.jpeg';
+    const dateStr = new Date().toLocaleDateString('ar-LY', { year: 'numeric', month: '2-digit', day: '2-digit' });
 
     // 1. قراءة صفوف الجدول المباشر من #deptStudentsTable فقط (للدقة)
     const studentsTable = document.getElementById('deptStudentsTable');
@@ -470,7 +470,7 @@ function printDepartmentStudentsReport() {
         const cols = tr.querySelectorAll('td');
         if (cols.length >= 3) {
             const regId = cols[1]?.textContent.trim() || '';
-            const name  = cols[2]?.textContent.trim() || '';
+            const name = cols[2]?.textContent.trim() || '';
             const level = cols[4]?.textContent.trim() || '';
 
             // تجاهل صف الـ empty state وصفوف بدون بيانات سليمة
@@ -677,11 +677,11 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     const levelSelect = document.getElementById('deptLevelFilter');
 
     if (levelSelect) {
-        levelSelect.addEventListener('change', function() {
+        levelSelect.addEventListener('change', function () {
             loadTopFailedCoursesOnly(this.value);
         });
     }
