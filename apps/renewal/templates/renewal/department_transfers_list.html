@@ -687,10 +687,14 @@ html.dark .btn-action-secondary {
                             </span>
                         </td>
                         <td>
+                            {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
                             <a href="{% url 'grades:course_equivalence' %}" class="action-btn-link" title="إدارة معادلة المواد">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">tune</span>
                                 <span>معادلة المواد</span>
                             </a>
+                            {% else %}
+                            <span class="text-muted small">--</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -720,10 +724,12 @@ html.dark .btn-action-secondary {
         </div>
 
         <div class="bottom-actions-group">
+            {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
             <a href="{% url 'grades:course_equivalence' %}" class="btn-action-primary">
                 <span class="material-symbols-outlined" style="font-size: 18px;">alt_route</span>
                 <span>معادلة المواد وتغيير المسار</span>
             </a>
+            {% endif %}
             <button type="button" onclick="handlePrintReport()" class="btn-action-print">
                 <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
                 <span>طباعة الكشف</span>

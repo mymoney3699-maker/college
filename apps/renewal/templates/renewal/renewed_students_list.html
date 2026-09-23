@@ -496,10 +496,12 @@ html.dark .btn-action-secondary {
         </div>
 
         <div class="bottom-actions-group">
+            {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
             <a href="{% url 'renewal:renew_registration' %}" class="btn-action-primary">
                 <span class="material-symbols-outlined" style="font-size: 18px;">autorenew</span>
                 <span>إدارة واعتماد تجديد القيد</span>
             </a>
+            {% endif %}
             <button type="button" onclick="window.print()" class="btn-action-print">
                 <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
                 <span>طباعة الكشف</span>

@@ -172,3 +172,159 @@ class GraduationEligibilityService:
                 ready_count += 1
 
         return ready_count
+
+
+class FailureWarningService:
+    """
+    خدمة رصد وتوليد ومزامنة إنذارات الرسوب والتعثر الأكاديمي (رسوب 3 مرات فما فوق) تلقائياً
+    للمسجل العام وإدارة الكلية وقسم الدراسة والامتحانات والطلاب.
+    """
+
+    @classmethod
+    def scan_student(cls, student):
+        """
+        فحص الطالب ورصد أي مقررات رسب فيها 3 مرات فما فوق أو تعثر تراكمي
+        وتوليد إشعارات تحذيرية رسمية فوراً مع منع التكرار.
+        """
+        if not student:
+            return 0
+
+        try:
+            from apps.grades.models import Grade
+            from apps.renewal.models import CourseRegistration
+            from apps.student.models import Notification
+            from django.db import models
+
+            all_grades = list(student.grade_set.all().select_related('course', 'semester'))
+            if not all_grades:
+                return 0
+
+            # 1. المواد التي تم اجتيازها بنجاح
+            passed_course_ids = {
+                g.course_id for g in all_grades
+                if g.is_passed or (g.is_final_entered and g.total_grade >= 50.0)
+            }
+
+            # 2. تجميع الدرجات لكل مادة
+            course_grades_map = {}
+            for g in all_grades:
+                if g.course:
+                    course_grades_map.setdefault(g.course, []).append(g)
+
+            created_count = 0
+            failed_courses = []
+
+            for course, c_grades in course_grades_map.items():
+                # إذا اجتاز الطالب المادة في محاولة لاحقة، نزيل أي إشعار رسوب قديم لها
+                if course.id in passed_course_ids:
+                    Notification.objects.filter(
+                        student=student,
+                        notification_type='failed_three_times',
+                        title__icontains=course.code
+                    ).delete()
+                    continue
+
+                historical_fails = sum(
+                    1 for g in c_grades
+                    if not g.is_passed or (g.is_final_entered and g.total_grade < 50.0)
+                )
+                max_grade_attempt = max([g.attempt_number or 1 for g in c_grades], default=1)
+                reg_qs = CourseRegistration.objects.filter(student=student, course=course)
+                reg_count = reg_qs.count()
+                max_reg_attempt = reg_qs.aggregate(models.Max('attempt_number'))['attempt_number__max'] or 1
+
+                exact_failure_count = max(historical_fails, max_grade_attempt, max_reg_attempt, reg_count, 1)
+                failed_courses.append((course, exact_failure_count))
+
+                # رصد الرسوب 3 مرات فما فوق للمقرر الواحد (معاود 3 مرات أو أكثر)
+                if exact_failure_count >= 3:
+                    rep_text = Grade.format_repetition_text(exact_failure_count)
+                    title = f"🚨 إنذار رسوب ({rep_text}): {student.name} ({course.code})"
+
+                    # التحقق من عدم وجود إشعار سابق لنفس الطالب ونفس المقرر
+                    existing = Notification.objects.filter(
+                        student=student,
+                        notification_type='failed_three_times',
+                        title__icontains=course.code
+                    ).first()
+
+                    if not existing:
+                        dept_name = student.department.name if student.department else "العام"
+                        msg = (
+                            f"تنبيه أكاديمي عاجل: رسب الطالب ({student.name} - رقم القيد: {student.student_id}) "
+                            f"في مقرر ({course.name} - رمز: {course.code}) للمرة الثالثة ({rep_text}). "
+                            f"القسم الأكاديمي: {dept_name}. "
+                            f"الحالة الأكاديمية: إيقاف قيد وفصل مؤقت للعرض على لجنة الكلية."
+                        )
+                        link = f"/grades/failed-students-report/?search={student.student_id}"
+
+                        Notification.objects.create(
+                            student=student,
+                            notification_type='failed_three_times',
+                            title=title,
+                            message=msg,
+                            link=link,
+                            target_role='registrar',
+                            icon='warning',
+                            is_read=False
+                        )
+                        created_count += 1
+
+            # 3. رصد التعثر الأكاديمي الشامل (3 مقررات رسوب غير مجتازة فأكثر)
+            if len(failed_courses) >= 3:
+                multi_title = f"🚨 إنذار تعثر أكاديمي ({len(failed_courses)} مقررات رسوب): {student.name}"
+                existing_multi = Notification.objects.filter(
+                    student=student,
+                    notification_type='failed_three_times',
+                    title__icontains="تعثر أكاديمي"
+                ).first()
+
+                if not existing_multi:
+                    dept_name = student.department.name if student.department else "العام"
+                    msg = (
+                        f"تنبيه أكاديمي: رُصد لدى الطالب ({student.name} - رقم القيد: {student.student_id}) "
+                        f"عدد ({len(failed_courses)}) مقررات رسوب غير مجتازة بقسم ({dept_name}). "
+                        f"يتطلب استدعاء الطالب ومراجعة ملفه الأكاديمي لاتخاذ الإجراء المناسب."
+                    )
+                    link = f"/grades/failed-students-report/?search={student.student_id}"
+
+                    Notification.objects.create(
+                        student=student,
+                        notification_type='failed_three_times',
+                        title=multi_title,
+                        message=msg,
+                        link=link,
+                        target_role='registrar',
+                        icon='warning',
+                        is_read=False
+                    )
+                    created_count += 1
+
+            return created_count
+
+        except Exception as e:
+            logger.error(f"Error scanning student {student.id} for failure warnings: {e}")
+            return 0
+
+    @classmethod
+    def sync_failure_warnings(cls):
+        """
+        فحص ومزامنة جماعية لجميع الطلاب الذين لديهم رسوب أو تسجيلات متكررة
+        لتوليد إنذارات الرسوب 3 مرات تلقائياً
+        """
+        try:
+            from apps.student.models import Student
+            from django.db.models import Q
+
+            candidates = Student.objects.filter(
+                Q(grade__is_passed=False) | Q(courseregistration__attempt_number__gte=3)
+            ).distinct()
+
+            total_created = 0
+            for student in candidates:
+                total_created += cls.scan_student(student)
+
+            return total_created
+        except Exception as e:
+            logger.error(f"Error in sync_failure_warnings: {e}")
+            return 0

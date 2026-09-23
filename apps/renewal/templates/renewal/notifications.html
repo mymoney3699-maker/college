@@ -256,7 +256,7 @@
 .notif-card-message {
     font-size: 0.88rem;
     color: #475569;
-    margin: 0.35rem 0 0 0;
+    margin: 0.35rem 0 0.75rem 0;
     line-height: 1.5;
 }
 
@@ -418,7 +418,7 @@ html.dark .icon-professor_grade_reply, html.dark .icon-grade_submission { backgr
         <div class="notif-filter-tabs">
             <a href="?type=all" class="notif-tab {% if filter_type == 'all' %}active{% endif %}">
                 <span class="material-symbols-outlined" style="font-size: 16px;">list_alt</span>
-                <span>الكل ({{ total_count }})</span>
+                <span>الكل ({{ all_count|default:total_count }})</span>
             </a>
             
             {% if request.user.role in 'graduate_officer,graduates' %}
@@ -488,7 +488,7 @@ html.dark .icon-professor_grade_reply, html.dark .icon-grade_submission { backgr
 
             <a href="?type=failed_three_times" class="notif-tab tab-danger {% if filter_type == 'failed_three_times' %}active{% endif %}">
                 <span class="material-symbols-outlined" style="font-size: 16px;">warning</span>
-                <span>🚨 إنذارات رسوب 3 مرات</span>
+                <span>🚨 إنذارات رسوب 3 مرات {% if failed_count %}({{ failed_count }}){% endif %}</span>
             </a>
             {% endif %}
         </div>
@@ -515,6 +515,129 @@ html.dark .icon-professor_grade_reply, html.dark .icon-grade_submission { backgr
                 </div>
 
                 <p class="notif-card-message">{{ notif.message }}</p>
+
+                <!-- أزرار الإجراءات: تظهر فقط لأصحاب الصلاحية المباشرة وتُخفى تماماً عن مدير النظام -->
+                {% if not request.user.is_superuser and request.user.role != 'admin' and request.user.role != 'manager' and request.user.role != 'مدير النظام' %}
+                <div>
+                    <!-- 1. إشعارات سحب الملفات (لقسم التسجيل والقبول فقط) -->
+                    {% if notif.notification_type == 'file_withdrawal' or notif.notification_type == 'withdrawal' or 'سحب الملف' in notif.title or 'سحب ملف' in notif.title or 'سحب' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
+                        <a href="{% url 'renewal:withdrawn_students_list' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">folder_off</span>
+                            <span>قائمة الطلاب الذين تم سحب ملفاتهم</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 2. إشعارات التخرج وإصدار الإفادات (لقسم الخريجين فقط) -->
+                    {% elif notif.notification_type == 'graduation' or 'إفادة' in notif.title or 'خريج' in notif.title or 'متخرج' in notif.title %}
+                        {% if request.user.role in 'graduate_officer,graduates' or request.user.role in 'قسم الخريجين,الخريجين' %}
+                        <a href="{% if notif.link %}{{ notif.link }}{% else %}{% url 'renewal:graduation_archive' %}{% endif %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">school</span>
+                            <span>إدارة الخريجين وإصدار الإفادة</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 3. إشعارات إخلاء طرف التخرج والطلاب المؤهلين للتخرج (لقسم الخريجين فقط) -->
+                    {% elif notif.notification_type == 'clearance' or 'إخلاء طرف' in notif.title or 'إخلاء الطرف' in notif.title or 'مؤهل لإخلاء' in notif.title %}
+                        {% if request.user.role in 'graduate_officer,graduates' or request.user.role in 'قسم الخريجين,الخريجين' %}
+                        <a href="{% if notif.link %}{{ notif.link }}{% elif notif.student %}{% url 'renewal:clearance' %}?student_id={{ notif.student.student_id }}{% else %}{% url 'renewal:clearance' %}{% endif %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">assignment_turned_in</span>
+                            <span>بدء توثيق إخلاء الطرف</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 4. تجديد القيد (لقسم التسجيل فقط) -->
+                    {% elif notif.notification_type == 'renewal' or 'تجديد' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
+                        <a href="{% url 'renewal:renewed_students_list' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">how_to_reg</span>
+                            <span>قائمة الطلاب الذين تم تجديد قيدهم</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 5. إيقاف القيد (لقسم التسجيل فقط) -->
+                    {% elif notif.notification_type == 'hold' or 'إيقاف' in notif.title or 'موقوف' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
+                        <a href="{% url 'renewal:suspended_students_list' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">pause_circle</span>
+                            <span>قائمة الطلاب الموقوف قيدهم</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 6. تغيير المسار والمعادلات (لقسم التسجيل فقط) -->
+                    {% elif notif.notification_type == 'department_change' or notif.notification_type == 'track_change' or 'مسار' in notif.title or 'معادلة' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
+                        <a href="{% url 'renewal:department_transfers_list' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">alt_route</span>
+                            <span>قائمة الطلاب الذين قاموا بتغيير مسارهم</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 7. إنذارات الرسوب 3 مرات -->
+                    {% elif notif.notification_type == 'failed_three_times' or 'رسوب' in notif.title or 'راسب' in notif.title %}
+                        {% if request.user.role in 'registrar,general_registrar,exam_director,exam_officer,exams,coordinator' %}
+                        <a href="{% if notif.link %}{{ notif.link }}{% else %}{% url 'grades:failed_students_report' %}{% endif %}" class="notif-card-action action-danger">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">open_in_new</span>
+                            <span>الانتقال المباشر لتقرير الطلاب الراسبين</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 8. تعيين وتكليف المواد للأساتذة (لقسم الدراسة والامتحانات فقط) -->
+                    {% elif notif.notification_type == 'course_assignment' or 'تعيين' in notif.title or 'تكليف' in notif.title %}
+                        {% if request.user.role in 'exam_director,exam_officer,exams,coordinator,study_exams,study_and_exams' or request.user.role in 'مدير الدراسة والامتحانات,منسق الدراسة والامتحانات,دراسة وامتحانات' %}
+                        <a href="{% url 'faculty:sections' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">assignment_ind</span>
+                            <span>الانتقال لإدارة الأقسام وتكليفات الأساتذة</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 9. رصد واستلام الدرجات (لقسم الدراسة والامتحانات فقط) -->
+                    {% elif notif.notification_type in 'grade_recording,professor_grade_reply,grade_submission' or 'رصد' in notif.title or 'رد الأستاذ' in notif.title %}
+                        {% if request.user.role in 'exam_director,exam_officer,exams,coordinator,study_exams,study_and_exams' or request.user.role in 'مدير الدراسة والامتحانات,منسق الدراسة والامتحانات,دراسة وامتحانات' %}
+                        <a href="{% url 'grades:grade_entry' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">edit_note</span>
+                            <span>الانتقال لرصد واعتماد كشف الدرجات</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 10. اعتماد ونشر النتائج العامة (لقسم الدراسة والامتحانات فقط) -->
+                    {% elif notif.notification_type in 'grade_approval,final_grade,midterm_grade' or 'نتائج' in notif.title or 'نتيجة' in notif.title %}
+                        {% if request.user.role in 'exam_director,exam_officer,exams,coordinator,study_exams,study_and_exams' or request.user.role in 'مدير الدراسة والامتحانات,منسق الدراسة والامتحانات,دراسة وامتحانات' %}
+                        <a href="{% url 'grades:show_results' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">visibility</span>
+                            <span>عرض واستعراض النتائج العامة</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 11. إضافة طالب جديد (لقسم التسجيل فقط) -->
+                    {% elif notif.notification_type == 'new_student' or 'طالب جديد' in notif.title or 'مستجد' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
+                        <a href="{% url 'renewal:student_data' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">person_add</span>
+                            <span>إدارة وبيانات الطلاب</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 12. تنزيل المواد (لقسم التسجيل والامتحانات) -->
+                    {% elif notif.notification_type == 'registration' or 'تنزيل' in notif.title %}
+                        {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,exam_director,exam_officer,exams,coordinator' %}
+                        <a href="{% url 'renewal:download_materials' %}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">download</span>
+                            <span>شاشة تقارير وتنزيل المواد</span>
+                        </a>
+                        {% endif %}
+
+                    <!-- 13. الافتراضي -->
+                    {% else %}
+                        {% if notif.link and request.user.role in 'registrar,general_registrar,exam_director,exam_officer,exams,coordinator' %}
+                        <a href="{{ notif.link }}" class="notif-card-action">
+                            <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+                            <span>عرض التفاصيل والإجراء</span>
+                        </a>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endif %}
             </div>
         </div>
         {% empty %}

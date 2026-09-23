@@ -11759,6 +11759,13 @@ def registrar_notifications(request):
     """
     filter_type = request.GET.get('type', 'all')
     
+    # 🔄 مزامنة إنذارات الرسوب والتعثر الأكاديمي (رسوب 3 مرات فما فوق) تلقائياً
+    try:
+        from apps.renewal.services import FailureWarningService
+        FailureWarningService.sync_failure_warnings()
+    except Exception as e:
+        logger.error(f"Error syncing failure warnings in notifications view: {e}")
+
     # جلب استعلام الإشعارات المخصص للمستخدم الحالي
     user_notifs_qs = get_scoped_notifications_queryset(request.user)
     
@@ -11767,8 +11774,18 @@ def registrar_notifications(request):
     
     base_qs = user_notifs_qs.order_by('-created_at')
     
+    all_count = user_notifs_qs.count()
+    failed_count = user_notifs_qs.filter(
+        Q(notification_type='failed_three_times') | Q(title__icontains='رسوب')
+    ).count()
+
     if filter_type != 'all':
-        base_qs = base_qs.filter(notification_type=filter_type)
+        if filter_type == 'failed_three_times':
+            base_qs = base_qs.filter(
+                Q(notification_type='failed_three_times') | Q(title__icontains='رسوب')
+            )
+        else:
+            base_qs = base_qs.filter(notification_type=filter_type)
         
     unread_count = 0
     total_count = base_qs.count()
@@ -11778,6 +11795,8 @@ def registrar_notifications(request):
         'notifications': notifications,
         'unread_count': unread_count,
         'total_count': total_count,
+        'all_count': all_count,
+        'failed_count': failed_count,
         'filter_type': filter_type,
     }
     return render(request, 'renewal/notifications.html', context)

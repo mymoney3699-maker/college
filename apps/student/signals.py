@@ -69,6 +69,13 @@ def handle_grade_save_and_notifications(sender, instance, created, **kwargs):
                     GraduationEligibilityService.check_student_eligibility(instance.student)
                 except Exception as ge:
                     logger.error(f"Error checking graduation eligibility in signal: {ge}")
+
+            # 🚨 أتمتة فحص ورصد إنذارات الرسوب والتعثر الأكاديمي (رسوب 3 مرات فما فوق)
+            try:
+                from apps.renewal.services import FailureWarningService
+                FailureWarningService.scan_student(instance.student)
+            except Exception as fe:
+                logger.error(f"Error checking failure warnings on grade save: {fe}")
     except Exception as e:
         logger.error(f"Error updating academic records on grade save: {e}")
 
@@ -175,6 +182,14 @@ try:
                     link='/renewal/download-materials/',
                     target_role='exam_director'
                 )
+
+                # 🚨 فحص ورصد إنذارات الرسوب عند تسجيل مادة للمرة 3 فما فوق
+                if getattr(instance, 'attempt_number', 1) >= 3:
+                    try:
+                        from apps.renewal.services import FailureWarningService
+                        FailureWarningService.scan_student(instance.student)
+                    except Exception as fe:
+                        logger.error(f"Error checking failure warnings on registration: {fe}")
         except Exception as e:
             logger.error(f"Error creating registration notification: {e}")
 except ImportError:
@@ -306,26 +321,48 @@ def track_student_changes_pre_save(sender, instance, **kwargs):
                     target_role='registrar'
                 )
 
-            # إخلاء طرف / سحب ملف
-            elif "منسحب" in status_name or "إخلاء" in status_name or "سحب" in status_name:
+            # 1. سحب ملف
+            elif "منسحب" in status_name or "سحب" in status_name:
                 Notification.create_notification(
                     student=instance,
-                    title="إتمام إجراءات إخلاء الطرف وسحب الملف",
-                    message="تم إتمام واعتماد إجراءات إخلاء الطرف وسحب الملف بنجاح.",
-                    notification_type='clearance',
-                    icon='folder_shared',
+                    title="إتمام إجراءات سحب الملف",
+                    message="تم إتمام واعتماد إجراءات سحب ملفك من المنظومة بنجاح.",
+                    notification_type='file_withdrawal',
+                    icon='folder_off',
                     link='/student/my-profile/',
                     target_role='student'
                 )
 
                 Notification.create_notification(
                     student=instance,
-                    title=f"إتمام إخلاء طرف وسحب ملف: {instance.name}",
-                    message=f"تم تسجيل واعتماد إخلاء الطرف وسحب الملف للطالب ({instance.name} - قيد: {instance.student_id}).",
-                    notification_type='clearance',
-                    icon='folder_shared',
+                    title=f"سحب ملف: {instance.name}",
+                    message=f"تم تسجيل واعتماد سحب الملف للطالب ({instance.name} - قيد: {instance.student_id}).",
+                    notification_type='file_withdrawal',
+                    icon='folder_off',
                     link='/renewal/withdrawn-students/',
                     target_role='registrar'
+                )
+
+            # 2. إخلاء طرف التخرج
+            elif "إخلاء" in status_name:
+                Notification.create_notification(
+                    student=instance,
+                    title="توثيق إخلاء طرف التخرج",
+                    message="تم إتمام وتوثيق إجراءات إخلاء طرف التخرج بنجاح.",
+                    notification_type='clearance',
+                    icon='assignment_turned_in',
+                    link='/student/my-profile/',
+                    target_role='student'
+                )
+
+                Notification.create_notification(
+                    student=instance,
+                    title=f"إخلاء طرف تخرج: {instance.name}",
+                    message=f"تم تسجيل واعتماد إخلاء طرف التخرج للطالب ({instance.name} - قيد: {instance.student_id}).",
+                    notification_type='clearance',
+                    icon='assignment_turned_in',
+                    link='/renewal/clearance/',
+                    target_role='graduates'
                 )
     except Exception as e:
         logger.error(f"Error tracking student changes in signal: {e}")

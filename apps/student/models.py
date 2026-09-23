@@ -862,6 +862,8 @@ class Notification(models.Model):
 
         if n_type in ['final_grade', 'midterm_grade', 'grade_appeal', 'grade_recording', 'grade_approval'] or any(w in combined_text for w in ['نتيجة', 'نتائج', 'درجة', 'درجات', 'رصد', 'طعن', 'إعلان']):
             return '/student/term-result/'
+        elif n_type == 'failed_three_times' or any(w in combined_text for w in ['إنذار', 'رسوب', 'راسب', 'تعثر']):
+            return '/student/my-warnings/'
         elif n_type in ['registration', 'course_assignment'] or any(w in combined_text for w in ['مواد', 'مادة', 'تنزيل', 'مقرر']):
             return '/student/my-courses/'
         elif n_type in ['graduation'] or any(w in combined_text for w in ['تخرج', 'خريج', 'إفادة']):

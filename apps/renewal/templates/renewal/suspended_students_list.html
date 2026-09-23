@@ -479,10 +479,14 @@ html.dark .btn-action-secondary {
                             </span>
                         </td>
                         <td>
+                            {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
                             <a href="{% url 'renewal:suspend_student_page' %}" class="action-btn-link" title="إدارة حالة القيد">
                                 <span class="material-symbols-outlined" style="font-size: 15px;">settings</span>
                                 <span>إدارة القيد</span>
                             </a>
+                            {% else %}
+                            <span class="text-muted small">--</span>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -512,10 +516,12 @@ html.dark .btn-action-secondary {
         </div>
 
         <div class="bottom-actions-group">
+            {% if request.user.role == 'registrar' or request.user.role in 'موظف تسجيل وقبول,تسجيل وقبول,تسجيل,قبول وتسجيل' %}
             <a href="{% url 'renewal:suspend_student_page' %}" class="btn-action-primary">
                 <span class="material-symbols-outlined" style="font-size: 18px;">admin_panel_settings</span>
                 <span>إدارة إيقاف واسترجاع القيد</span>
             </a>
+            {% endif %}
             <button type="button" onclick="window.print()" class="btn-action-print">
                 <span class="material-symbols-outlined" style="font-size: 18px;">print</span>
                 <span>طباعة الكشف</span>
